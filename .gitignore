@@ -1,0 +1,40 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# agent skills
+# .agents/ e skills-lock.json sao versionados de proposito.
+# .claude/skills sao junctions geradas pelo `npx skills add` — recriar com:
+#   npx skills add https://github.com/Leonxlnx/taste-skill
+/.claude/

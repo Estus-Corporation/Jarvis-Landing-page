@@ -98,7 +98,6 @@ function NetworkSphere({
   }, [size]);
 
   useEffect(() => {
-    if (paused) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const glowCanvas = glowCanvasRef.current;
@@ -157,7 +156,7 @@ function NetworkSphere({
 
       const sinceIntro = ts - introT0Ref.current;
       const calmIdle = stateRef.current === "idle" && sinceIntro > 6000;
-      const minFrame = calmIdle ? 32 : 0;
+      const minFrame = calmIdle && !paused ? 32 : 0;
       if (minFrame > 0 && ts - lastDrawTs < minFrame) {
         frameRef.current = requestAnimationFrame(animate);
         return;
@@ -335,7 +334,9 @@ function NetworkSphere({
       }
       ctx.globalAlpha = 1;
 
-      frameRef.current = requestAnimationFrame(animate);
+      // paused desenha exatamente um quadro e para, deixando a esfera estatica.
+      // Antes o efeito saia antes de pintar, e sobrava so o anel SVG num vazio.
+      if (!paused) frameRef.current = requestAnimationFrame(animate);
     };
     frameRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameRef.current);

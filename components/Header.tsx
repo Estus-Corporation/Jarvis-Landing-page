@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
+// Rotulos de navegacao e ancoras preservados do layout anterior: mudar slug
+// quebra link salvo e memoria muscular de quem ja conhece a pagina.
 const navLinksData = [
   { label: "Recursos", href: "#recursos" },
   { label: "Como funciona", href: "#como-funciona" },
@@ -15,29 +17,27 @@ const AnimatedNavLink = ({
 }: {
   href: string;
   children: React.ReactNode;
-}) => {
-  return (
-    <a
-      href={href}
-      className="group relative inline-block h-5 overflow-hidden text-sm"
-    >
-      <div className="flex flex-col transition-transform duration-400 ease-out transform group-hover:-translate-y-1/2">
-        <span className="text-gray-300">{children}</span>
-        <span className="text-white">{children}</span>
-      </div>
-    </a>
-  );
-};
+}) => (
+  <a
+    href={href}
+    className="group relative inline-block h-5 overflow-hidden text-sm"
+  >
+    <div className="flex flex-col transition-transform duration-300 ease-out group-hover:-translate-y-1/2">
+      <span className="text-white/60">{children}</span>
+      <span className="text-white">{children}</span>
+    </div>
+  </a>
+);
 
 const Logo = () => (
-  <a href="#top" className="flex items-center gap-2">
-    <div className="relative flex h-6 w-6 items-center justify-center">
-      <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white opacity-90" />
-      <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white opacity-90" />
-      <span className="absolute right-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white opacity-90" />
-      <span className="absolute bottom-0 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white opacity-90" />
+  <a href="#top" className="flex items-center gap-2.5">
+    <div className="relative flex h-5 w-5 items-center justify-center">
+      <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" />
+      <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/90" />
+      <span className="absolute right-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/90" />
+      <span className="absolute bottom-0 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" />
     </div>
-    <span className="text-sm font-semibold tracking-[0.2em] text-white">
+    <span className="text-sm font-semibold tracking-[0.18em] text-white">
       JARVIS
     </span>
   </a>
@@ -45,52 +45,38 @@ const Logo = () => (
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [headerShapeClass, setHeaderShapeClass] = useState("rounded-full");
-  const shapeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const toggleMenu = () => setIsOpen((prev) => !prev);
+  const [shapeClass, setShapeClass] = useState("rounded-full");
+  const shapeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (shapeTimeoutRef.current) {
-      clearTimeout(shapeTimeoutRef.current);
-    }
+    if (shapeTimeout.current) clearTimeout(shapeTimeout.current);
     if (isOpen) {
-      setHeaderShapeClass("rounded-xl");
+      setShapeClass("rounded-card");
     } else {
-      shapeTimeoutRef.current = setTimeout(() => {
-        setHeaderShapeClass("rounded-full");
-      }, 300);
+      shapeTimeout.current = setTimeout(() => setShapeClass("rounded-full"), 300);
     }
     return () => {
-      if (shapeTimeoutRef.current) {
-        clearTimeout(shapeTimeoutRef.current);
-      }
+      if (shapeTimeout.current) clearTimeout(shapeTimeout.current);
     };
   }, [isOpen]);
 
-  const loginButtonElement = (
-    <button className="w-full rounded-full border border-[#333] bg-[rgba(31,31,31,0.62)] px-4 py-2 text-xs text-gray-300 transition-colors duration-200 hover:border-white/50 hover:text-white sm:w-auto sm:px-3 sm:text-sm">
-      Entrar
-    </button>
-  );
-
-  const signupButtonElement = (
-    <a href="#precos" className="group relative block w-full sm:w-auto">
-      <div className="pointer-events-none absolute inset-0 -m-2 hidden rounded-full bg-gray-100 opacity-40 blur-lg transition-all duration-300 ease-out group-hover:-m-3 group-hover:opacity-60 group-hover:blur-xl sm:block" />
-      <button className="relative z-10 w-full rounded-full bg-gradient-to-br from-gray-100 to-gray-300 px-4 py-2 text-xs font-semibold text-black transition-all duration-200 hover:from-gray-200 hover:to-gray-400 sm:w-auto sm:px-3 sm:text-sm">
-        Começar agora
-      </button>
+  const signupButton = (
+    <a
+      href="#precos"
+      className="block w-full rounded-full bg-[#FAFAFA] px-4 py-1.5 text-center text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-white sm:w-auto"
+    >
+      Começar agora
     </a>
   );
 
   return (
     <header
-      className={`fixed left-1/2 top-6 z-50 flex w-[calc(100%-2rem)] -translate-x-1/2 transform flex-col items-center border border-[#333] bg-[#1f1f1f57] pl-6 pr-6 py-3 backdrop-blur-sm transition-[border-radius] duration-0 ease-in-out sm:w-auto ${headerShapeClass}`}
+      className={`fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] -translate-x-1/2 flex-col items-center border border-white/10 bg-ink-900/70 px-5 py-2.5 backdrop-blur-xl transition-[border-radius] duration-300 sm:w-auto ${shapeClass}`}
     >
-      <div className="flex w-full items-center justify-between gap-x-6 sm:gap-x-10">
+      <div className="flex w-full items-center justify-between gap-x-8 sm:gap-x-12">
         <Logo />
 
-        <nav className="hidden items-center space-x-6 sm:flex">
+        <nav className="hidden items-center gap-x-7 lg:flex">
           {navLinksData.map((link) => (
             <AnimatedNavLink key={link.href} href={link.href}>
               {link.label}
@@ -98,72 +84,50 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 sm:flex sm:gap-3">
-          {loginButtonElement}
-          {signupButtonElement}
-        </div>
+        <div className="hidden items-center lg:flex">{signupButton}</div>
 
         <button
-          className="flex h-8 w-8 items-center justify-center text-gray-300 focus:outline-none sm:hidden"
-          onClick={toggleMenu}
+          className="flex h-8 w-8 items-center justify-center text-white/70 lg:hidden"
+          onClick={() => setIsOpen((v) => !v)}
+          aria-expanded={isOpen}
           aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
         >
-          {isOpen ? (
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          )}
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 7h16M4 12h16M4 17h16"}
+            />
+          </svg>
         </button>
       </div>
 
       <div
-        className={`flex w-full flex-col items-center overflow-hidden transition-all duration-300 ease-in-out sm:hidden ${
+        className={`flex w-full flex-col items-center overflow-hidden transition-all duration-300 lg:hidden ${
           isOpen
-            ? "max-h-[1000px] pt-4 opacity-100"
-            : "max-h-0 pointer-events-none pt-0 opacity-0"
+            ? "max-h-[420px] pt-5 opacity-100"
+            : "pointer-events-none max-h-0 pt-0 opacity-0"
         }`}
       >
-        <nav className="flex w-full flex-col items-center space-y-4 text-base">
+        <nav className="flex w-full flex-col items-center gap-4">
           {navLinksData.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="w-full text-center text-gray-300 transition-colors hover:text-white"
+              onClick={() => setIsOpen(false)}
+              className="w-full text-center text-sm text-white/70 transition-colors hover:text-white"
             >
               {link.label}
             </a>
           ))}
         </nav>
-        <div className="mt-4 flex w-full flex-col items-center space-y-4">
-          {loginButtonElement}
-          {signupButtonElement}
-        </div>
+        <div className="mt-5 w-full">{signupButton}</div>
       </div>
     </header>
   );

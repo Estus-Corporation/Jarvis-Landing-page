@@ -1,116 +1,105 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
-import { CanvasRevealEffect } from "@/components/ui/canvas-reveal-effect";
+import React, { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { JarvisOrb } from "@/components/ui/jarvis-sphere";
+import { useOrbSize } from "@/components/ui/use-orb-size";
+import CodeRain from "@/components/ui/code-rain";
+
+const HEADLINE = ["Fale.", "O", "Jarvis", "executa."];
 
 export default function Hero() {
+  const reduce = useReducedMotion();
+  const { containerRef, size } = useOrbSize({ min: 200, max: 420 });
+
+  // O orb comeca em espera e passa a ouvir logo depois da entrada do texto:
+  // a primeira coisa que a pagina faz e o produto reagindo.
+  const [state, setState] = useState<"idle" | "listening">("idle");
+  useEffect(() => {
+    if (reduce) return;
+    const timer = setTimeout(() => setState("listening"), 2200);
+    return () => clearTimeout(timer);
+  }, [reduce]);
+
   return (
     <section
       id="top"
-      className="relative flex min-h-screen w-full flex-col overflow-hidden bg-black"
+      className="relative flex min-h-[100dvh] w-full items-center overflow-hidden bg-ink-950 px-6 pb-20 pt-24"
     >
-      {/* Background layer */}
-      <div className="absolute inset-0 z-0">
-        <CanvasRevealEffect
-          animationSpeed={3}
-          containerClassName="bg-black"
-          colors={[
-            [255, 255, 255],
-            [255, 255, 255],
-          ]}
-          dotSize={6}
-          reverse={false}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.9)_0%,_transparent_100%)]" />
-        <div className="absolute left-0 right-0 top-0 h-1/3 bg-gradient-to-b from-black to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black to-transparent" />
-      </div>
+      <CodeRain />
 
-      {/* Content layer */}
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pt-40 pb-24 text-center sm:pt-44">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#333] bg-[rgba(31,31,31,0.62)] px-4 py-1.5 backdrop-blur-sm"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-white" />
-          <span className="text-xs font-medium tracking-wide text-gray-300">
-            Seu Windows, agora com um mordomo de IA
-          </span>
-        </motion.div>
+      {/* Halo com respiro lento, unico loop continuo do fundo. */}
+      <motion.div
+        animate={
+          reduce ? undefined : { scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }
+        }
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+        className="pointer-events-none absolute right-0 top-1/2 h-[640px] w-[640px] -translate-y-1/2 translate-x-1/4 rounded-full bg-white/[0.045] blur-[130px]"
+      />
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-          className="max-w-3xl text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white sm:text-6xl"
-        >
-          Fale. O Jarvis executa.
-          <br className="hidden sm:block" /> Sem tocar no teclado.
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-          className="mt-6 max-w-xl text-base font-light text-white/60 sm:text-lg"
-        >
-          Um assistente de voz que vive no seu Windows: controla navegador,
-          abre e fecha programas, roda comandos de terminal, mexe no Spotify
-          e no WhatsApp, e responde com a sua própria voz clonada.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-          className="mt-10 flex w-full max-w-md flex-col items-center gap-3 sm:w-auto sm:flex-row sm:justify-center"
-        >
-          <a href="#precos" className="group relative block w-full sm:w-auto">
-            <div className="pointer-events-none absolute inset-0 -m-2 hidden rounded-full bg-gray-100 opacity-40 blur-lg transition-all duration-300 ease-out group-hover:-m-3 group-hover:opacity-60 group-hover:blur-xl sm:block" />
-            <button className="relative z-10 w-full rounded-full bg-gradient-to-br from-gray-100 to-gray-300 px-6 py-3 text-sm font-semibold text-black transition-all duration-200 hover:from-gray-200 hover:to-gray-400 sm:w-auto">
-              Começar agora
-            </button>
-          </a>
-
-          <a
-            href="#demo"
-            className="w-full rounded-full border border-[#333] bg-[rgba(31,31,31,0.62)] px-6 py-3 text-center text-sm text-gray-300 backdrop-blur-sm transition-colors duration-200 hover:border-white/50 hover:text-white sm:w-auto"
-          >
-            Ver demonstração
-          </a>
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut", delay: 0.45 }}
-          className="mt-8 text-xs text-white/40"
-        >
-          Windows 10/11 · Configuração em minutos · Sua voz, sua privacidade
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut", delay: 0.55 }}
-          className="mt-16 grid w-full max-w-3xl grid-cols-2 gap-6 border-t border-white/10 pt-10 sm:grid-cols-4"
-        >
-          {[
-            { value: "10+", label: "integrações nativas" },
-            { value: "100%", label: "controle por voz" },
-            { value: "1", label: "voz clonada, a sua" },
-            { value: "24/7", label: "sempre em espera" },
-          ].map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center">
-              <span className="text-2xl font-bold text-white sm:text-3xl">
-                {stat.value}
+      <div className="relative mx-auto grid w-full max-w-shell grid-cols-1 items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
+        <div className="order-2 lg:order-1">
+          {/* Revelacao palavra a palavra: o titulo se monta como uma frase
+              sendo dita, em vez de aparecer inteiro de uma vez. */}
+          <h1 className="flex max-w-[15ch] flex-wrap gap-x-[0.28em] text-[2.75rem] font-semibold leading-[1.05] tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:text-7xl">
+            {HEADLINE.map((word, i) => (
+              <span key={word + i} className="overflow-hidden pb-[0.08em]">
+                <motion.span
+                  className="inline-block"
+                  initial={reduce ? false : { y: "100%", opacity: 0 }}
+                  animate={{ y: "0%", opacity: 1 }}
+                  transition={{
+                    duration: 0.75,
+                    delay: reduce ? 0 : i * 0.08,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                >
+                  {word}
+                </motion.span>
               </span>
-              <span className="mt-1 text-xs text-white/40">{stat.label}</span>
-            </div>
-          ))}
+            ))}
+          </h1>
+
+          <motion.p
+            initial={reduce ? false : { opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.42, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-7 max-w-[46ch] text-lg font-light leading-relaxed text-white/60"
+          >
+            Um assistente de voz que vive no seu Windows. Controla o navegador,
+            abre programas e roda comandos de terminal.
+          </motion.p>
+
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.52, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-10 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center"
+          >
+            <a
+              href="#precos"
+              className="rounded-full bg-[#FAFAFA] px-7 py-3.5 text-center text-sm font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98] sm:w-fit"
+            >
+              Começar agora
+            </a>
+
+            <a
+              href="#como-funciona"
+              className="rounded-full border border-white/15 px-7 py-3.5 text-center text-sm text-white/70 transition-all duration-300 hover:border-white/40 hover:bg-white/[0.04] hover:text-white active:scale-[0.98] sm:w-fit"
+            >
+              Ver como funciona
+            </a>
+          </motion.div>
+        </div>
+
+        <motion.div
+          ref={containerRef}
+          initial={reduce ? false : { opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="order-1 flex items-center justify-center lg:order-2 lg:justify-end"
+        >
+          <JarvisOrb state={state} sphereSize={size} paused={!!reduce} />
         </motion.div>
       </div>
     </section>

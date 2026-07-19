@@ -1,7 +1,11 @@
-"use client";
-
 import React from "react";
-import { Github, Twitter, Instagram, Linkedin } from "lucide-react";
+import {
+  GithubLogo,
+  XLogo,
+  InstagramLogo,
+  LinkedinLogo,
+} from "@phosphor-icons/react/dist/ssr";
+import type { Icon } from "@phosphor-icons/react";
 
 const footerLinks = [
   {
@@ -30,57 +34,59 @@ const footerLinks = [
   },
 ];
 
-const socialLinks = [
-  { icon: Github, href: "#", label: "GitHub" },
-  { icon: Twitter, href: "#", label: "X (Twitter)" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Linkedin, href: "#", label: "LinkedIn" },
+const socialLinks: { icon: Icon; href: string; label: string }[] = [
+  { icon: GithubLogo, href: "#", label: "GitHub" },
+  { icon: XLogo, href: "#", label: "X" },
+  { icon: InstagramLogo, href: "#", label: "Instagram" },
+  { icon: LinkedinLogo, href: "#", label: "LinkedIn" },
 ];
 
 export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative border-t border-white/10 bg-black px-6 py-16">
-      <div className="mx-auto max-w-6xl">
+    <footer className="border-t border-white/[0.08] bg-ink-950 px-6 py-16 sm:py-20">
+      <div className="mx-auto max-w-shell">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <a href="#top" className="flex items-center gap-2">
-              <div className="relative flex h-6 w-6 items-center justify-center">
-                <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white opacity-90" />
-                <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white opacity-90" />
-                <span className="absolute right-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white opacity-90" />
-                <span className="absolute bottom-0 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white opacity-90" />
+            <a href="#top" className="flex items-center gap-2.5">
+              <div className="relative flex h-5 w-5 items-center justify-center">
+                <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" />
+                <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/90" />
+                <span className="absolute right-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/90" />
+                <span className="absolute bottom-0 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" />
               </div>
-              <span className="text-sm font-semibold tracking-[0.2em] text-white">
+              <span className="text-sm font-semibold tracking-[0.18em] text-white">
                 JARVIS
               </span>
             </a>
-            <p className="mt-4 max-w-[220px] text-sm leading-relaxed text-white/40">
-              Seu assistente de voz pessoal para Windows. Fale, e ele
-              executa.
+            <p className="mt-5 max-w-[24ch] text-sm leading-relaxed text-white/40">
+              Seu assistente de voz para Windows. Fale, e ele executa.
             </p>
 
-            <div className="mt-6 flex items-center gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  aria-label={social.label}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/50 transition-colors duration-200 hover:border-white/30 hover:text-white"
-                >
-                  <social.icon className="h-4 w-4" strokeWidth={1.75} />
-                </a>
-              ))}
+            <div className="mt-7 flex items-center gap-2.5">
+              {socialLinks.map((social) => {
+                const Glyph = social.icon;
+                return (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    aria-label={social.label}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/50 transition-colors duration-200 hover:border-white/30 hover:text-white"
+                  >
+                    <Glyph size={16} weight="light" aria-hidden />
+                  </a>
+                );
+              })}
             </div>
           </div>
 
           {footerLinks.map((group) => (
             <div key={group.title}>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-white/40">
+              <h3 className="text-sm font-medium text-white/40">
                 {group.title}
-              </h4>
-              <ul className="mt-4 flex flex-col gap-3">
+              </h3>
+              <ul className="mt-5 flex flex-col gap-3">
                 {group.links.map((link) => (
                   <li key={link.label}>
                     <a
@@ -96,7 +102,7 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs text-white/30 sm:flex-row">
+        <div className="mt-16 flex flex-col justify-between gap-3 border-t border-white/[0.08] pt-8 text-sm text-white/30 sm:flex-row">
           <span>© {year} Jarvis. Todos os direitos reservados.</span>
           <span>Feito pela Estus Corporation.</span>
         </div>

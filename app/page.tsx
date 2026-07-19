@@ -1,8 +1,10 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Signals from "@/components/Signals";
+import Integrations from "@/components/Integrations";
 import Features from "@/components/Features";
 import InAction from "@/components/InAction";
+import Showcase from "@/components/Showcase";
 import Voice from "@/components/Voice";
 import Pricing from "@/components/Pricing";
 import Faq from "@/components/Faq";
@@ -59,8 +61,10 @@ export default function Home() {
         <Header />
         <Hero />
         <Signals />
+        <Integrations />
         <Features />
         <InAction />
+        <Showcase />
         <Voice />
         <Pricing />
         <Faq />

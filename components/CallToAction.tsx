@@ -9,7 +9,15 @@ export default function CallToAction() {
   const reduce = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden border-t border-white/[0.08] bg-ink-900 px-6 py-28 sm:py-36">
+    <section className="relative overflow-hidden border-t border-white/[0.08] bg-ink-900 px-6 py-32 sm:py-44">
+      {/* Cena do produto ao fundo, bem apagada, so pra dar profundidade. */}
+      <img
+        src="/images/jarvis-desk.png"
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.12]"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink-900 via-ink-900/70 to-ink-900" />
       <div className="pointer-events-none absolute left-1/2 top-full h-[520px] w-[820px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.05] blur-[120px]" />
 
       <motion.div

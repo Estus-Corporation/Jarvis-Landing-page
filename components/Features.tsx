@@ -13,8 +13,8 @@ import {
   SlidersHorizontal,
   Microphone,
   Waveform,
-  SpotifyLogo,
-  WhatsappLogo,
+  Keyboard,
+  CloudSun,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
@@ -40,8 +40,8 @@ const context: Capability[] = [
 const voice: Capability[] = [
   { icon: Microphone, title: "Ativação por voz", line: "Palavra de ativação e atalho global configuráveis." },
   { icon: Waveform, title: "Voz clonada", line: "Responde com uma síntese treinada na sua voz." },
-  { icon: SpotifyLogo, title: "Spotify", line: "Toca, pula e busca música com comando natural." },
-  { icon: WhatsappLogo, title: "WhatsApp", line: "Envia mensagens sem você pegar no celular." },
+  { icon: Keyboard, title: "Digita por você", line: "Digita textos e pressiona teclas sob comando." },
+  { icon: CloudSun, title: "Clima e hora", line: "Informa tempo, previsão e horário na hora." },
 ];
 
 function CapabilityRow({ item }: { item: Capability }) {

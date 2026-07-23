@@ -1,11 +1,15 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { motion, useReducedMotion } from "motion/react";
 
-// Prova visual: a dashboard real do app, emoldurada como uma janela, mais um
-// plano cinematografico do produto rodando na mesa. Widgets reais listados ao
-// lado para ancorar a imagem no que a pessoa vai realmente ver.
+// Prova visual da secao: uma imagem so, a captura real da dashboard.
+//
+// A segunda foto saiu a pedido. E, com ela fora, a lista de widgets nao podia
+// continuar como cartao ao lado: a propria imagem ja mostra clima, relogio,
+// Spotify e tarefas. Nomear em texto o que a foto exibe e dizer duas vezes.
+// Os nomes viram indice discreto embaixo, e a imagem ganha o palco inteiro.
 const widgets = [
   "Clima e relógio",
   "Spotify com capa do álbum",
@@ -20,7 +24,10 @@ export default function Showcase() {
 
   return (
     <section className="relative overflow-hidden bg-ink-900 px-6 py-28 sm:py-36">
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-white/[0.04] blur-[130px]" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-white/[0.04] blur-[130px]"
+      />
 
       <div className="relative mx-auto max-w-shell">
         <motion.div
@@ -28,85 +35,77 @@ export default function Showcase() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-2xl"
+          className="max-w-3xl"
         >
           <span className="text-xs font-medium uppercase tracking-[0.2em] text-white/35">
-            A central de comando
+            Interface
           </span>
-          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl">
             Uma dashboard viva na sua tela.
           </h2>
-          <p className="mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55">
-            Esfera geodésica que reage à conversa, widgets que você arrasta e
-            reorganiza, e um tema de cores que responde ao seu gosto.
+          <p className="mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55">
+            A esfera reage à conversa no centro. Em volta, widgets que você
+            arrasta, reorganiza e tinge com o seu tema de cor.
           </p>
         </motion.div>
 
-        {/* Janela emoldurada com a captura real do app. */}
+        {/* Palco da imagem. Moldura de bisel duplo: uma casca externa com
+            respiro e um nucleo interno com realce no topo. Nao e cromo de
+            janela falsa, e um porta-retrato: a imagem e real, a moldura nao
+            finge ser sistema operacional. */}
         <motion.figure
-          initial={reduce ? false : { opacity: 0, y: 28 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-14 overflow-hidden rounded-card border border-white/10 bg-ink-950 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]"
+          initial={reduce ? false : { opacity: 0, y: 32, scale: 0.965 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mt-16"
         >
-          <div className="flex items-center gap-2 border-b border-white/[0.07] px-5 py-3.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-            <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-            <span className="ml-3 font-mono text-xs tracking-[0.15em] text-white/30">
-              JARVIS — v0.6.1
-            </span>
-          </div>
-          <img
-            src="/images/jarvis-dashboard.png"
-            alt="Interface do Jarvis: esfera de rede geodésica no centro, widgets de tarefas, clima, relógio e Spotify ao redor."
-            width={1918}
-            height={1062}
-            className="block w-full"
+          {/* Luz sob a imagem: separa o painel do fundo e dá volume. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-12 bottom-0 h-40 translate-y-1/2 rounded-[50%] bg-white/[0.09] blur-[80px]"
           />
+
+          <div className="relative rounded-[26px] border border-white/[0.09] bg-white/[0.03] p-1.5 shadow-[0_50px_140px_-50px_rgba(0,0,0,0.95)] sm:p-2">
+            <div className="overflow-hidden rounded-[20px] border border-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+              <Image
+                src="/images/jarvis-dashboard.png"
+                alt="Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor."
+                width={1918}
+                height={1062}
+                sizes="(max-width: 1200px) 100vw, 1200px"
+                quality={90}
+                className="block w-full"
+              />
+            </div>
+          </div>
         </motion.figure>
 
-        {/* Segunda linha: cena de contexto + lista de widgets. */}
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-          <motion.figure
-            initial={reduce ? false : { opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden rounded-card border border-white/10"
-          >
-            <img
-              src="/images/jarvis-desk.png"
-              alt="Monitor exibindo o Jarvis em uma mesa escura à noite."
-              width={1280}
-              height={720}
-              className="block h-full w-full object-cover"
-            />
-          </motion.figure>
-
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col justify-center rounded-card border border-white/[0.08] bg-ink-950 p-8 sm:p-10"
-          >
-            <h3 className="text-sm font-medium text-white/50">
-              Widgets que vêm de fábrica
-            </h3>
-            <ul className="mt-6 flex flex-col gap-3.5">
-              {widgets.map((w) => (
-                <li
-                  key={w}
-                  className="flex items-center gap-3 text-sm text-white/70"
-                >
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/50" />
-                  {w}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+        {/* Indice do que aparece na imagem. Sem cartao e sem icone: a secao ja
+            tem um ativo visual forte, e competir com ele aqui embaixo so
+            rouba atencao da captura. */}
+        <div className="mt-16">
+          <h3 className="text-sm font-medium text-white/45">
+            O que já vem na tela
+          </h3>
+          <ul className="mt-6 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
+            {widgets.map((widget, i) => (
+              <motion.li
+                key={widget}
+                initial={reduce ? false : { opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{
+                  duration: 0.5,
+                  delay: reduce ? 0 : i * 0.06,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="border-t border-white/[0.1] py-4 text-sm text-white/65"
+              >
+                {widget}
+              </motion.li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>

@@ -10,7 +10,11 @@ const HEADLINE = ["Fale.", "O", "Jarvis", "executa."];
 
 export default function Hero() {
   const reduce = useReducedMotion();
-  const { containerRef, size } = useOrbSize({ min: 200, max: 420 });
+  // O teto acompanha a largura da coluna do orb, alargada logo abaixo no grid.
+  // A caixa desenhada e (size + 144) por causa do padding dos aneis, entao o
+  // limite util da coluna de ~640px e 496. O hook ainda corta por altura de
+  // viewport, o que mantem o hero inteiro visivel em telas baixas.
+  const { containerRef, size } = useOrbSize({ min: 200, max: 480 });
 
   // O orb comeca em espera e passa a ouvir logo depois da entrada do texto:
   // a primeira coisa que a pagina faz e o produto reagindo.
@@ -37,7 +41,7 @@ export default function Hero() {
         className="pointer-events-none absolute right-0 top-1/2 h-[640px] w-[640px] -translate-y-1/2 translate-x-1/4 rounded-full bg-white/[0.045] blur-[130px]"
       />
 
-      <div className="relative mx-auto grid w-full max-w-shell grid-cols-1 items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
+      <div className="relative mx-auto grid w-full max-w-shell grid-cols-1 items-center gap-14 lg:grid-cols-[0.95fr_1.15fr] lg:gap-8">
         <div className="order-2 lg:order-1">
           {/* Revelacao palavra a palavra: o titulo se monta como uma frase
               sendo dita, em vez de aparecer inteiro de uma vez. */}

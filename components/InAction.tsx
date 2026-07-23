@@ -125,7 +125,7 @@ export default function InAction() {
                   role="tab"
                   aria-selected={activeChip}
                   onClick={() => setSc(i)}
-                  className={`group flex items-center gap-3 rounded-chip border px-4 py-3 text-left transition-colors duration-300 ${
+                  className={`group flex cursor-pointer items-center gap-3 rounded-chip border px-4 py-3 text-left transition-colors duration-300 ${
                     activeChip
                       ? "border-white/25 bg-ink-800 text-[#FAFAFA]"
                       : "border-white/[0.08] text-white/50 hover:border-white/15 hover:text-white/75"

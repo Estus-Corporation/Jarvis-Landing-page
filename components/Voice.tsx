@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { LockKey, HardDrives, Brain, Waveform as WaveIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
+import { useOrbSize } from "@/components/ui/use-orb-size";
 
 const points: { icon: Icon; title: string; line: string }[] = [
   {
@@ -25,18 +26,22 @@ const points: { icon: Icon; title: string; line: string }[] = [
   {
     icon: Brain,
     title: "Memória persistente",
-    line: "Lembra de você entre sessões, em banco local — nada sai da máquina.",
+    line: "Lembra de você entre sessões, em banco local. Nada sai da máquina.",
   },
 ];
 
-// Frases que o Jarvis "fala" — datilografadas em tempo real para dar a
-// sensacao de que ele esta respondendo agora, na sua voz.
+// Frases que o Jarvis "fala", datilografadas em tempo real para dar a sensacao
+// de que ele esta respondendo agora, na sua voz.
 const PHRASES = [
   "Bom dia, Senhor. Sua agenda está livre até as 14h.",
   "Vídeo pausado. Abrindo o Visual Studio Code agora.",
   "Tocando sua playlist de foco no Spotify.",
   "Tudo certo. Mensagem enviada no WhatsApp.",
 ];
+
+const CHAR_MS = 42;
+const HOLD_MS = 2000;
+const EXIT_MS = 420;
 
 // Alturas deterministicas: nada de Math.random, senao servidor e cliente
 // desenham barras diferentes e a hidratacao quebra.
@@ -78,10 +83,18 @@ function LiveWave({ live }: { live: boolean }) {
   );
 }
 
-function SpokenCaption() {
+function SpokenCaption({
+  onSpeakingChange,
+}: {
+  onSpeakingChange: (speaking: boolean) => void;
+}) {
   const reduce = useReducedMotion();
   const [pi, setPi] = useState(0);
   const [chars, setChars] = useState(0);
+  // "exiting" e a fase que faltava: antes a frase pronta era zerada de uma vez
+  // e o texto sumia num piscar. Agora ela sai desbotando antes da proxima.
+  const [exiting, setExiting] = useState(false);
+
   const phrase = PHRASES[pi];
   const typing = chars < phrase.length;
 
@@ -90,35 +103,69 @@ function SpokenCaption() {
       setChars(phrase.length);
       return;
     }
-    if (chars < phrase.length) {
-      const id = setTimeout(() => setChars((c) => c + 1), 42);
+    if (exiting) {
+      const id = setTimeout(() => {
+        setPi((p) => (p + 1) % PHRASES.length);
+        setChars(0);
+        setExiting(false);
+      }, EXIT_MS);
       return () => clearTimeout(id);
     }
-    const id = setTimeout(() => {
-      setPi((p) => (p + 1) % PHRASES.length);
-      setChars(0);
-    }, 2000);
+    if (typing) {
+      const id = setTimeout(() => setChars((c) => c + 1), CHAR_MS);
+      return () => clearTimeout(id);
+    }
+    const id = setTimeout(() => setExiting(true), HOLD_MS);
     return () => clearTimeout(id);
-  }, [chars, pi, reduce, phrase.length]);
+  }, [chars, pi, exiting, typing, reduce, phrase.length]);
+
+  // A esfera fala enquanto a legenda digita e se acalma quando ela termina.
+  const speaking = typing && !exiting && !reduce;
+  useEffect(() => {
+    onSpeakingChange(speaking);
+  }, [speaking, onSpeakingChange]);
 
   return (
-    <div className="flex min-h-[3.5rem] w-full max-w-xl items-center gap-4 rounded-card border border-white/[0.1] bg-ink-800/80 px-5 py-4 backdrop-blur-sm">
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.6 }}
+      transition={{ duration: 0.6, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      // min-h fixo comporta duas linhas: sem isso a caixa pula de altura toda
+      // vez que uma frase mais longa quebra a linha.
+      className="flex min-h-[4.75rem] w-full max-w-xl items-center gap-4 rounded-card border border-white/[0.1] bg-ink-800/80 px-5 py-4 backdrop-blur-sm"
+    >
       <span className="shrink-0">
-        <LiveWave live={typing && !reduce} />
+        <LiveWave live={speaking} />
       </span>
       <span className="h-8 w-px shrink-0 bg-white/10" />
-      <p className="text-left text-sm leading-snug text-[#FAFAFA] sm:text-base">
+      <motion.p
+        animate={{ opacity: exiting ? 0 : 1, y: exiting ? -6 : 0 }}
+        transition={{ duration: exiting ? EXIT_MS / 1000 : 0.25, ease: "easeOut" }}
+        className="text-left text-sm leading-snug text-[#FAFAFA] sm:text-base"
+        aria-live="polite"
+      >
         {phrase.slice(0, chars)}
-        {typing && !reduce && (
+        {typing && !exiting && !reduce && (
           <span className="ml-0.5 inline-block h-[1.05em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
         )}
-      </p>
-    </div>
+      </motion.p>
+    </motion.div>
   );
 }
 
 export default function Voice() {
   const reduce = useReducedMotion();
+  const [speaking, setSpeaking] = useState(false);
+  // Esfera maior e responsiva. O componente desenha uma caixa de
+  // (sphereSize + 144) por causa do padding dos aneis, e o hook ja desconta
+  // isso da largura disponivel, entao ela cresce sem estourar no mobile.
+  const { containerRef, size } = useOrbSize({ min: 170, max: 400 });
+
+  const handleSpeakingChange = React.useCallback(
+    (value: boolean) => setSpeaking(value),
+    []
+  );
 
   return (
     <section className="relative overflow-hidden bg-ink-950 px-6 py-28 sm:py-40">
@@ -150,7 +197,7 @@ export default function Voice() {
           </motion.h2>
           <p className="mt-5 max-w-[48ch] text-lg font-light leading-relaxed text-white/55">
             Ele não lê em voz de robô. Responde com uma síntese treinada na sua
-            própria fala — como se você conversasse com outra versão de si.
+            própria fala, como se você conversasse com outra versão de si.
           </p>
 
           {/* Palco: esfera viva + legenda datilografada */}
@@ -159,13 +206,22 @@ export default function Voice() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-10 flex flex-col items-center"
+            className="mt-10 flex w-full flex-col items-center"
           >
-            <div className="flex justify-center">
-              <JarvisOrb state="speaking" sphereSize={300} />
+            <div ref={containerRef} className="flex w-full justify-center">
+              <JarvisOrb
+                state={speaking ? "speaking" : "idle"}
+                sphereSize={size}
+                paused={!!reduce}
+              />
             </div>
-            <div className="-mt-6 flex w-full justify-center sm:-mt-10">
-              <SpokenCaption />
+
+            {/* Sem margem negativa aqui. O orb ja traz 72px de padding
+                transparente embaixo, entao esta margem soma a ele: o respiro
+                real entre a esfera e a legenda fica em ~88px no mobile e
+                ~96px no desktop. */}
+            <div className="mt-4 flex w-full justify-center sm:mt-6">
+              <SpokenCaption onSpeakingChange={handleSpeakingChange} />
             </div>
           </motion.div>
         </div>

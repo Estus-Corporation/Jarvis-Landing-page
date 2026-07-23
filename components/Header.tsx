@@ -87,7 +87,7 @@ export default function Header() {
         <div className="hidden items-center lg:flex">{signupButton}</div>
 
         <button
-          className="flex h-8 w-8 items-center justify-center text-white/70 lg:hidden"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center text-white/70 transition-colors hover:text-white lg:hidden"
           onClick={() => setIsOpen((v) => !v)}
           aria-expanded={isOpen}
           aria-label={isOpen ? "Fechar menu" : "Abrir menu"}

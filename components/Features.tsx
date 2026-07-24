@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { motion, useReducedMotion } from "motion/react";
 import {
   Eye,
@@ -11,15 +12,15 @@ import {
 import type { Icon } from "@phosphor-icons/react";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 
-// A secao de Integracoes, logo acima, ja lista Spotify, Chrome, GitHub,
-// PowerShell, Steam e Windows com descricao. Repetir "Navegador", "Terminal" e
-// "GitHub" aqui em outra grade fazia a pagina dizer a mesma coisa duas vezes
-// seguidas, em dois layouts parecidos.
+// Esta secao vem antes de Integracoes: primeiro o que o produto E, depois no
+// que ele se conecta. Ela responde "o que ele percebe, lembra e como ele soa",
+// que e o que nenhuma lista de logo explica. Integracoes, logo abaixo, cobre
+// Spotify, Chrome, GitHub, PowerShell, Steam e Windows com descricao, entao
+// repetir "Navegador", "Terminal" e "GitHub" aqui em outra grade faria a pagina
+// dizer a mesma coisa duas vezes seguidas.
 //
-// Divisao nova: Integracoes responde "no que ele se conecta". Esta secao
-// responde "o que ele percebe, lembra e como ele soa", que e o que nenhuma
-// integracao explica. Nada foi cortado: as outras oito capacidades continuam
-// na pagina, comprimidas na celula de alcance.
+// Nada foi cortado: as outras oito capacidades continuam na pagina, comprimidas
+// na celula de alcance.
 type Pillar = {
   icon: Icon;
   title: string;
@@ -97,6 +98,41 @@ function Cell({
   );
 }
 
+// Textura de fundo da celula. As imagens sao monocromaticas e entram em
+// opacidade baixa com um scrim por cima: elas dao materia ao bento sem disputar
+// leitura com o texto. Sao decorativas, entao alt vazio e aria-hidden no
+// wrapper, e nenhuma delas carrega informacao que so exista na imagem.
+//
+// As tres tem no maximo 800px de largura. Por isso entram como textura de
+// fundo, nunca como imagem focal em escala grande, onde a falta de resolucao
+// apareceria.
+function CellTexture({
+  src,
+  className = "",
+  opacity = "opacity-[0.15]",
+  sizes,
+}: {
+  src: string;
+  className?: string;
+  opacity?: string;
+  sizes: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute select-none ${opacity} ${className}`}
+    >
+      <Image
+        src={src}
+        alt=""
+        fill
+        sizes={sizes}
+        className="object-cover transition-opacity duration-500"
+      />
+    </div>
+  );
+}
+
 // O comando falado e o que prova a capacidade. Aparece como fala, entre aspas
 // tipograficas, nao como pill sobreposta nem como bloco de codigo.
 function SpokenExample({ text, big = false }: { text: string; big?: boolean }) {
@@ -152,10 +188,7 @@ export default function Features() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-3xl"
         >
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-white/35">
-            Recursos
-          </span>
-          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl">
+          <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl">
             Ele age no computador, não só no chat.
           </h2>
           <p className="mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55">
@@ -170,6 +203,19 @@ export default function Features() {
           {/* Dominante: a capacidade mais dificil de acreditar ganha o maior
               espaco e a maior escala de tipo. */}
           <Cell className="bg-ink-800 lg:col-span-7 lg:row-span-2" delay={0}>
+            {/* Campo de blocos: le como uma tela cheia de janelas vista de
+                lado, que e exatamente o que esta celula afirma. */}
+            <CellTexture
+              src="/images/i1.jpg"
+              className="inset-0"
+              opacity="opacity-[0.22]"
+              sizes="(max-width: 1024px) 100vw, 58vw"
+            />
+            {/* Scrim: garante o contraste do texto sobre a textura. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-ink-800 via-ink-800/90 to-ink-800/55"
+            />
             <div
               aria-hidden
               className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/[0.07] blur-[90px]"
@@ -183,7 +229,19 @@ export default function Features() {
           </Cell>
 
           <Cell className="bg-ink-900 lg:col-span-5" delay={0.08}>
-            <div className="p-8 sm:p-10">
+            {/* Cerebro de trilha de circuito: a imagem diz "memoria" sem que a
+                celula precise desenhar um icone a mais. */}
+            <CellTexture
+              src="/images/i2.webp"
+              className="-right-12 -top-12 h-56 w-56"
+              opacity="opacity-[0.16]"
+              sizes="224px"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-ink-900 via-ink-900/85 to-transparent"
+            />
+            <div className="relative p-8 sm:p-10">
               <PillarHead item={memory} />
               <SpokenExample text={memory.quote} />
             </div>
@@ -205,7 +263,19 @@ export default function Features() {
 
           {/* Alcance: as outras oito, como amplitude e nao como cartao. */}
           <Cell className="bg-ink-900/60 lg:col-span-7" delay={0.24}>
-            <div className="p-8 sm:p-10">
+            {/* Trilhas saindo de um nucleo: alcance se espalhando, que e o
+                argumento desta celula. */}
+            <CellTexture
+              src="/images/i3.jpg"
+              className="inset-0"
+              opacity="opacity-[0.13]"
+              sizes="(max-width: 1024px) 100vw, 58vw"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-900 via-ink-900/85 to-ink-900/45"
+            />
+            <div className="relative p-8 sm:p-10">
               <h3 className="text-sm font-medium text-white/45">
                 E também comanda
               </h3>

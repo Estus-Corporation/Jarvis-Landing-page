@@ -76,8 +76,8 @@ export default function Home() {
         <Header />
         <Hero />
         <Signals />
-        <Integrations />
         <Features />
+        <Integrations />
         <InAction />
         <Showcase />
         <Voice />

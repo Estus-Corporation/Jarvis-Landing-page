@@ -113,7 +113,7 @@ export default function InAction() {
           </motion.h2>
           <p className="mt-5 max-w-[46ch] text-lg font-light leading-relaxed text-white/55">
             Você fala uma vez. O Jarvis interpreta, escolhe as ferramentas e
-            executa tudo em sequência — e volta falando quando termina.
+            executa tudo em sequência e volta falando quando termina.
           </p>
 
           <div className="mt-9 flex flex-col gap-2" role="tablist" aria-label="Exemplos de comando">

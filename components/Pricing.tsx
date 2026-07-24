@@ -84,10 +84,7 @@ export default function Pricing() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-2xl"
         >
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-white/35">
-            Preços
-          </span>
-          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <h2 className="text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
             Escolha como quer usar.
           </h2>
           <p className="mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55">

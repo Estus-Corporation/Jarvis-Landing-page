@@ -91,11 +91,11 @@ export default function Integrations() {
             Integrações
           </span>
           <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
-            Pare de procurar o ícone.
+            Ele já fala com os seus apps.
           </h2>
           <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55">
             Sem clicar, sem caçar janela. Você diz o que quer e o Jarvis aciona
-            o app certo, no aparelho certo — na hora.
+            o app certo, no aparelho certo, na hora.
           </p>
         </motion.div>
 

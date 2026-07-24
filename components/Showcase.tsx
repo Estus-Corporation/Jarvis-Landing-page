@@ -37,10 +37,7 @@ export default function Showcase() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-3xl"
         >
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-white/35">
-            Interface
-          </span>
-          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl">
+          <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl">
             Uma dashboard viva na sua tela.
           </h2>
           <p className="mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55">

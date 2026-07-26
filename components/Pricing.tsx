@@ -324,53 +324,46 @@ export default function Pricing() {
           ))}
         </div>
 
-        {/* Recursos listados uma vez so, porque valem para os dois planos. */}
+        {/* Recursos listados uma vez so, porque valem para os dois planos.
+            Sem cartao proprio: um bloco do mesmo peso visual dos planos
+            (borda, fundo, padding grande) competia com a decisao real, que e
+            escolher entre Mensal e Anual. Uma linha fina no topo basta para
+            separar do grid de planos; o resto e so lista, sem chrome por
+            item. */}
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={reduce ? false : { opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-4 rounded-card border border-white/[0.09] bg-ink-900 p-8 sm:p-10"
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-14 border-t border-white/[0.08] pt-8"
         >
-          <div className="flex items-baseline justify-between gap-4">
-            <h3 className="text-base font-medium text-[#FAFAFA]">
-              Incluído nos dois planos
-            </h3>
-            <span className="font-mono text-sm text-white/35">
-              {included.length} recursos
+          <p className="text-sm font-medium text-white/45">
+            Incluído nos dois planos{" "}
+            <span className="font-mono text-white/25">
+              · {included.length} recursos
             </span>
-          </div>
+          </p>
 
-          {/* Cada recurso em um chip proprio com seu icone. Le muito melhor que
-              a lista miuda de antes, e cada item entra em sequencia quando a
-              secao aparece. */}
-          <ul className="mt-7 grid gap-3 sm:grid-cols-2">
-            {included.map(({ icon: Glyph, label }, i) => (
-              <motion.li
+          <ul className="mt-5 grid gap-x-8 gap-y-3.5 sm:grid-cols-2">
+            {included.map(({ icon: Glyph, label }) => (
+              <li
                 key={label}
-                initial={reduce ? false : { opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.4 }}
-                transition={{
-                  duration: 0.45,
-                  delay: reduce ? 0 : i * 0.05,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                className="group flex items-center gap-3.5 rounded-chip border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 transition-colors duration-300 hover:border-white/20 hover:bg-white/[0.05]"
+                className="flex items-center gap-3 text-sm text-white/60"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-white/70 transition-colors duration-300 group-hover:border-white/20 group-hover:text-[#FAFAFA]">
-                  <Glyph size={17} weight="light" aria-hidden />
-                </span>
-                <span className="text-sm leading-snug text-white/75">
-                  {label}
-                </span>
-              </motion.li>
+                <Glyph
+                  size={16}
+                  weight="light"
+                  className="shrink-0 text-white/35"
+                  aria-hidden
+                />
+                {label}
+              </li>
             ))}
           </ul>
         </motion.div>
 
         {/* Dizer o aumento na cara constroi mais confianca do que escondê-lo. */}
-        <p className="mt-8 max-w-[60ch] text-sm leading-relaxed text-white/40">
+        <p className="mt-10 max-w-[60ch] text-sm leading-relaxed text-white/40">
           O preço de lançamento vale enquanto durar o lançamento. Depois disso, o
           plano mensal passa a custar R$ 147. Preços em reais, impostos
           incluídos.

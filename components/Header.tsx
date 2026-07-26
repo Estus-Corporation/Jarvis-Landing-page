@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 
-// Navegacao. Ancoras apontam so para secoes que existem hoje: Recursos,
-// Integracoes e Precos. As antigas "Como funciona" e "Demonstracao" sairam com
+// Navegacao. Uma ancora por secao real da pagina, na mesma ordem em que elas
+// aparecem ao rolar: Recursos, Integracoes, Interface (o showcase da
+// dashboard) e Precos. As antigas "Como funciona" e "Demonstracao" sairam com
 // a secao que elas linkavam.
 const navLinksData = [
   { label: "Recursos", href: "#recursos" },
   { label: "Integrações", href: "#integracoes" },
+  { label: "Interface", href: "#interface" },
   { label: "Preços", href: "#precos" },
 ];
 
@@ -57,12 +59,14 @@ export default function Header() {
 
   return (
     <header
-      // Cartao de vidro fixo, na largura normal do site. Radius moderado
-      // (rounded-2xl) no lugar da pilula. Vidro reforcado: fundo mais
-      // translucido + saturacao no backdrop (o conteudo atras "vaza" com cor,
-      // sensacao de vidro) e uma linha de luz interna no topo (refracao da
-      // borda). py maior deixa a barra levemente mais alta.
-      className="glass-surface fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] max-w-6xl -translate-x-1/2 flex-col items-center rounded-2xl border border-white/[0.14] bg-ink-900/40 px-6 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-1px_0_rgba(255,255,255,0.04),0_18px_50px_-16px_rgba(0,0,0,0.7)] backdrop-blur-2xl backdrop-saturate-150"
+      // Cartao de vidro fixo. Radius um pouco maior (rounded-3xl) que antes.
+      // Vidro LEVE de proposito: fundo bem mais translucido (/16 em vez de
+      // /40) e blur reduzido (lg em vez de 2xl), entao o vidro fica sutil,
+      // quase so uma sugestao, em vez do efeito pesado de antes. A linha de
+      // luz interna no topo (refracao da borda) continua, e e o que mantem a
+      // leitura de "vidro" mesmo com o blur baixo. Largura reduzida (5xl em
+      // vez de 6xl) deixa a barra mais compacta.
+      className="glass-surface fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 flex-col items-center rounded-3xl border border-white/[0.1] bg-ink-900/16 px-6 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(255,255,255,0.03),0_18px_50px_-16px_rgba(0,0,0,0.65)] backdrop-blur-lg backdrop-saturate-125"
     >
       <div className="flex w-full items-center justify-between gap-x-8 sm:gap-x-12">
         <Logo />

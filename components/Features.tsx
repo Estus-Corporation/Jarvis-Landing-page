@@ -16,7 +16,6 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
-import StepDivider from "@/components/ui/step-divider";
 
 // Esta secao vem antes de Integracoes: primeiro o que o produto E, depois no
 // que ele se conecta. Ela responde "o que ele percebe, lembra e como ele soa",
@@ -210,29 +209,21 @@ export default function Features() {
   return (
     <section
       id="recursos"
-      // Fundo igual ao de Integracoes (ink-900). O pt maior abre espaco para o
-      // corte diagonal do topo nao encostar no conteudo.
-      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-44 sm:pb-36 sm:pt-64"
+      // Fundo igual ao de Integracoes (ink-900). O pt-44/pt-64 de antes existia
+      // so para abrir espaco para o corte diagonal que ficava aqui no topo;
+      // como ele se mudou para dentro da propria Hero, esse respiro extra
+      // ficou orfao, so afastando o titulo da divisoria. pt reduzido bem alem
+      // do padrao py-28/36 do site (que so se aplica ao pb aqui), aproximando
+      // o titulo da linha visivel no rodape da hero.
+      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-14 sm:pb-36 sm:pt-20"
     >
-      {/* Corte diagonal Hero -> Recursos via clip-path (nao imagem, nao SVG).
-          Duas camadas dentro da faixa do topo:
-           1) Uma div da cor da hero (ink-950) recortada em diagonal: cobre o
-              topo inteiro e a aresta de baixo SOBE da esquerda para a direita
-              (poucos graus), revelando o ink-900 de Recursos por baixo.
-           2) Uma segunda div de 2px seguindo a MESMA diagonal, branca, que
-              desenha o fio nitido da aresta (o dark-sobre-dark sozinho quase
-              nao aparece). */}
-      {/* Divisor em degrau (RETO -> QUEDA -> RETO) com fio branco.
-          `flip` porque aqui a secao ESCURA (hero) esta EM CIMA: a forma precisa
-          ficar ancorada no topo, prolongando a cor da hero para baixo, funda a
-          esquerda e recuada a direita. */}
-      <StepDivider
-        fill="bg-ink-950"
-        flip
-        className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-40 sm:h-56"
-      />
-
-      <div className="relative z-[2] mx-auto max-w-shell">
+      {/* O acento em degrau que ficava aqui (topo de Recursos) foi para dentro
+          da propria Hero, encostado no rodape dela: assim ele fica visivel
+          assim que a pagina carrega, sem depender de scroll. Manter os dois
+          pontos criaria dois degraus quase colados, redundantes. A transicao
+          Hero -> Recursos volta a ser a simples troca de cor ink-950 -> ink-900
+          entre as secoes. */}
+      <div className="relative mx-auto max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}

@@ -124,7 +124,7 @@ export default function Showcase() {
     // Sem overflow-hidden nesta secao: ele quebraria o `sticky` do palco de
     // expansao (sticky nao gruda se algum ancestral tem overflow hidden). O
     // recorte da midia e do halo ja acontece dentro do proprio palco.
-    <section className="relative border-t border-white/[0.07] bg-ink-900 pb-28 sm:pb-36">
+    <section id="interface" className="relative border-t border-white/[0.07] bg-ink-900 pb-28 sm:pb-36">
       {/* Revelacao por expansao: a captura nasce estreita entre as duas linhas
           do titulo e cresce ate quase encher o palco conforme a pagina rola,
           enquanto o titulo se abre para os lados. Dirigido por progresso de

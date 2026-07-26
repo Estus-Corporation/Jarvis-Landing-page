@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   WindowsLogo,
   DownloadSimple,
@@ -26,7 +27,7 @@ const assurances: { icon: Icon; label: string }[] = [
 ];
 
 export default function CallToAction() {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
 
   return (
     <section className="relative overflow-hidden border-t border-white/[0.08] bg-ink-900 px-6 py-28 sm:py-36">

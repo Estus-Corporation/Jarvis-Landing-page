@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 
 // Estilo novo desta secao.
 //
@@ -157,11 +158,21 @@ function Track({
 }
 
 export default function Integrations() {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   // A legenda nunca fica vazia: ela nasce no primeiro app e troca conforme o
   // ponteiro ou o foco anda. Em touch, onde nao existe hover, o visitante ainda
   // ve um par nome/acao completo.
   const [active, setActive] = useState<Integration>(rowOne[0]);
+
+  // Gate de hidratacao. useReducedMotionSafe() devolve null no servidor e o valor
+  // real no cliente. Como este bloco troca a ARVORE renderizada (esteiras vs
+  // grade estatica), ler o hook direto no render fazia servidor e cliente
+  // produzirem DOM diferente, quebrando a hidratacao. Com o gate os dois
+  // comecam iguais (esteiras) e a versao sem movimento so entra depois de
+  // montar, ja no cliente.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const staticGrid = mounted && reduce;
   const handleFocusItem = React.useCallback(
     (item: Integration) => setActive(item),
     []
@@ -222,7 +233,7 @@ export default function Integrations() {
               "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
           }}
         >
-          {reduce ? (
+          {staticGrid ? (
             // Sem movimento: as esteiras viram uma grade estatica, com todos os
             // apps visiveis de uma vez.
             <div className="flex flex-wrap justify-center gap-3">

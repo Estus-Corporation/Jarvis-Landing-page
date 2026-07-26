@@ -170,11 +170,12 @@ export default function PixelCard({
   const animationRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(
     null
   );
-  const timePreviousRef = useRef(performance.now());
-  const reducedMotion = useRef(
-    typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  ).current;
+  // Nada de performance.now() nem matchMedia durante o RENDER: no servidor os
+  // dois dao resultado diferente do cliente, e isso quebra a hidratacao. Os
+  // dois viram refs neutros aqui e sao preenchidos dentro do efeito, que so
+  // roda no cliente.
+  const timePreviousRef = useRef(0);
+  const reducedMotionRef = useRef(false);
 
   const variantCfg = VARIANTS[variant] || VARIANTS.default;
   const finalGap = gap ?? variantCfg.gap;
@@ -206,7 +207,7 @@ export default function PixelCard({
         const dx = x - width / 2;
         const dy = y - height / 2;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const delay = reducedMotion ? 0 : distance;
+        const delay = reducedMotionRef.current ? 0 : distance;
         if (!ctx) return;
         pxs.push(
           new Pixel(
@@ -215,7 +216,7 @@ export default function PixelCard({
             x,
             y,
             color,
-            getEffectiveSpeed(finalSpeed, reducedMotion),
+            getEffectiveSpeed(finalSpeed, reducedMotionRef.current),
             delay
           )
         );
@@ -283,11 +284,17 @@ export default function PixelCard({
   };
 
   useEffect(() => {
+    // Preenche no cliente o que nao pode ser lido no render.
+    reducedMotionRef.current = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    timePreviousRef.current = performance.now();
+
     initPixels();
 
     // Modo fixo: dispara sozinho, sem hover.
     if (controlled) {
-      if (reducedMotion) drawStatic();
+      if (reducedMotionRef.current) drawStatic();
       else if (active) handleAnimation("appear");
       else handleAnimation("disappear");
     }
@@ -295,7 +302,7 @@ export default function PixelCard({
     const observer = new ResizeObserver(() => {
       initPixels();
       if (controlled && active) {
-        if (reducedMotion) drawStatic();
+        if (reducedMotionRef.current) drawStatic();
         else handleAnimation("appear");
       }
     });

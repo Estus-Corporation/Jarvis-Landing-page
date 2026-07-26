@@ -380,6 +380,14 @@ export function JarvisOrb({
   };
   const a = alphaCfg[state];
 
+  // Arredondamento obrigatorio, nao cosmetico. Math.sin/Math.cos podem devolver
+  // o ultimo digito diferente no Node (servidor) e no navegador (cliente). Como
+  // esses numeros viram atributos x1/y1/x2/y2 do SVG, a string gerada saia
+  // diferente dos dois lados ("75.51982240646211" vs "75.5198224064621") e a
+  // hidratacao quebrava. Truncar em 3 casas e visualmente identico (fracao de
+  // pixel) e garante a MESMA string nos dois lados.
+  const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
   const ticks = Array.from({ length: 72 }, (_, i) => {
     const ang = ((i / 72) * 360 - 90) * (Math.PI / 180);
     const long = i % 18 === 0;
@@ -387,10 +395,10 @@ export function JarvisOrb({
     const r1 = RO - 1;
     const r2 = RO + (long ? 10 : med ? 6 : 3);
     return {
-      x1: CX + Math.cos(ang) * r1,
-      y1: CX + Math.sin(ang) * r1,
-      x2: CX + Math.cos(ang) * r2,
-      y2: CX + Math.sin(ang) * r2,
+      x1: r3(CX + Math.cos(ang) * r1),
+      y1: r3(CX + Math.sin(ang) * r1),
+      x2: r3(CX + Math.cos(ang) * r2),
+      y2: r3(CX + Math.sin(ang) * r2),
       long,
       med,
     };

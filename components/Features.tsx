@@ -6,8 +6,8 @@ import {
   motion,
   useMotionValue,
   useMotionTemplate,
-  useReducedMotion,
 } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   Eye,
   Brain,
@@ -16,6 +16,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
+import StepDivider from "@/components/ui/step-divider";
 
 // Esta secao vem antes de Integracoes: primeiro o que o produto E, depois no
 // que ele se conecta. Ela responde "o que ele percebe, lembra e como ele soa",
@@ -83,7 +84,7 @@ function Cell({
   className?: string;
   delay?: number;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   // Luz que segue o cursor dentro da celula. Vive em motion values, nunca em
   // estado do React: rastrear o ponteiro com useState re-renderizaria a arvore a
   // cada pixel e travaria no mobile.
@@ -204,7 +205,7 @@ function PillarHead({ item, big = false }: { item: Pillar; big?: boolean }) {
 }
 
 export default function Features() {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
 
   return (
     <section
@@ -221,22 +222,15 @@ export default function Features() {
            2) Uma segunda div de 2px seguindo a MESMA diagonal, branca, que
               desenha o fio nitido da aresta (o dark-sobre-dark sozinho quase
               nao aparece). */}
-      <div
-        aria-hidden
+      {/* Divisor em degrau (RETO -> QUEDA -> RETO) com fio branco.
+          `flip` porque aqui a secao ESCURA (hero) esta EM CIMA: a forma precisa
+          ficar ancorada no topo, prolongando a cor da hero para baixo, funda a
+          esquerda e recuada a direita. */}
+      <StepDivider
+        fill="bg-ink-950"
+        flip
         className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-40 sm:h-56"
-      >
-        <div
-          className="absolute inset-0 bg-ink-950"
-          style={{ clipPath: "polygon(0 0, 100% 0, 100% 45%, 0 100%)" }}
-        />
-        <div
-          className="absolute inset-0 bg-white/40"
-          style={{
-            clipPath:
-              "polygon(0 calc(100% - 2px), 100% calc(45% - 2px), 100% 45%, 0 100%)",
-          }}
-        />
-      </div>
+      />
 
       <div className="relative z-[2] mx-auto max-w-shell">
         <motion.div

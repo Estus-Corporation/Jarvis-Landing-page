@@ -5,8 +5,8 @@ import {
   motion,
   useMotionValue,
   useMotionTemplate,
-  useReducedMotion,
 } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   CloudSun,
   MusicNotes,
@@ -68,7 +68,7 @@ const widgets: Widget[] = [
 // A posicao vive em motion values, nunca em estado do React: seguir o ponteiro
 // com useState re-renderizaria a arvore a cada pixel e travaria no mobile.
 function SpotlightCard({ widget, delay }: { widget: Widget; delay: number }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   const mx = useMotionValue(-9999);
   const my = useMotionValue(-9999);
   const spotlight = useMotionTemplate`radial-gradient(220px circle at ${mx}px ${my}px, rgba(255,255,255,0.1), transparent 72%)`;

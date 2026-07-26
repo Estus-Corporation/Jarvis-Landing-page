@@ -6,8 +6,8 @@ import {
   motion,
   useScroll,
   useTransform,
-  useReducedMotion,
 } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 
 // "Scroll Expand" reconstruido.
 //
@@ -35,7 +35,7 @@ export default function ScrollExpandMedia({
   mediaAlt: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end end"],

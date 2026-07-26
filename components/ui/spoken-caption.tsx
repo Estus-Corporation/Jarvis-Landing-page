@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 
 // Legenda falada + mixer de onda.
 //
@@ -26,7 +27,7 @@ const BARS = Array.from(
 );
 
 export function LiveWave({ live }: { live: boolean }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   return (
     <div className="flex h-6 items-center gap-[2px]" aria-hidden>
       {BARS.map((base, i) => (
@@ -73,7 +74,7 @@ export function SpokenCaption({
   revealDelay?: number;
   className?: string;
 }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   const [pi, setPi] = useState(0);
   const [chars, setChars] = useState(0);
   // "exiting" e a fase que faltava: antes a frase pronta era zerada de uma vez
@@ -110,9 +111,13 @@ export function SpokenCaption({
     onSpeakingChange(speaking);
   }, [speaking, onSpeakingChange]);
 
-  const entry = reduce
-    ? {}
-    : reveal === "immediate"
+  // O alvo da entrada NAO depende de reduce. Antes o branch reduzido devolvia
+  // um objeto vazio: sem `animate`, nada tirava o elemento do opacity 0 inicial
+  // e a legenda ficava invisivel para quem usa "reduzir movimento".
+  // Agora o destino e sempre o estado visivel; quem muda com a preferencia e so
+  // a DURACAO, que vai a zero e faz o elemento aparecer instantaneamente.
+  const entry =
+    reveal === "immediate"
       ? { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 } }
       : {
           initial: { opacity: 0, y: 12 },
@@ -123,7 +128,11 @@ export function SpokenCaption({
   return (
     <motion.div
       {...entry}
-      transition={{ duration: 0.6, delay: revealDelay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{
+        duration: reduce ? 0 : 0.6,
+        delay: reduce ? 0 : revealDelay,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       // min-h fixo comporta duas linhas: sem isso a caixa pula de altura toda
       // vez que uma frase mais longa quebra a linha.
       className={`flex min-h-[4.75rem] w-full items-center gap-4 rounded-card border border-white/[0.1] bg-ink-800/80 px-5 py-4 backdrop-blur-sm ${className}`}

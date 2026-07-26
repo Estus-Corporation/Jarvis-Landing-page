@@ -2,7 +2,8 @@
 
 import React from "react";
 import Image from "next/image";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   Tag,
   Microphone,
@@ -83,7 +84,7 @@ function Price({ value, className }: { value: string; className?: string }) {
 }
 
 export default function Pricing() {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
 
   return (
     <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 py-28 sm:py-36">

@@ -1,4 +1,5 @@
 import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
+import StepDivider from "@/components/ui/step-divider";
 
 // Hero com fundo dividido por um corte diagonal via clip-path (nao imagem).
 //
@@ -25,12 +26,10 @@ export default function HeroDemoPage() {
       {/* Camada 1: fundo cinza-claro, secao toda */}
       <div aria-hidden className="absolute inset-0 bg-[#e8e8e8]" />
 
-      {/* Camada 2: faixa preta do rodape, topo em diagonal sutil */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-black"
-        style={{ clipPath: "polygon(0 70%, 100% 40%, 100% 100%, 0 100%)" }}
-      />
+      {/* Camada 2: faixa preta do rodape no formato de degrau
+          (RETO -> QUEDA -> RETO), com o fio branco. Caso padrao do divisor:
+          conteudo claro em cima, preto embaixo, sem flip. */}
+      <StepDivider className="absolute inset-x-0 bottom-0 h-[42%]" />
 
       {/* Conteudo, acima das duas camadas */}
       <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-[1400px] flex-col px-6 pt-28 sm:pt-32">

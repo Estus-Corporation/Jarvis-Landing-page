@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
 import { SpokenCaption } from "@/components/ui/spoken-caption";
@@ -21,7 +22,7 @@ const HERO_PHRASES = [
 ];
 
 export default function Hero() {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionSafe();
   // O teto acompanha a largura da coluna do orb, alargada logo abaixo no grid.
   // A caixa desenhada e (size + 144) por causa do padding dos aneis, entao o
   // limite util da coluna de ~640px e 496. O hook ainda corta por altura de

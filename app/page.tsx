@@ -1,11 +1,8 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import Signals from "@/components/Signals";
 import Integrations from "@/components/Integrations";
 import Features from "@/components/Features";
-import InAction from "@/components/InAction";
 import Showcase from "@/components/Showcase";
-import Voice from "@/components/Voice";
 import Pricing from "@/components/Pricing";
 import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
@@ -75,12 +72,9 @@ export default function Home() {
         <Grain />
         <Header />
         <Hero />
-        <Signals />
         <Features />
         <Integrations />
-        <InAction />
         <Showcase />
-        <Voice />
         <Pricing />
         <CallToAction />
         <Footer />

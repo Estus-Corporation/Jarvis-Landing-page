@@ -1,12 +1,24 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
+import { SpokenCaption } from "@/components/ui/spoken-caption";
 import CodeRain from "@/components/ui/code-rain";
 
 const HEADLINE = ["Fale.", "O", "Jarvis", "executa."];
+
+// Frases proprias do hero. Sao diferentes das da secao de Voz clonada de
+// proposito: a mesma legenda datilografada aparece em dois pontos da pagina, e
+// repetir texto identico faria a segunda parecer um bug de copia. Todas
+// descrevem coisas que o produto realmente faz.
+const HERO_PHRASES = [
+  "Abrindo o Chrome e buscando os documentos.",
+  "Comando executado. Terminal pronto.",
+  "Notificações silenciadas. Modo foco ligado.",
+  "Claro. Enviando a mensagem agora.",
+];
 
 export default function Hero() {
   const reduce = useReducedMotion();
@@ -14,16 +26,19 @@ export default function Hero() {
   // A caixa desenhada e (size + 144) por causa do padding dos aneis, entao o
   // limite util da coluna de ~640px e 496. O hook ainda corta por altura de
   // viewport, o que mantem o hero inteiro visivel em telas baixas.
-  const { containerRef, size } = useOrbSize({ min: 200, max: 480 });
+  // Teto menor que antes (era 480). A legenda falada agora divide a coluna com
+  // a esfera, e o hero continua tendo que caber na primeira tela: o espaco que
+  // a caixa de texto ocupa saiu do diametro da esfera.
+  const { containerRef, size } = useOrbSize({ min: 220, max: 480 });
 
-  // O orb comeca em espera e passa a ouvir logo depois da entrada do texto:
-  // a primeira coisa que a pagina faz e o produto reagindo.
-  const [state, setState] = useState<"idle" | "listening">("idle");
-  useEffect(() => {
-    if (reduce) return;
-    const timer = setTimeout(() => setState("listening"), 2200);
-    return () => clearTimeout(timer);
-  }, [reduce]);
+  // A esfera segue a legenda, exatamente como na secao de Voz clonada: fala
+  // enquanto o texto e datilografado e se acalma quando a frase termina. Antes
+  // ela so trocava de "idle" para "listening" uma vez e parava ali.
+  const [speaking, setSpeaking] = useState(false);
+  const handleSpeakingChange = React.useCallback(
+    (value: boolean) => setSpeaking(value),
+    []
+  );
 
   return (
     <section
@@ -82,28 +97,47 @@ export default function Hero() {
           >
             <a
               href="#precos"
-              className="rounded-full bg-[#FAFAFA] px-7 py-3.5 text-center text-sm font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98] sm:w-fit"
+              className="rounded-full bg-[#FAFAFA] px-9 py-4 text-center text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98] sm:w-fit"
             >
               Começar agora
             </a>
 
             <a
-              href="#como-funciona"
-              className="rounded-full border border-white/15 px-7 py-3.5 text-center text-sm text-white/70 transition-all duration-300 hover:border-white/40 hover:bg-white/[0.04] hover:text-white active:scale-[0.98] sm:w-fit"
+              href="#recursos"
+              className="rounded-full border border-white/15 px-9 py-4 text-center text-base text-white/70 transition-all duration-300 hover:border-white/40 hover:bg-white/[0.04] hover:text-white active:scale-[0.98] sm:w-fit"
             >
-              Ver como funciona
+              Ver recursos
             </a>
           </motion.div>
         </div>
 
         <motion.div
-          ref={containerRef}
           initial={reduce ? false : { opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="order-1 flex items-center justify-center lg:order-2 lg:justify-end"
+          className="order-1 flex flex-col items-center lg:order-2"
         >
-          <JarvisOrb state={state} sphereSize={size} paused={!!reduce} />
+          <div ref={containerRef} className="flex w-full justify-center">
+            <JarvisOrb
+              state={speaking ? "speaking" : "idle"}
+              sphereSize={size}
+              paused={!!reduce}
+            />
+          </div>
+
+          {/* O orb ja traz 72px de padding transparente embaixo, entao a
+              legenda encosta sem precisar de margem propria grande. */}
+          <div className="flex w-full justify-center px-2">
+            <SpokenCaption
+              phrases={HERO_PHRASES}
+              onSpeakingChange={handleSpeakingChange}
+              // Acima da dobra: entra por tempo, junto com os CTAs, e nao por
+              // scroll, que aqui nunca aconteceria.
+              reveal="immediate"
+              revealDelay={0.75}
+              className="max-w-md"
+            />
+          </div>
         </motion.div>
       </div>
     </section>

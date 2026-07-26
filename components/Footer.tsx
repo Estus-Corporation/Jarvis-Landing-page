@@ -12,8 +12,7 @@ const footerLinks = [
     title: "Produto",
     links: [
       { label: "Recursos", href: "#recursos" },
-      { label: "Como funciona", href: "#como-funciona" },
-      { label: "Demonstração", href: "#demo" },
+      { label: "Integrações", href: "#integracoes" },
       { label: "Preços", href: "#precos" },
     ],
   },
@@ -72,7 +71,7 @@ export default function Footer() {
                     key={social.label}
                     href={social.href}
                     aria-label={social.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/50 transition-colors duration-200 hover:border-white/30 hover:text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/50 transition-colors duration-200 hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
                   >
                     <Glyph size={16} weight="light" aria-hidden />
                   </a>

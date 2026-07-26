@@ -1,9 +1,22 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { motion, useReducedMotion } from "motion/react";
-import { Check, Tag } from "@phosphor-icons/react/dist/ssr";
+import {
+  Tag,
+  Microphone,
+  AppWindow,
+  Terminal,
+  ChatCircleText,
+  Eye,
+  Brain,
+  Waveform,
+  Headset,
+} from "@phosphor-icons/react/dist/ssr";
+import type { Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import PixelCard from "@/components/ui/pixel-card";
 
 // Dois planos, mesmo produto, periodicidade diferente. Por isso a lista de
 // recursos aparece UMA vez, embaixo, em vez de repetida dentro de cada cartao:
@@ -42,15 +55,18 @@ const plans = [
   },
 ];
 
-const included = [
-  "Ativação por voz e atalho global",
-  "Controle de navegador e programas",
-  "Terminal, Git e automações de dev",
-  "Integração com Spotify e WhatsApp",
-  "Visão de tela e detecção de jogos",
-  "Memória persistente ilimitada",
-  "Voz clonada, a sua própria voz",
-  "Suporte prioritário",
+// Cada recurso ganha um icone proprio, que diz do que se trata de relance.
+// Melhor que oito checks identicos: o icone diferencia e da ritmo visual a
+// grade sem precisar de mais texto.
+const included: { icon: Icon; label: string }[] = [
+  { icon: Microphone, label: "Ativação por voz e atalho global" },
+  { icon: AppWindow, label: "Controle de navegador e programas" },
+  { icon: Terminal, label: "Terminal, Git e automações de dev" },
+  { icon: ChatCircleText, label: "Integração com Spotify e WhatsApp" },
+  { icon: Eye, label: "Visão de tela e detecção de jogos" },
+  { icon: Brain, label: "Memória persistente ilimitada" },
+  { icon: Waveform, label: "Voz clonada, a sua própria voz" },
+  { icon: Headset, label: "Suporte prioritário" },
 ];
 
 // Em fonte monoespacada o caractere de espaco ocupa uma largura inteira, que
@@ -70,7 +86,42 @@ export default function Pricing() {
   const reduce = useReducedMotion();
 
   return (
-    <section id="precos" className="relative overflow-hidden bg-ink-900 px-6 py-28 sm:py-36">
+    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 py-28 sm:py-36">
+      {/* Curvas de nivel ao fundo da secao.
+          A versao anterior entrava com corte seco: a mascara comecava em #000
+          (opaco total) em 0%, entao a primeira linha da imagem aparecia inteira
+          de uma vez e desenhava uma borda reta no topo da secao.
+          Agora a mascara nasce em transparent e so atinge o pico la pelos 34%,
+          o que faz a textura emergir do fundo em vez de comecar. A area tambem
+          ficou mais alta para a rampa ser mais longa e portanto mais discreta. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[760px] opacity-[0.85]"
+        style={{
+          maskImage:
+            "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
+        }}
+      >
+        {/* object-top e o detalhe que decide se a textura existe ou nao.
+            A i5 tem as curvas concentradas em cima e embaixo e quase nada no
+            meio: ancorar no centro mostrava justamente a faixa vazia, e o
+            fundo sumia por completo. */}
+        <Image
+          src="/images/i5.avif"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover object-top"
+        />
+      </div>
+      {/* Scrims laterais na propria cor da secao: matam as bordas verticais da
+          imagem, que apareciam como dois cortes retos nas laterais. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[760px] bg-[linear-gradient(to_right,#0A0A0B_0%,rgba(10,10,11,0)_20%,rgba(10,10,11,0)_80%,#0A0A0B_100%)]"
+      />
       <div
         aria-hidden
         className="pointer-events-none absolute right-0 top-1/4 h-[520px] w-[620px] translate-x-1/3 rounded-full bg-white/[0.045] blur-[130px]"
@@ -108,16 +159,62 @@ export default function Pricing() {
                 ease: [0.16, 1, 0.3, 1],
               }}
               className={cn(
-                "relative flex flex-col rounded-card border p-8 sm:p-10",
+                "relative flex flex-col overflow-hidden rounded-card border",
+                // Elevacao correta agora que a secao e ink-950: o cartao comum
+                // fica um degrau ACIMA do fundo e o destacado dois. Antes o
+                // cartao comum era ink-950 sobre secao ink-900, ou seja, mais
+                // escuro que a propria superficie, o que o fazia parecer
+                // afundado em vez de elevado.
                 plan.highlighted
-                  ? "border-white/25 bg-ink-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-                  : "border-white/[0.09] bg-ink-950"
+                  ? "border-white/30 bg-ink-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(255,255,255,0.05),0_28px_70px_-28px_rgba(255,255,255,0.16)]"
+                  : "border-white/[0.09] bg-ink-900"
               )}
             >
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-lg font-medium text-[#FAFAFA]">
-                  {plan.name}
-                </h3>
+              {/* Efeito de pixels FIXO (sempre ligado, nao no hover) no fundo
+                  do plano em destaque. A mascara radial desvanece os pixels
+                  antes das bordas, entao eles se fundem no proprio cartao em vez
+                  de cortarem seco na borda e parecerem uma camada a parte. Fica
+                  atras do conteudo (z-0); o texto vive na camada z-10 acima. */}
+              {plan.highlighted && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 z-0"
+                  style={{
+                    maskImage:
+                      "radial-gradient(115% 85% at 50% 45%, #000 32%, transparent 82%)",
+                    WebkitMaskImage:
+                      "radial-gradient(115% 85% at 50% 45%, #000 32%, transparent 82%)",
+                  }}
+                >
+                  <PixelCard
+                    active
+                    gap={6}
+                    speed={40}
+                    // Paleta ponderada em branco/cinza/preto: a lista repetida
+                    // enviesa o sorteio. Poucos brancos puros viram glints que
+                    // cintilam entre muitos cinzas e quase-pretos, no lugar de um
+                    // ruido de cor uniforme. Mais bonito e mais sutil.
+                    colors="#ffffff,#e4e4e7,#a1a1aa,#a1a1aa,#52525b,#52525b,#3f3f46"
+                    className="h-full w-full opacity-[0.5]"
+                  />
+                </div>
+              )}
+
+              {/* Charme do Mensal: uma luz suave sangrando do canto superior,
+                  recortada pelo overflow do cartao. Sutil, para nao competir
+                  com o destaque do Anual. */}
+              {!plan.highlighted && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -right-16 -top-20 z-0 h-48 w-48 rounded-full bg-white/[0.05] blur-[55px]"
+                />
+              )}
+
+              <div className="relative z-10 flex flex-1 flex-col p-8 sm:p-10">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-medium text-[#FAFAFA]">
+                    {plan.name}
+                  </h3>
                 {plan.highlighted ? (
                   <span className="rounded-chip bg-[#FAFAFA] px-2.5 py-1 text-xs font-semibold text-ink-950">
                     Melhor custo
@@ -221,6 +318,7 @@ export default function Pricing() {
               <p className="mt-4 text-center text-xs text-white/40">
                 {plan.note}
               </p>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -231,25 +329,41 @@ export default function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-4 rounded-card border border-white/[0.09] bg-ink-950 p-8 sm:p-10"
+          className="mt-4 rounded-card border border-white/[0.09] bg-ink-900 p-8 sm:p-10"
         >
-          <h3 className="text-sm font-medium text-white/50">
-            Incluído nos dois planos
-          </h3>
-          <ul className="mt-7 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
-            {included.map((item) => (
-              <li
-                key={item}
-                className="flex items-start gap-2.5 text-sm text-white/70"
+          <div className="flex items-baseline justify-between gap-4">
+            <h3 className="text-base font-medium text-[#FAFAFA]">
+              Incluído nos dois planos
+            </h3>
+            <span className="font-mono text-sm text-white/35">
+              {included.length} recursos
+            </span>
+          </div>
+
+          {/* Cada recurso em um chip proprio com seu icone. Le muito melhor que
+              a lista miuda de antes, e cada item entra em sequencia quando a
+              secao aparece. */}
+          <ul className="mt-7 grid gap-3 sm:grid-cols-2">
+            {included.map(({ icon: Glyph, label }, i) => (
+              <motion.li
+                key={label}
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{
+                  duration: 0.45,
+                  delay: reduce ? 0 : i * 0.05,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="group flex items-center gap-3.5 rounded-chip border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 transition-colors duration-300 hover:border-white/20 hover:bg-white/[0.05]"
               >
-                <Check
-                  size={15}
-                  weight="bold"
-                  className="mt-1 shrink-0 text-white/45"
-                  aria-hidden
-                />
-                <span>{item}</span>
-              </li>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] text-white/70 transition-colors duration-300 group-hover:border-white/20 group-hover:text-[#FAFAFA]">
+                  <Glyph size={17} weight="light" aria-hidden />
+                </span>
+                <span className="text-sm leading-snug text-white/75">
+                  {label}
+                </span>
+              </motion.li>
             ))}
           </ul>
         </motion.div>

@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 
-// Rotulos de navegacao e ancoras preservados do layout anterior: mudar slug
-// quebra link salvo e memoria muscular de quem ja conhece a pagina.
+// Navegacao. Ancoras apontam so para secoes que existem hoje: Recursos,
+// Integracoes e Precos. As antigas "Como funciona" e "Demonstracao" sairam com
+// a secao que elas linkavam.
 const navLinksData = [
   { label: "Recursos", href: "#recursos" },
-  { label: "Como funciona", href: "#como-funciona" },
-  { label: "Demonstração", href: "#demo" },
+  { label: "Integrações", href: "#integracoes" },
   { label: "Preços", href: "#precos" },
 ];
 
@@ -45,25 +45,11 @@ const Logo = () => (
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [shapeClass, setShapeClass] = useState("rounded-full");
-  const shapeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (shapeTimeout.current) clearTimeout(shapeTimeout.current);
-    if (isOpen) {
-      setShapeClass("rounded-card");
-    } else {
-      shapeTimeout.current = setTimeout(() => setShapeClass("rounded-full"), 300);
-    }
-    return () => {
-      if (shapeTimeout.current) clearTimeout(shapeTimeout.current);
-    };
-  }, [isOpen]);
 
   const signupButton = (
     <a
       href="#precos"
-      className="block w-full rounded-full bg-[#FAFAFA] px-4 py-1.5 text-center text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-white sm:w-auto"
+      className="block w-full rounded-full bg-[#FAFAFA] px-6 py-2.5 text-center text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-white sm:w-auto"
     >
       Começar agora
     </a>
@@ -71,7 +57,12 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] -translate-x-1/2 flex-col items-center border border-white/10 bg-ink-900/70 px-5 py-2.5 backdrop-blur-xl transition-[border-radius] duration-300 sm:w-auto ${shapeClass}`}
+      // Cartao de vidro fixo, na largura normal do site. Radius moderado
+      // (rounded-2xl) no lugar da pilula. Vidro reforcado: fundo mais
+      // translucido + saturacao no backdrop (o conteudo atras "vaza" com cor,
+      // sensacao de vidro) e uma linha de luz interna no topo (refracao da
+      // borda). py maior deixa a barra levemente mais alta.
+      className="glass-surface fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] max-w-6xl -translate-x-1/2 flex-col items-center rounded-2xl border border-white/[0.14] bg-ink-900/40 px-6 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-1px_0_rgba(255,255,255,0.04),0_18px_50px_-16px_rgba(0,0,0,0.7)] backdrop-blur-2xl backdrop-saturate-150"
     >
       <div className="flex w-full items-center justify-between gap-x-8 sm:gap-x-12">
         <Logo />

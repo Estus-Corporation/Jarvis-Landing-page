@@ -1,8 +1,22 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
-import { motion, useReducedMotion } from "motion/react";
+import {
+  motion,
+  useMotionValue,
+  useMotionTemplate,
+  useReducedMotion,
+} from "motion/react";
+import {
+  CloudSun,
+  MusicNotes,
+  Timer,
+  GameController,
+  ListChecks,
+  ChatCircleText,
+} from "@phosphor-icons/react/dist/ssr";
+import type { Icon } from "@phosphor-icons/react";
+import ScrollExpandMedia from "@/components/ui/scroll-expansion-hero";
 
 // Prova visual da secao: uma imagem so, a captura real da dashboard.
 //
@@ -10,99 +24,142 @@ import { motion, useReducedMotion } from "motion/react";
 // continuar como cartao ao lado: a propria imagem ja mostra clima, relogio,
 // Spotify e tarefas. Nomear em texto o que a foto exibe e dizer duas vezes.
 // Os nomes viram indice discreto embaixo, e a imagem ganha o palco inteiro.
-const widgets = [
-  "Clima e relógio",
-  "Spotify com capa do álbum",
-  "Timer e pomodoro",
-  "Jogo em execução",
-  "Tarefas, agenda e lembretes",
-  "Chat de texto com imagens",
+// O indice deixou de ser uma lista de texto com hairline em cima de cada linha,
+// que era o layout mais preguicoso possivel para seis itens. Cada widget virou
+// um cartao com glifo proprio e uma luz que segue o cursor: a secao fala de uma
+// tela viva, entao o indice dela tambem reage ao ponteiro.
+type Widget = { icon: Icon; title: string; note: string };
+
+const widgets: Widget[] = [
+  {
+    icon: CloudSun,
+    title: "Clima e relógio",
+    note: "Previsão e hora local sempre à vista.",
+  },
+  {
+    icon: MusicNotes,
+    title: "Spotify",
+    note: "Faixa atual com a capa do álbum.",
+  },
+  {
+    icon: Timer,
+    title: "Timer e pomodoro",
+    note: "Ciclos de foco controlados por voz.",
+  },
+  {
+    icon: GameController,
+    title: "Jogo em execução",
+    note: "Ele reconhece o que você está jogando.",
+  },
+  {
+    icon: ListChecks,
+    title: "Tarefas e agenda",
+    note: "Lembretes e compromissos do dia.",
+  },
+  {
+    icon: ChatCircleText,
+    title: "Chat com imagens",
+    note: "Conversa por texto quando falar não dá.",
+  },
 ];
 
-export default function Showcase() {
+// Luz que acompanha o cursor dentro do cartao.
+//
+// A posicao vive em motion values, nunca em estado do React: seguir o ponteiro
+// com useState re-renderizaria a arvore a cada pixel e travaria no mobile.
+function SpotlightCard({ widget, delay }: { widget: Widget; delay: number }) {
   const reduce = useReducedMotion();
+  const mx = useMotionValue(-9999);
+  const my = useMotionValue(-9999);
+  const spotlight = useMotionTemplate`radial-gradient(220px circle at ${mx}px ${my}px, rgba(255,255,255,0.1), transparent 72%)`;
+  const Glyph = widget.icon;
 
   return (
-    <section className="relative overflow-hidden bg-ink-900 px-6 py-28 sm:py-36">
-      <div
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{
+        duration: 0.6,
+        delay: reduce ? 0 : delay,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      onMouseMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        mx.set(e.clientX - r.left);
+        my.set(e.clientY - r.top);
+      }}
+      // Tira a luz de cena ao sair, senao ela fica congelada no ultimo ponto.
+      onMouseLeave={() => {
+        mx.set(-9999);
+        my.set(-9999);
+      }}
+      className="group relative overflow-hidden rounded-card border border-white/[0.08] bg-ink-950/40 p-7 transition-colors duration-300 hover:border-white/20"
+    >
+      <motion.div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-white/[0.04] blur-[130px]"
+        style={{ background: spotlight }}
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+      />
+      <div className="relative">
+        <Glyph
+          size={26}
+          weight="light"
+          aria-hidden
+          className="text-white/55 transition-colors duration-300 group-hover:text-[#FAFAFA]"
+        />
+        <h4 className="mt-5 text-base font-medium text-[#FAFAFA]">
+          {widget.title}
+        </h4>
+        <p className="mt-2 text-sm leading-relaxed text-white/45">
+          {widget.note}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+export default function Showcase() {
+  return (
+    // Sem overflow-hidden nesta secao: ele quebraria o `sticky` do palco de
+    // expansao (sticky nao gruda se algum ancestral tem overflow hidden). O
+    // recorte da midia e do halo ja acontece dentro do proprio palco.
+    <section className="relative border-t border-white/[0.07] bg-ink-900 pb-28 sm:pb-36">
+      {/* Revelacao por expansao: a captura nasce estreita entre as duas linhas
+          do titulo e cresce ate quase encher o palco conforme a pagina rola,
+          enquanto o titulo se abre para os lados. Dirigido por progresso de
+          scroll, sem sequestrar a rolagem. */}
+      <ScrollExpandMedia
+        titleTop="Uma dashboard"
+        titleBottom="viva na sua tela"
+        mediaSrc="/images/jarvis-dashboard.png"
+        mediaAlt="Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor."
       />
 
-      <div className="relative mx-auto max-w-shell">
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.5 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-3xl"
-        >
-          <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl">
-            Uma dashboard viva na sua tela.
-          </h2>
-          <p className="mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55">
-            A esfera reage à conversa no centro. Em volta, widgets que você
-            arrasta, reorganiza e tinge com o seu tema de cor.
-          </p>
-        </motion.div>
+      <div className="relative mx-auto max-w-shell px-6">
+        {/* Ponte: a legenda que antes ficava sob o titulo agora liga a captura
+            expandida ao indice de widgets. */}
+        <p className="mx-auto max-w-[54ch] text-center text-lg font-light leading-relaxed text-white/55">
+          A esfera reage à conversa no centro. Em volta, widgets que você
+          arrasta, reorganiza e tinge com o seu tema de cor.
+        </p>
 
-        {/* Palco da imagem. Moldura de bisel duplo: uma casca externa com
-            respiro e um nucleo interno com realce no topo. Nao e cromo de
-            janela falsa, e um porta-retrato: a imagem e real, a moldura nao
-            finge ser sistema operacional. */}
-        <motion.figure
-          initial={reduce ? false : { opacity: 0, y: 32, scale: 0.965 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="relative mt-16"
-        >
-          {/* Luz sob a imagem: separa o painel do fundo e dá volume. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-12 bottom-0 h-40 translate-y-1/2 rounded-[50%] bg-white/[0.09] blur-[80px]"
-          />
-
-          <div className="relative rounded-[26px] border border-white/[0.09] bg-white/[0.03] p-1.5 shadow-[0_50px_140px_-50px_rgba(0,0,0,0.95)] sm:p-2">
-            <div className="overflow-hidden rounded-[20px] border border-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-              <Image
-                src="/images/jarvis-dashboard.png"
-                alt="Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor."
-                width={1918}
-                height={1062}
-                sizes="(max-width: 1200px) 100vw, 1200px"
-                quality={90}
-                className="block w-full"
-              />
-            </div>
-          </div>
-        </motion.figure>
-
-        {/* Indice do que aparece na imagem. Sem cartao e sem icone: a secao ja
-            tem um ativo visual forte, e competir com ele aqui embaixo so
-            rouba atencao da captura. */}
+        {/* Indice do que aparece na imagem. */}
         <div className="mt-16">
           <h3 className="text-sm font-medium text-white/45">
             O que já vem na tela
           </h3>
-          <ul className="mt-6 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Seis itens, seis celulas: 3 colunas por 2 linhas no desktop, sem
+              celula vazia sobrando. No mobile cai para coluna unica. */}
+          <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {widgets.map((widget, i) => (
-              <motion.li
-                key={widget}
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.4 }}
-                transition={{
-                  duration: 0.5,
-                  delay: reduce ? 0 : i * 0.06,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                className="border-t border-white/[0.1] py-4 text-sm text-white/65"
-              >
-                {widget}
-              </motion.li>
+              <SpotlightCard
+                key={widget.title}
+                widget={widget}
+                delay={i * 0.07}
+              />
             ))}
-          </ul>
+          </div>
         </div>
       </div>
     </section>

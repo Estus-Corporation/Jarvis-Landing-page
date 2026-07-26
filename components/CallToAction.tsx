@@ -13,23 +13,12 @@ import type { Icon } from "@phosphor-icons/react";
 // Fechamento da pagina. Um CTA so, com o mesmo rotulo usado no header, no hero
 // e nos planos: uma intencao, um texto, em todo lugar.
 //
-// O fundo nao repete foto de produto. No lugar entra o motivo que a pagina
-// inteira ja construiu: a forma de uma voz. A onda vira horizonte, e a secao
-// fecha com o desenho do que o produto e.
+// A antiga onda de barras e os halos de "amanhecer" na base sairam a pedido. O
+// fechamento agora e limpo: um glow central sutil por tras do texto da a
+// profundidade, sem o show de luzes competindo na regiao de baixo.
 
-// Envelope de onda: pico no centro, decaindo para as bordas, com variacao
-// deterministica por indice. Nada de Math.random, senao servidor e cliente
-// desenham alturas diferentes e a hidratacao quebra.
-const BAR_COUNT = 96;
-const HORIZON = Array.from({ length: BAR_COUNT }, (_, i) => {
-  const envelope = Math.sin((Math.PI * i) / (BAR_COUNT - 1));
-  const jitter = 0.32 + 0.68 * Math.abs(Math.sin(i * 1.7) * Math.cos(i * 0.61));
-  return Math.max(0.06, envelope * jitter);
-});
-
-// Removedores de atrito, todos ancorados no que a pagina ja afirma: os
-// requisitos vem de Signals, o preco de lancamento e o cancelamento vem da
-// tabela de precos. Nenhum inventa promessa nova.
+// Removedores de atrito, ancorados no que a pagina ja afirma. Nenhum inventa
+// promessa nova.
 const assurances: { icon: Icon; label: string }[] = [
   { icon: WindowsLogo, label: "Windows 10 e 11" },
   { icon: DownloadSimple, label: "Instala em minutos" },
@@ -40,22 +29,12 @@ export default function CallToAction() {
   const reduce = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden border-t border-white/[0.08] bg-ink-900 px-6 pb-44 pt-32 sm:pb-56 sm:pt-44">
-      {/* Camada 1: luz nascendo da borda de baixo, como um amanhecer. Fica
-          atras da onda e e o que da volume ao horizonte. */}
+    <section className="relative overflow-hidden border-t border-white/[0.08] bg-ink-900 px-6 py-28 sm:py-36">
+      {/* Glow central suave por tras do fechamento: profundidade sem o show de
+          luzes que havia na base. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 left-1/2 h-[560px] w-[1100px] -translate-x-1/2 translate-y-1/3 rounded-[50%] bg-white/[0.07] blur-[120px]"
-      />
-      {/* Camada 2: nucleo mais quente e concentrado dentro do halo. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-0 left-1/2 h-[260px] w-[560px] -translate-x-1/2 translate-y-1/2 rounded-[50%] bg-white/[0.09] blur-[90px]"
-      />
-      {/* Camada 3: vinheta lateral, para a luz nao encostar nas bordas. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_60%_at_50%_100%,transparent_35%,rgb(14,14,16)_100%)]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[380px] w-[720px] max-w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-white/[0.05] blur-[120px]"
       />
 
       <motion.div
@@ -95,67 +74,37 @@ export default function CallToAction() {
         </a>
       </motion.div>
 
-      {/* Removedores de atrito. Sem cartao: so icone e texto, separados por
-          hairline no desktop. A fileira le como assinatura de rodape do
-          fechamento, sem competir com o botao logo acima. */}
-      <motion.ul
-        initial={reduce ? false : { opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.4 }}
-        transition={{
-          duration: 0.6,
-          delay: reduce ? 0 : 0.18,
-          ease: [0.16, 1, 0.3, 1],
-        }}
-        className="relative mx-auto mt-14 flex max-w-3xl flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-0"
-      >
-        {assurances.map(({ icon: Glyph, label }) => (
-          <li
-            key={label}
-            className="flex items-center gap-2.5 sm:border-l sm:border-white/[0.14] sm:px-6 sm:first:border-l-0"
-          >
-            <Glyph
-              size={18}
-              weight="light"
-              aria-hidden
-              className="shrink-0 text-white/50"
-            />
-            <span className="text-sm text-white/60">{label}</span>
-          </li>
-        ))}
-      </motion.ul>
-
-      {/* Horizonte de onda. Estatico de proposito: a pagina ja tem chuva de
-          codigo, halo pulsando, onda viva na secao de voz e ping no console.
-          O fechamento e a expiracao, nao mais um loop competindo por atencao.
-          A unica animacao e a subida das barras quando a secao entra em cena. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[150px] items-end justify-center gap-[3px] px-4 sm:h-[190px]"
-        style={{
-          maskImage:
-            "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
-        }}
-      >
-        {HORIZON.map((h, i) => (
-          <motion.span
-            key={i}
-            className="w-full max-w-[7px] origin-bottom rounded-t-full bg-gradient-to-t from-white/[0.32] to-white/[0.06]"
-            style={{ height: `${h * 100}%` }}
-            initial={reduce ? false : { scaleY: 0.05, opacity: 0 }}
-            whileInView={{ scaleY: 1, opacity: 1 }}
-            viewport={{ once: true, amount: 0.1 }}
-            transition={{
-              duration: 0.9,
-              // Sobe do centro para as pontas: a onda "acende" a partir de
-              // onde a voz seria mais forte.
-              delay: reduce ? 0 : Math.abs(i - BAR_COUNT / 2) * 0.008,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-          />
-        ))}
+      {/* Removedores de atrito, agora dentro de um cartao de vidro com o mesmo
+          material do header: mesma borda, mesmo fundo translucido, mesmo blur
+          saturado e o realce de luz interno no topo. Pilula no desktop,
+          cartao arredondado com os itens empilhados no mobile. */}
+      <div className="mt-14 flex justify-center px-2">
+        <motion.ul
+          initial={reduce ? false : { opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{
+            duration: 0.6,
+            delay: reduce ? 0 : 0.18,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          className="glass-surface relative inline-flex flex-col items-center gap-4 rounded-card border border-white/[0.14] bg-ink-900/40 px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-1px_0_rgba(255,255,255,0.04),0_18px_50px_-16px_rgba(0,0,0,0.7)] backdrop-blur-2xl backdrop-saturate-150 sm:flex-row sm:gap-0 sm:rounded-full sm:px-3 sm:py-2.5"
+        >
+          {assurances.map(({ icon: Glyph, label }) => (
+            <li
+              key={label}
+              className="flex items-center gap-2.5 sm:border-l sm:border-white/[0.12] sm:px-6 sm:first:border-l-0"
+            >
+              <Glyph
+                size={18}
+                weight="light"
+                aria-hidden
+                className="shrink-0 text-white/50"
+              />
+              <span className="text-sm text-white/65">{label}</span>
+            </li>
+          ))}
+        </motion.ul>
       </div>
     </section>
   );

@@ -2,7 +2,12 @@
 
 import React from "react";
 import Image from "next/image";
-import { motion, useReducedMotion } from "motion/react";
+import {
+  motion,
+  useMotionValue,
+  useMotionTemplate,
+  useReducedMotion,
+} from "motion/react";
 import {
   Eye,
   Brain,
@@ -79,6 +84,13 @@ function Cell({
   delay?: number;
 }) {
   const reduce = useReducedMotion();
+  // Luz que segue o cursor dentro da celula. Vive em motion values, nunca em
+  // estado do React: rastrear o ponteiro com useState re-renderizaria a arvore a
+  // cada pixel e travaria no mobile.
+  const mx = useMotionValue(-9999);
+  const my = useMotionValue(-9999);
+  const spotlight = useMotionTemplate`radial-gradient(300px circle at ${mx}px ${my}px, rgba(255,255,255,0.08), transparent 68%)`;
+
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0, y: 20 }}
@@ -89,10 +101,26 @@ function Cell({
         delay: reduce ? 0 : delay,
         ease: [0.16, 1, 0.3, 1],
       }}
-      // Hover em CSS puro, sem rastrear posicao do cursor: a borda acende e a
-      // superficie sobe um degrau. Barato e consistente com o resto da pagina.
-      className={`group relative overflow-hidden rounded-card border border-white/[0.08] transition-colors duration-300 hover:border-white/20 ${className}`}
+      onMouseMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        mx.set(e.clientX - r.left);
+        my.set(e.clientY - r.top);
+      }}
+      onMouseLeave={() => {
+        mx.set(-9999);
+        my.set(-9999);
+      }}
+      // A borda acende no hover e a luz do cursor lava a superficie.
+      className={`group relative overflow-hidden rounded-card border border-white/[0.08] transition-colors duration-300 hover:border-white/25 ${className}`}
     >
+      {/* Spotlight acima das texturas (z-[2]), abaixo do texto na pratica: e
+          branco e de opacidade baixa, entao levanta as areas escuras e quase nao
+          toca no texto claro. */}
+      <motion.div
+        aria-hidden
+        style={{ background: spotlight }}
+        className="pointer-events-none absolute inset-0 z-[2] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+      />
       {children}
     </motion.div>
   );
@@ -179,8 +207,38 @@ export default function Features() {
   const reduce = useReducedMotion();
 
   return (
-    <section id="recursos" className="relative bg-ink-950 px-6 py-28 sm:py-36">
-      <div className="mx-auto max-w-shell">
+    <section
+      id="recursos"
+      // Fundo igual ao de Integracoes (ink-900). O pt maior abre espaco para o
+      // corte diagonal do topo nao encostar no conteudo.
+      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-44 sm:pb-36 sm:pt-64"
+    >
+      {/* Corte diagonal Hero -> Recursos via clip-path (nao imagem, nao SVG).
+          Duas camadas dentro da faixa do topo:
+           1) Uma div da cor da hero (ink-950) recortada em diagonal: cobre o
+              topo inteiro e a aresta de baixo SOBE da esquerda para a direita
+              (poucos graus), revelando o ink-900 de Recursos por baixo.
+           2) Uma segunda div de 2px seguindo a MESMA diagonal, branca, que
+              desenha o fio nitido da aresta (o dark-sobre-dark sozinho quase
+              nao aparece). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-40 sm:h-56"
+      >
+        <div
+          className="absolute inset-0 bg-ink-950"
+          style={{ clipPath: "polygon(0 0, 100% 0, 100% 45%, 0 100%)" }}
+        />
+        <div
+          className="absolute inset-0 bg-white/40"
+          style={{
+            clipPath:
+              "polygon(0 calc(100% - 2px), 100% calc(45% - 2px), 100% 45%, 0 100%)",
+          }}
+        />
+      </div>
+
+      <div className="relative z-[2] mx-auto max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -229,17 +287,18 @@ export default function Features() {
           </Cell>
 
           <Cell className="bg-ink-900 lg:col-span-5" delay={0.08}>
-            {/* Cerebro de trilha de circuito: a imagem diz "memoria" sem que a
-                celula precise desenhar um icone a mais. */}
+            {/* Fitas em camadas: leem como coisas guardadas uma sobre a outra,
+                que e o que esta celula afirma. Cobrem a celula inteira porque a
+                imagem e continua, sem assunto central. */}
             <CellTexture
-              src="/images/i2.webp"
-              className="-right-12 -top-12 h-56 w-56"
-              opacity="opacity-[0.16]"
-              sizes="224px"
+              src="/images/i6.avif"
+              className="inset-0"
+              opacity="opacity-[0.3]"
+              sizes="(max-width: 1024px) 100vw, 42vw"
             />
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-ink-900 via-ink-900/85 to-transparent"
+              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-ink-900 via-ink-900/88 to-ink-900/50"
             />
             <div className="relative p-8 sm:p-10">
               <PillarHead item={memory} />
@@ -291,7 +350,7 @@ export default function Features() {
                       delay: reduce ? 0 : 0.3 + i * 0.04,
                       ease: [0.16, 1, 0.3, 1],
                     }}
-                    className="rounded-chip border border-white/[0.1] px-3.5 py-2 text-sm text-white/65"
+                    className="rounded-chip border border-white/[0.1] px-3.5 py-2 text-sm text-white/65 transition-colors duration-300 hover:border-white/25 hover:bg-white/[0.03] hover:text-white/90"
                   >
                     {item}
                   </motion.li>

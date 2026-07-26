@@ -35,16 +35,33 @@ const config: Config = {
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
       },
       maxWidth: {
-        shell: "1200px",
+        // Largura mestra de todas as secoes e do header. Alargada de 1200 para
+        // 1400: em telas grandes o layout antigo deixava tudo "para dentro",
+        // com margens gordas. 1400 puxa os elementos para mais perto das bordas,
+        // no espirito de sites como o React Bits, sem virar largura total (os
+        // blocos de texto continuam com seu proprio limite de leitura).
+        shell: "1400px",
       },
       keyframes: {
         "fade-up": {
           "0%": { opacity: "0", transform: "translateY(16px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        // A trilha do marquee guarda a lista DUPLICADA, entao andar -50% coloca
+        // a copia exatamente onde o original estava: o loop fecha sem salto.
+        "marquee-left": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        "marquee-right": {
+          "0%": { transform: "translateX(-50%)" },
+          "100%": { transform: "translateX(0)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.6s cubic-bezier(0.16,1,0.3,1) forwards",
+        "marquee-left": "marquee-left 46s linear infinite",
+        "marquee-right": "marquee-right 52s linear infinite",
       },
     },
   },

@@ -10,7 +10,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 export type JarvisState = "idle" | "listening" | "thinking" | "working" | "speaking";
 
 const PHI = (1 + Math.sqrt(5)) / 2;
-const N = 210; // nós da malha — mesma densidade do app
+const N = 210; // nós da malha, mesma densidade do app
 
 const NODES = Array.from({ length: N }, (_, i) => {
   const theta = Math.acos(1 - (2 * (i + 0.5)) / N);

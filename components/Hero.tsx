@@ -8,8 +8,57 @@ import { useOrbSize } from "@/components/ui/use-orb-size";
 import { SpokenCaption } from "@/components/ui/spoken-caption";
 import CodeRain from "@/components/ui/code-rain";
 import StepDivider from "@/components/ui/step-divider";
+import {
+  ShieldCheck,
+  Lightning,
+  Microphone,
+  Terminal,
+  SquaresFour,
+} from "@phosphor-icons/react/dist/ssr";
+import type { Icon } from "@phosphor-icons/react";
 
 const HEADLINE = ["Fale.", "Ele", "já", "fez."];
+
+// Selos flutuantes ao redor da esfera: mostram, de relance, tres coisas
+// concretas que o Jarvis faz, sem exigir que a pessoa leia a secao de
+// Recursos para descobrir. Posicoes em % do proprio quadro da esfera (nao da
+// coluna), entao acompanham a esfera crescendo/encolhendo por breakpoint sem
+// precisar de valores por tamanho de tela. `float` da a cada um um atraso de
+// balanco proprio, para nao boiarem em uníssono como um bloco so.
+const ORB_CHIPS: {
+  icon: Icon;
+  label: string;
+  position: string;
+  float: number;
+}[] = [
+  {
+    icon: Microphone,
+    label: "Comandos de voz",
+    position: "right-[4%] top-[10%]",
+    float: 0,
+  },
+  {
+    icon: Terminal,
+    label: "Terminal integrado",
+    position: "left-[-8%] top-[48%]",
+    float: 0.5,
+  },
+  {
+    icon: SquaresFour,
+    label: "Abre programas",
+    position: "bottom-[10%] right-[8%]",
+    float: 1,
+  },
+];
+
+// Prova social logo abaixo dos CTAs, ainda dentro da primeira dobra: reforca
+// a decisao no exato momento em que ela e tomada, sem exigir que a pessoa
+// role a pagina atras de confianca. Os dois selos (privacidade, instalacao)
+// repetem so o que a pagina ja afirma la embaixo, nunca uma promessa nova.
+const TRUST_SIGNALS: { icon: Icon; title: string; subtitle: string }[] = [
+  { icon: ShieldCheck, title: "Privacidade total", subtitle: "Dados 100% locais" },
+  { icon: Lightning, title: "Instalação rápida", subtitle: "Menos de 1 minuto" },
+];
 
 // Frases proprias do hero. Sao diferentes das da secao de Voz clonada de
 // proposito: a mesma legenda datilografada aparece em dois pontos da pagina, e
@@ -157,6 +206,40 @@ export default function Hero() {
               Ver recursos
             </a>
           </motion.div>
+
+          {/* Dois lembretes de atrito, ambos coisas que a pagina reafirma la
+              embaixo. O selo de "+1,2 mil usuarios" que vivia aqui saiu: sem
+              numero verificavel para mostrar ainda, prova social fabricada
+              piora a confianca em vez de construir ela. */}
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.62, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4"
+          >
+            {TRUST_SIGNALS.map(({ icon: Glyph, title, subtitle }, i) => (
+              <React.Fragment key={title}>
+                <div className="flex items-center gap-2.5">
+                  <Glyph
+                    size={20}
+                    weight="light"
+                    aria-hidden
+                    className="shrink-0 text-white/45"
+                  />
+                  <div className="leading-tight">
+                    <p className="text-sm text-white/75">{title}</p>
+                    <p className="text-xs text-white/40">{subtitle}</p>
+                  </div>
+                </div>
+                {i < TRUST_SIGNALS.length - 1 && (
+                  <span
+                    className="hidden h-8 w-px bg-white/10 sm:block"
+                    aria-hidden
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </motion.div>
         </div>
 
         <motion.div
@@ -168,11 +251,51 @@ export default function Hero() {
           className="order-1 flex flex-col items-center lg:order-2 lg:ml-6 xl:ml-10"
         >
           <div ref={containerRef} className="flex w-full justify-center">
-            <JarvisOrb
-              state={speaking ? "speaking" : "idle"}
-              sphereSize={size}
-              paused={!!reduce}
-            />
+            <div className="relative inline-block">
+              <JarvisOrb
+                state={speaking ? "speaking" : "idle"}
+                sphereSize={size}
+                paused={!!reduce}
+              />
+
+              {/* Escondidos abaixo de sm: a esfera fica pequena demais nesse
+                  breakpoint (min 220px) para tres selos com texto nao
+                  colidirem ou vazarem da secao. */}
+              {ORB_CHIPS.map(({ icon: Glyph, label, position, float }, i) => (
+                <motion.div
+                  key={label}
+                  initial={reduce ? false : { opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    duration: 0.6,
+                    delay: 0.95 + i * 0.15,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className={`absolute z-10 hidden sm:block ${position}`}
+                >
+                  <motion.div
+                    animate={reduce ? undefined : { y: [0, -8, 0] }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: float,
+                    }}
+                    className="flex items-center gap-3 whitespace-nowrap rounded-2xl border border-white/[0.12] bg-ink-900/80 px-5 py-3.5 shadow-[0_14px_40px_-14px_rgba(0,0,0,0.65)] backdrop-blur-sm"
+                  >
+                    <Glyph
+                      size={22}
+                      weight="light"
+                      aria-hidden
+                      className="shrink-0 text-white/70"
+                    />
+                    <span className="text-base font-medium text-white/85">
+                      {label}
+                    </span>
+                  </motion.div>
+                </motion.div>
+              ))}
+            </div>
           </div>
 
           {/* O orb ja traz 72px de padding transparente embaixo, entao a
@@ -185,7 +308,10 @@ export default function Hero() {
               // scroll, que aqui nunca aconteceria.
               reveal="immediate"
               revealDelay={0.75}
-              className="max-w-md"
+              // max-w-md nao bastava mais: com a caixa presa a uma linha so
+              // (sem quebrar), a frase mais longa precisa de mais espaco
+              // horizontal do que 448px davam.
+              className="max-w-xl"
             />
           </div>
         </motion.div>

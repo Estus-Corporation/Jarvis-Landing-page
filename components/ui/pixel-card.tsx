@@ -176,6 +176,10 @@ export default function PixelCard({
   // roda no cliente.
   const timePreviousRef = useRef(0);
   const reducedMotionRef = useRef(false);
+  // Modo `active` liga o shimmer pra sempre (ele nunca fica isIdle sozinho,
+  // e o ponto do efeito). Sem isso, o cartao Anual desenha pixels a 60fps
+  // pra sempre, mesmo depois que a secao de Precos ja saiu da tela.
+  const visibleRef = useRef(true);
 
   const variantCfg = VARIANTS[variant] || VARIANTS.default;
   const finalGap = gap ?? variantCfg.gap;
@@ -239,6 +243,7 @@ export default function PixelCard({
 
   const doAnimate = (fnName: keyof Pixel) => {
     animationRef.current = requestAnimationFrame(() => doAnimate(fnName));
+    if (!visibleRef.current) return;
     const timeNow = performance.now();
     const timePassed = timeNow - timePreviousRef.current;
     const timeInterval = 1000 / 60;
@@ -309,8 +314,23 @@ export default function PixelCard({
     if (containerRef.current) {
       observer.observe(containerRef.current);
     }
+
+    const visibilityObserver = new IntersectionObserver(
+      ([entry]) => {
+        visibleRef.current = entry.isIntersecting && !document.hidden;
+      },
+      { threshold: 0 }
+    );
+    if (containerRef.current) visibilityObserver.observe(containerRef.current);
+    const onVisibility = () => {
+      visibleRef.current = !document.hidden;
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       observer.disconnect();
+      visibilityObserver.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
       if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current);
       }

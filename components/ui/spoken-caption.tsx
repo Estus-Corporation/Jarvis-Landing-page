@@ -133,18 +133,24 @@ export function SpokenCaption({
         delay: reduce ? 0 : revealDelay,
         ease: [0.16, 1, 0.3, 1],
       }}
-      // min-h fixo comporta duas linhas: sem isso a caixa pula de altura toda
-      // vez que uma frase mais longa quebra a linha.
-      className={`flex min-h-[4.75rem] w-full items-center gap-4 rounded-card border border-white/[0.1] bg-ink-800/80 px-5 py-4 backdrop-blur-sm ${className}`}
+      // Caixa agora encolhe/cresce com o conteudo (w-fit) em vez de ocupar a
+      // largura toda: a frase nunca quebra linha, entao nao ha mais motivo
+      // para reservar uma largura fixa que sobra vazia na maioria das frases.
+      // `max-w-full` trava no pai se algum dia uma frase for grande demais
+      // mesmo assim; `overflow-hidden` garante que ela corta em vez de
+      // vazar do cartao nesse caso extremo. Onda e divisor somem abaixo de
+      // sm: e o espaco que falta pra frase mais longa caber numa linha so no
+      // celular, onde a coluna e mais estreita.
+      className={`flex w-fit max-w-full items-center gap-4 overflow-hidden rounded-card border border-white/[0.1] bg-ink-800/80 px-4 py-4 backdrop-blur-sm sm:px-5 ${className}`}
     >
-      <span className="shrink-0">
+      <span className="hidden shrink-0 sm:block">
         <LiveWave live={speaking} />
       </span>
-      <span className="h-8 w-px shrink-0 bg-white/10" />
+      <span className="hidden h-8 w-px shrink-0 bg-white/10 sm:block" />
       <motion.p
         animate={{ opacity: exiting ? 0 : 1, y: exiting ? -6 : 0 }}
         transition={{ duration: exiting ? EXIT_MS / 1000 : 0.25, ease: "easeOut" }}
-        className="text-left text-sm leading-snug text-[#FAFAFA] sm:text-base"
+        className="whitespace-nowrap text-left text-xs leading-snug text-[#FAFAFA] sm:text-sm"
         aria-live="polite"
       >
         {phrase.slice(0, chars)}

@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   Tag,
+  ShieldCheck,
   Microphone,
   AppWindow,
   Terminal,
@@ -14,6 +15,8 @@ import {
   Brain,
   Waveform,
   Headset,
+  ArrowsClockwise,
+  Trophy,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,7 @@ const plans = [
   {
     id: "mensal",
     name: "Mensal",
+    icon: ArrowsClockwise,
     price: "R$ 97",
     period: "por mês",
     anchor: "R$ 147",
@@ -47,6 +51,7 @@ const plans = [
   {
     id: "anual",
     name: "Anual",
+    icon: Trophy,
     price: "R$ 1.000",
     period: "por ano",
     equivalent: "R$ 83,33 por mês",
@@ -105,16 +110,23 @@ export default function Pricing() {
             "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
         }}
       >
-        {/* object-top e o detalhe que decide se a textura existe ou nao.
-            A i5 tem as curvas concentradas em cima e embaixo e quase nada no
-            meio: ancorar no centro mostrava justamente a faixa vazia, e o
-            fundo sumia por completo. */}
+        {/* Trocada pela mesma imagem (i6) usada no fundo do card "Ele lembra"
+            em Recursos, a pedido — reforca a mesma textura em vez de uma
+            terceira imagem so pra essa secao. object-top continua valendo:
+            e o topo da imagem que tem a textura mais interessante.
+            i6.avif e nativamente pequena (626x351): foi feita pra uma celula
+            de bento a ~42vw, nunca pra cobrir a secao inteira a 100vw. Nessa
+            largura o navegador amplia mais de 2x, e a ampliacao aparece como
+            borrado/pixelado. blur (com scale para o blur nao revelar a borda
+            crua do recorte) transforma esse borrado indesejado em textura
+            suave proposital — a mesma linguagem dos halos e gradientes que ja
+            existem na secao, entao nao destoa. */}
         <Image
-          src="/images/i5.avif"
+          src="/images/i6.avif"
           alt=""
           fill
           sizes="100vw"
-          className="object-cover object-top"
+          className="scale-110 object-cover object-top blur-[6px]"
         />
       </div>
       {/* Scrims laterais na propria cor da secao: matam as bordas verticais da
@@ -160,15 +172,18 @@ export default function Pricing() {
                 ease: [0.16, 1, 0.3, 1],
               }}
               className={cn(
-                "relative flex flex-col overflow-hidden rounded-card border",
+                "group relative flex flex-col overflow-hidden rounded-card border transition-colors duration-300",
                 // Elevacao correta agora que a secao e ink-950: o cartao comum
                 // fica um degrau ACIMA do fundo e o destacado dois. Antes o
                 // cartao comum era ink-950 sobre secao ink-900, ou seja, mais
                 // escuro que a propria superficie, o que o fazia parecer
                 // afundado em vez de elevado.
+                // Hover proprio faltava aqui: todo outro cartao do site
+                // (Features, Integracoes) acende a borda ao passar o mouse;
+                // os planos eram os unicos sem esse retorno visual.
                 plan.highlighted
-                  ? "border-white/30 bg-ink-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(255,255,255,0.05),0_28px_70px_-28px_rgba(255,255,255,0.16)]"
-                  : "border-white/[0.09] bg-ink-900"
+                  ? "border-white/30 bg-ink-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(255,255,255,0.05),0_28px_70px_-28px_rgba(255,255,255,0.16)] hover:border-white/45"
+                  : "border-white/[0.09] bg-ink-900 hover:border-white/20"
               )}
             >
               {/* Efeito de pixels FIXO (sempre ligado, nao no hover) no fundo
@@ -213,7 +228,13 @@ export default function Pricing() {
 
               <div className="relative z-10 flex flex-1 flex-col p-8 sm:p-10">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-medium text-[#FAFAFA]">
+                  <h3 className="flex items-center gap-2.5 text-lg font-medium text-[#FAFAFA]">
+                    <plan.icon
+                      size={19}
+                      weight="light"
+                      className="shrink-0 text-white/50"
+                      aria-hidden
+                    />
                     {plan.name}
                   </h3>
                 {plan.highlighted ? (
@@ -316,7 +337,16 @@ export default function Pricing() {
                 Começar agora
               </a>
 
-              <p className="mt-4 text-center text-xs text-white/40">
+              {/* Reversao de risco, no exato ponto de decisao: logo abaixo do
+                  botao, nao rodape apagado. Pedir R$97 a R$1.000 de um produto
+                  que ninguem viu funcionar sem essa linha e pedir ao
+                  comprador para assumir sozinho todo o risco. */}
+              <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-white/60">
+                <ShieldCheck size={14} weight="light" className="shrink-0" aria-hidden />
+                Garantia de 7 dias: não gostou, devolvemos 100%.
+              </p>
+
+              <p className="mt-2 text-center text-xs text-white/40">
                 {plan.note}
               </p>
               </div>
@@ -335,7 +365,7 @@ export default function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-14 border-t border-white/[0.08] pt-8"
+          className="mt-14 border-t border-white/[0.08] pt-8 text-center"
         >
           <p className="text-sm font-medium text-white/45">
             Incluído nos dois planos{" "}
@@ -344,11 +374,11 @@ export default function Pricing() {
             </span>
           </p>
 
-          <ul className="mt-5 grid gap-x-8 gap-y-3.5 sm:grid-cols-2">
+          <ul className="mx-auto mt-5 grid max-w-2xl gap-x-8 gap-y-3.5 sm:grid-cols-2">
             {included.map(({ icon: Glyph, label }) => (
               <li
                 key={label}
-                className="flex items-center gap-3 text-sm text-white/60"
+                className="flex items-center justify-center gap-3 text-sm text-white/60"
               >
                 <Glyph
                   size={16}

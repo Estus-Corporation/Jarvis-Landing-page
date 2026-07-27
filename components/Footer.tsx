@@ -1,4 +1,8 @@
+"use client";
+
 import React from "react";
+import { motion } from "motion/react";
+import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   GithubLogo,
   XLogo,
@@ -43,10 +47,18 @@ const socialLinks: { icon: Icon; href: string; label: string }[] = [
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const reduce = useReducedMotionSafe();
 
+  // Era o unico bloco da pagina sem entrada por scroll: todo o resto ja
+  // aparece com fade+subida ao entrar na tela, e o rodape so surgia estatico.
   return (
     <footer className="border-t border-white/[0.08] bg-ink-950 px-6 py-16 sm:py-20">
-      <div className="mx-auto max-w-shell">
+      <motion.div
+        initial={reduce ? false : { opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-auto max-w-shell">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <a href="#top" className="flex items-center gap-2.5">
@@ -106,7 +118,7 @@ export default function Footer() {
           <span>© {year} Jarvis. Todos os direitos reservados.</span>
           <span>Feito pela Estus Corporation.</span>
         </div>
-      </div>
+      </motion.div>
     </footer>
   );
 }

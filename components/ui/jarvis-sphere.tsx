@@ -75,6 +75,9 @@ function NetworkSphere({
   const speedRef = useRef(0);
   const tiltSpeedRef = useRef(0);
   const introT0Ref = useRef(-1); // timestamp do 1º frame
+  // Comeca true (o servidor nunca sabe se esta visivel): so um Intersection
+  // Observer, montado no proprio effect da animacao, corrige isso no cliente.
+  const visibleRef = useRef(true);
 
   useEffect(() => {
     stateRef.current = state;
@@ -149,6 +152,15 @@ function NetworkSphere({
     const animate = (ts: number) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
+
+      // Fora da tela (rolou para alem do hero) ou aba em segundo plano: pula
+      // o desenho inteiro, so mantem o rAF vivo pra detectar quando a esfera
+      // volta a ficar visivel. Sem isso ela desenhava 3 canvases por quadro
+      // pra sempre, mesmo depois que a pessoa ja tinha rolado a pagina toda.
+      if (!visibleRef.current) {
+        if (!paused) frameRef.current = requestAnimationFrame(animate);
+        return;
+      }
 
       // Landing page: a esfera já nasce "ligada" — pula a ignição do app e
       // fixa Praw bem acima de 1.6 (fim de qualquer efeito de boot).
@@ -339,7 +351,25 @@ function NetworkSphere({
       if (!paused) frameRef.current = requestAnimationFrame(animate);
     };
     frameRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frameRef.current);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        visibleRef.current = entry.isIntersecting && !document.hidden;
+      },
+      { threshold: 0 }
+    );
+    observer.observe(canvas);
+
+    const onVisibility = () => {
+      visibleRef.current = !document.hidden;
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelAnimationFrame(frameRef.current);
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [size, paused]);
 
   return (

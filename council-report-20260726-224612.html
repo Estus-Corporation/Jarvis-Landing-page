@@ -1,0 +1,564 @@
+<title>Conselho de IA — Veredito sobre a landing page do Jarvis</title>
+<style>
+  :root {
+    --bg: #f5f6f7;
+    --surface: #ffffff;
+    --border: #e1e4e8;
+    --ink: #14171c;
+    --ink-muted: #5b6270;
+    --ink-faint: #8a8f99;
+    --agree: #2f6f4e;
+    --agree-bg: #eaf3ee;
+    --clash: #9c6a24;
+    --clash-bg: #f6efe1;
+    --blindspot: #a83232;
+    --blindspot-bg: #f6e9e9;
+    --verdict: #1d3557;
+    --verdict-bg: #eaeff5;
+    --shadow: 0 1px 2px rgba(20, 23, 28, 0.04), 0 8px 24px -12px rgba(20, 23, 28, 0.12);
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", monospace;
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #14161a;
+    --surface: #1b1e24;
+    --border: #2b2f37;
+    --ink: #ecedf1;
+    --ink-muted: #9aa1ac;
+    --ink-faint: #6b7280;
+    --agree: #57b087;
+    --agree-bg: #16241d;
+    --clash: #d9a24e;
+    --clash-bg: #2a2216;
+    --blindspot: #e0766a;
+    --blindspot-bg: #2a1a19;
+    --verdict: #7c9dcb;
+    --verdict-bg: #1a2433;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a;
+      --surface: #1b1e24;
+      --border: #2b2f37;
+      --ink: #ecedf1;
+      --ink-muted: #9aa1ac;
+      --ink-faint: #6b7280;
+      --agree: #57b087;
+      --agree-bg: #16241d;
+      --clash: #d9a24e;
+      --clash-bg: #2a2216;
+      --blindspot: #e0766a;
+      --blindspot-bg: #2a1a19;
+      --verdict: #7c9dcb;
+      --verdict-bg: #1a2433;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 2.5rem;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 14px 0 0;
+    text-wrap: balance;
+  }
+
+  .subtitle {
+    margin: 18px 0 0;
+    font-size: 1.05rem;
+    color: var(--ink-muted);
+    max-width: 62ch;
+    line-height: 1.6;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+  .meta-row strong { color: var(--ink-muted); font-weight: 600; }
+
+  section { margin-top: 48px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.5rem;
+    margin: 0 0 18px;
+    letter-spacing: -0.005em;
+  }
+
+  .verdict-block {
+    margin-top: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--verdict);
+    border-radius: 6px;
+    padding: 28px 30px;
+    box-shadow: var(--shadow);
+  }
+  .verdict-block .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--verdict);
+    background: var(--verdict-bg);
+    padding: 3px 9px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+  .verdict-block p { margin: 0 0 14px; color: var(--ink); font-size: 1rem; }
+  .verdict-block p:last-child { margin-bottom: 0; }
+  .verdict-block .next-step {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--border);
+  }
+  .verdict-block .next-step p { font-weight: 600; font-size: 1.02rem; }
+
+  /* Consensus matrix */
+  .matrix-wrap { overflow-x: auto; }
+  table.matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  table.matrix th, table.matrix td {
+    padding: 11px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  table.matrix tr:last-child td { border-bottom: none; }
+  table.matrix th {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+    background: var(--bg);
+  }
+  table.matrix td:first-child, table.matrix th:first-child {
+    text-align: left;
+    font-family: var(--sans);
+    color: var(--ink);
+    font-size: 13.5px;
+    min-width: 220px;
+  }
+  .dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--agree);
+  }
+  .dot.warn { background: var(--blindspot); }
+  .dot.empty {
+    background: transparent;
+    border: 1.5px solid var(--border);
+  }
+  .matrix-note {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  .point-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .point-list li {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    font-size: 0.96rem;
+  }
+  .point-list li strong { display: block; margin-bottom: 4px; font-size: 0.98rem; }
+  .point-list.agree li strong { color: var(--agree); }
+  .point-list.clash li strong { color: var(--clash); }
+  .point-list.blindspot li strong { color: var(--blindspot); }
+
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  details + details { margin-top: 10px; }
+  summary {
+    cursor: pointer;
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: "+";
+    font-family: var(--mono);
+    color: var(--ink-faint);
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  details[open] summary::after { content: "\2212"; }
+  summary .role {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  .details-body {
+    padding: 0 18px 18px;
+    color: var(--ink-muted);
+    font-size: 0.93rem;
+    line-height: 1.65;
+  }
+  .details-body p { margin: 0 0 12px; }
+  .details-body p:last-child { margin-bottom: 0; }
+  .details-body strong { color: var(--ink); }
+
+  .review-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--ink-muted);
+  }
+  .review-item:last-child { border-bottom: none; }
+  .review-item strong { color: var(--ink); }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 1.9rem; }
+    .page { padding: 40px 18px 72px; }
+    table.matrix td:first-child, table.matrix th:first-child { min-width: 160px; }
+  }
+</style>
+
+<div class="page">
+
+  <div class="eyebrow">Conselho de IA · Veredito</div>
+  <h1>A landing page do Jarvis está pedindo confiança máxima com prova mínima.</h1>
+  <p class="subtitle">
+    Cinco conselheiros analisaram, de forma independente, o que falta e o que precisa mudar na
+    landing page do Jarvis (assistente de voz para Windows, Estus Corporation) para que ela
+    converta de verdade — depois revisaram o trabalho uns dos outros de forma anônima antes do
+    veredito final.
+  </p>
+  <div class="meta-row">
+    <span><strong>Produto</strong> Jarvis · assistente de voz para Windows</span>
+    <span><strong>Estágio</strong> pré-lançamento</span>
+    <span><strong>Conselheiros</strong> 5</span>
+    <span><strong>Data</strong> 26 jul. 2026</span>
+  </div>
+
+  <section class="verdict-block">
+    <span class="tag">Recomendação do presidente</span>
+    <p>
+      Quatro dos cinco revisores elegeram <strong>O Executor</strong> como a resposta mais forte —
+      é o único plano que transforma diagnóstico em ação executável esta semana, sem engenharia
+      nova. Mas o presidente corrige um ponto: a <strong>reversão de risco</strong> (garantia,
+      trial) não é o item três de uma lista de três — é o que faz os outros dois (prova social,
+      vídeo) valerem alguma coisa. Sem ela, um vídeo convincente e um depoimento real ainda deixam
+      o comprador assumindo 100% do risco financeiro sozinho, num produto que ninguém nunca usou.
+    </p>
+    <p>
+      As propostas de expansão (tier "Fundador", programa de indicação, preço maior) não são
+      ruins — mas a revisão cruzada identificou, por unanimidade, que escalar em cima de uma
+      prova social de autenticidade duvidosa (os "+1,2 mil usuários") agrava o problema em vez de
+      resolvê-lo. Revisite-as depois que a base de confiança estiver de pé.
+    </p>
+    <div class="next-step">
+      <span class="tag" style="color: var(--clash); background: var(--clash-bg);">A primeira coisa a fazer</span>
+      <p>
+        Adicionar uma garantia incondicional de reembolso de 7 dias na seção de preços e no
+        checkout — hoje, antes de qualquer outra mudança. Custa uma frase, ataca a causa-raiz da
+        assimetria de risco, e é o único ponto onde quatro linhas de raciocínio independentes do
+        conselho convergem exatamente na mesma ação. No Brasil, esse direito de arrependimento de
+        7 dias é lei (CDC art. 49) para compra online — a ausência pode já ser uma
+        não-conformidade, não só uma fraqueza de conversão.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Onde o conselho convergiu</h2>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Ponto de consenso</th>
+            <th>Contrário</th>
+            <th>1º Princípios</th>
+            <th>Expansionista</th>
+            <th>Estranho</th>
+            <th>Executor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>"+1,2 mil usuários" com avatar genérico mina a credibilidade</td>
+            <td><span class="dot"></span></td>
+            <td><span class="dot empty"></span></td>
+            <td><span class="dot warn"></span></td>
+            <td><span class="dot"></span></td>
+            <td><span class="dot"></span></td>
+          </tr>
+          <tr>
+            <td>Falta vídeo real do produto funcionando</td>
+            <td><span class="dot"></span></td>
+            <td><span class="dot empty"></span></td>
+            <td><span class="dot"></span></td>
+            <td><span class="dot"></span></td>
+            <td><span class="dot"></span></td>
+          </tr>
+          <tr>
+            <td>Estrutura de risco está invertida contra o comprador</td>
+            <td><span class="dot"></span></td>
+            <td><span class="dot"></span></td>
+            <td><span class="dot empty"></span></td>
+            <td><span class="dot"></span></td>
+            <td><span class="dot"></span></td>
+          </tr>
+          <tr>
+            <td>FAQ / comparação com concorrentes são secundários</td>
+            <td><span class="dot empty"></span></td>
+            <td><span class="dot empty"></span></td>
+            <td><span class="dot empty"></span></td>
+            <td><span class="dot empty"></span></td>
+            <td><span class="dot"></span></td>
+          </tr>
+          <tr>
+            <td>Escalar preço/escassez agora seria prematuro</td>
+            <td><span class="dot warn"></span></td>
+            <td><span class="dot warn"></span></td>
+            <td>—</td>
+            <td><span class="dot warn"></span></td>
+            <td><span class="dot warn"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="matrix-note">● o conselheiro levantou esse ponto diretamente · ● (vermelho) apontou como risco na revisão cruzada · ○ não abordou</p>
+  </section>
+
+  <section>
+    <h2>Onde o conselho concorda</h2>
+    <ul class="point-list agree">
+      <li>
+        <strong>A prova social atual é pior do que não ter nenhuma.</strong>
+        "+1.200 usuários" com avatares genéricos, num produto pré-lançamento, é uma inconsistência
+        que qualquer visitante cético detecta em segundos — e que contamina a credibilidade de
+        tudo que vem depois, inclusive o preço.
+      </li>
+      <li>
+        <strong>A esfera 3D decorativa é o oposto de prova.</strong>
+        Quatro dos cinco conselheiros chegam à mesma lacuna: falta vídeo real do Jarvis
+        controlando a tela, abrindo o Chrome, respondendo com a voz clonada. Sem isso, a reação
+        instintiva é "encenação", não "impressionante".
+      </li>
+      <li>
+        <strong>A estrutura de risco está invertida.</strong>
+        Pedir R$97–1.000 recorrente, sem trial, sem garantia, no momento de confiança mínima
+        (pré-lançamento, zero prova verificável), é uma assimetria que mata conversão antes de
+        qualquer objeção de copy.
+      </li>
+      <li>
+        <strong>FAQ e comparação com concorrentes podem esperar.</strong>
+        Resolvem objeção marginal — não geram a confiança inicial que está faltando.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Onde o conselho diverge</h2>
+    <ul class="point-list clash">
+      <li>
+        <strong>Nível de abstração: lista de melhorias vs. causa-raiz.</strong>
+        Executor, Contrário e Estranho tratam a pergunta como foi feita — o que falta — e
+        respondem com uma lista priorizada. Primeiros Princípios rejeita a pergunta: argumenta que
+        nenhuma seção nova salva uma oferta que a lógica do comprador já rejeitou. Não é que um
+        lado esteja errado — mudam a ordem de prioridade. Se a garantia é o item 3 de uma lista,
+        ela compete por atenção. Se é causa-raiz, é pré-requisito para os outros dois funcionarem.
+      </li>
+      <li>
+        <strong>Direção: reduzir risco agora vs. aumentar ambição agora.</strong>
+        Enquanto quatro conselheiros querem reduzir afirmações e risco, o Expansionista quer
+        aumentar (tier "Fundador", escassez real, preço maior) neste exato momento. A revisão
+        cruzada considerou isso prematuro por unanimidade — mas as ideias em si (vídeo como
+        conteúdo de aquisição, indicação para early adopters reais) são boas. O erro é o
+        sequenciamento, não a ideia.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Pontos cegos que só a revisão cruzada capturou</h2>
+    <ul class="point-list blindspot">
+      <li>
+        <strong>Direito de arrependimento de 7 dias é lei no Brasil (CDC art. 49).</strong>
+        "Sem garantia de reembolso" pode já ser uma não-conformidade legal para compra online, não
+        apenas uma fraqueza de conversão.
+      </li>
+      <li>
+        <strong>LGPD.</strong>
+        O produto processa tela, voz clonada e mensagens de WhatsApp — dados sensíveis — sem
+        política de privacidade real (o footer aponta para "#"). Risco regulatório, não só copy
+        vaga sobre "dados 100% locais".
+      </li>
+      <li>
+        <strong>Segurança funcional do produto.</strong>
+        Nenhum conselheiro perguntou se existe confirmação antes de ações destrutivas (apagar
+        arquivo, enviar mensagem errada). Prova social não resolve isso.
+      </li>
+      <li>
+        <strong>Experiência pós-clique.</strong>
+        Checkout, instalação, prompts do Windows (UAC, antivírus barrando "app desconhecido"),
+        concessão de permissões — é onde a promessa da Hero vira confiança real ou estorno.
+      </li>
+      <li>
+        <strong>Credibilidade do fundador, não explorada.</strong>
+        Expor quem está por trás da Estus Corporation (rosto, LinkedIn, história) é uma alavanca
+        de confiança praticamente gratuita que nenhum conselheiro propôs.
+      </li>
+      <li>
+        <strong>Ninguém propôs medir nada.</strong>
+        Todo o conselho debateu por raciocínio — sem sugerir teste A/B, funil ou dados reais de
+        comportamento.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>As 5 respostas completas dos conselheiros</h2>
+
+    <details>
+      <summary>O Contrário <span class="role">busca a falha fatal</span></summary>
+      <div class="details-body">
+        <p>Prova social é o buraco fatal. "+1,2 mil usuários já estão usando o Jarvis" com avatares genéricos, num produto que ainda nem lançou. Isso não é ancoragem, é mentira visível — qualquer usuário minimamente cético vai reconhecer avatares de stock em dois segundos e a credibilidade da página inteira desaba. Zero depoimentos, zero vídeo do produto rodando de verdade, zero caso de uso real. Vocês estão pedindo R$97-1000 por um produto que ninguém viu funcionar, comandado por um app que promete controlar terminal, WhatsApp e Chrome — ou seja, acesso profundo ao sistema — sem uma única prova em vídeo de que isso não trava, não alucina um comando destrutivo, e não é assustador de configurar.</p>
+        <p>Segundo problema: risco assimétrico contra o comprador. Sem trial, sem garantia de reembolso, ancorado num plano anual de R$1.000 vendido como "melhor custo" — vocês estão pedindo o compromisso mais alto exatamente no momento de menor confiança. Ninguém compra acesso root ao próprio PC de uma empresa desconhecida sem rede de segurança. Isso não é detalhe, é a razão pela qual a conversão vai morrer no cartão de preços.</p>
+        <p>Terceiro: a página vende "ele enxerga sua tela e ouve sua voz clonada" — vigilância de nível altíssimo — e não existe uma linha sobre privacidade além de um selo genérico "dados 100% locais", sem política de privacidade real (o footer aponta pra "#"). Para o público técnico que entenderia o valor do produto, essa omissão é uma bandeira vermelha, não um detalhe.</p>
+        <p>Windows-only também não é mencionado como filtro logo no hero — gera atrito e frustração tardia, não cedo, que é onde deveria estar.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>O Pensador de Primeiros Princípios <span class="role">questiona a pergunta</span></summary>
+      <div class="details-body">
+        <p>O problema não é a página. É a pergunta. "O que falta na página" pressupõe que a conversão é um problema de composição de seções. Isso é otimizar o arranjo dos móveis numa casa sem fundação.</p>
+        <p>Por que alguém compraria hoje, sem nunca ter visto o Jarvis funcionar, sem nenhum outro usuário confirmável, de uma empresa que nem lançou o produto, por R$97/mês recorrente, sem reembolso, sem trial? A resposta honesta: ninguém racional compra isso. A página está tentando resolver "como fazer essa oferta converter melhor" quando o problema real é "essa oferta é convertível?". Não é.</p>
+        <p>Vídeo, depoimentos, FAQ, garantia — tudo isso são curativos em cima de uma oferta que pede confiança máxima com prova mínima e risco financeiro total do lado do comprador.</p>
+        <p>A pergunta certa é: "por que estamos pedindo ao usuário para assumir 100% do risco de um produto não comprovado?". Resolvido isso — trial, garantia incondicional, ou preço simbólico de fundador com waitlist em vez de cobrança recorrente cega — a página praticamente se vende sozinha, mesmo incompleta. Reconstruam a oferta primeiro. A página vem depois.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>O Expansionista <span class="role">procura o upside</span></summary>
+      <div class="details-body">
+        <p>Todo mundo vai focar no que falta. Eu vejo algo maior sendo deixado na mesa: essa página posiciona o Jarvis como produto pequeno, quando o pitch é categoria nova — "fala e ele faz de verdade no seu PC" — não "mais um assistente de voz".</p>
+        <p>Primeiro, upside de preço: R$97 vs R$147 é ancoragem tímida para quem entrega visão de tela + memória persistente + voz clonada. Eu criaria um terceiro tier "Fundador" — vitalício ou anual premium com acesso antecipado — para capturar quem pagaria mais e gerar escassez real em cima disso.</p>
+        <p>Segundo, o vídeo ausente é a maior alavanca de conversão perdida: um Jarvis real controlando tela é conteúdo que vira orgânico/viral sozinho. Deveria estar na Hero e cortado em clipes para redes — a página devia gerar seu próprio funil de aquisição.</p>
+        <p>Terceiro, os "+1,2 mil usuários" é ativo subaproveitado: se é real, deveria virar programa de indicação (1 mês grátis por indicação) — transformando early adopters em canal de vendas.</p>
+        <p>Quarto: "Windows-only, por enquanto" com waitlist para Mac captura demanda futura sem prometer nada ainda.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>O Estranho no Ninho <span class="role">vê sem contexto prévio</span></summary>
+      <div class="details-body">
+        <p>Lendo isso pela primeira vez: a primeira coisa que não entendo é o que é o Jarvis, de verdade, antes de rolar a página inteira. "Fale. Ele já fez." não me diz que é um app instalável no Windows que controla meu PC. Achei que fosse mais um chatbot de voz. Só na seção 3 eu entendo o que ele faz — tarde demais, a maioria já foi embora.</p>
+        <p>A esfera 3D com legenda simulada me deixou desconfiado, não impressionado. É óbvio que é encenado. Cadê o vídeo real da pessoa falando e o Chrome abrindo de verdade? Minha reação instintiva é "produto que ainda não existe" — e é literalmente pré-lançamento, então essa desconfiança está certa.</p>
+        <p>O mais grave: "+1,2 mil usuários" com avatares genéricos, ao lado de "sem trial" e "ainda não lançado". Isso não bate. Se ainda não lançou, quem são esses 1.200 usuários? É a primeira coisa que qualquer visitante cético vai notar, e vai desconfiar de todo o resto — inclusive dos preços "de lançamento".</p>
+        <p>Vocês pedem R$97 ou R$1.000 por algo que dá acesso total ao meu terminal, WhatsApp, GitHub e navegador, sem uma linha sobre segurança de verdade, sem garantia, sem trial. Falta prova de que isso é real, funciona, e é seguro — nessa ordem, antes de qualquer preço.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>O Executor <span class="role">só quer o próximo passo</span></summary>
+      <div class="details-body">
+        <p>Faltam três coisas sem as quais nada mais importa, e o resto é decoração.</p>
+        <p><strong>1. Prova social real.</strong> Tire os avatares genéricos ou tire a barra inteira. Se há 1.200 usuários de verdade, 5 nomes, 5 prints, 5 clipes de 15 segundos gravados no celular entram na página essa semana.</p>
+        <p><strong>2. Vídeo do produto funcionando.</strong> A única prova visual hoje é uma esfera decorativa e um print estático. Grava a tela com OBS falando "Jarvis, abre o Chrome" e ele fazendo. 90 segundos, sem edição. Uma tarde de trabalho.</p>
+        <p><strong>3. Reversão de risco.</strong> Anuncia "7 dias, não gostou, devolvemos 100%" no plano mensal. Uma frase no checkout, uma linha na seção de preços. Não exige engenharia nova.</p>
+        <p>FAQ e comparação com concorrentes são secundários — resolvem objeção, não geram desejo. Sem prova, vídeo e garantia, você está otimizando a decoração de uma casa que ninguém quer entrar.</p>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>Destaques da revisão cruzada</h2>
+    <details>
+      <summary>Como os 5 conselheiros avaliaram uns aos outros (anônimo) <span class="role">5 revisões</span></summary>
+      <div class="details-body">
+        <div class="review-item"><strong>Revisor 1 —</strong> mais forte: Executor (só ele responde com prioridade e execução de custo zero). Ponto cego: Expansionista (monetiza sobre prova social de autenticidade duvidosa). Faltou: validar hipóteses com dados reais; discutir onboarding e permissões pós-clique.</div>
+        <div class="review-item"><strong>Revisor 2 —</strong> mais forte: Executor. Ponto cego: Expansionista (growth hacking sobre base podre). Faltou: CDC art. 49 (garantia de 7 dias é lei, não opção); LGPD (dado sensível sem política de privacidade real).</div>
+        <div class="review-item"><strong>Revisor 3 —</strong> mais forte: Executor (converte crítica em ação executável). Ponto cego: Expansionista (ignora que a página ainda não provou o básico). Faltou: segurança funcional — confirmação antes de ações destrutivas do produto.</div>
+        <div class="review-item"><strong>Revisor 4 —</strong> mais forte: Executor (hierarquia clara de prioridades). Ponto cego: Expansionista (trata "+1,2 mil" como ativo genuíno). Faltou: credibilidade do fundador; experiência de checkout/instalação/permissões do Windows.</div>
+        <div class="review-item"><strong>Revisor 5 —</strong> mais forte: Primeiros Princípios (ataca causa-raiz, não sintoma). Ponto cego: Expansionista (escala em cima de confiança não estabelecida). Faltou: medir com dados reais (funil, A/B); risco de ToS ao automatizar WhatsApp/Chrome.</div>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    Conselho gerado com a metodologia LLM Council (Andrej Karpathy), adaptada via subagentes internos.<br>
+    5 conselheiros independentes → revisão cruzada anônima → síntese do presidente.<br>
+    Transcrição completa: council-transcript-20260726-224612.md · Projeto: Jarvis-Landing-page
+  </footer>
+
+</div>

@@ -62,6 +62,10 @@ const config: Config = {
         "fade-up": "fade-up 0.6s cubic-bezier(0.16,1,0.3,1) forwards",
         "marquee-left": "marquee-left 46s linear infinite",
         "marquee-right": "marquee-right 52s linear infinite",
+        // Mesma trilha de marquee-left, so mais lenta: usada na esteira de
+        // recursos da secao de precos, que precisa dar tempo de ler cada
+        // rotulo em vez de so passar de relance.
+        "marquee-left-slow": "marquee-left 95s linear infinite",
       },
     },
   },

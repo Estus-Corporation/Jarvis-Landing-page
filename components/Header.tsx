@@ -4,12 +4,13 @@ import React, { useState } from "react";
 
 // Navegacao. Uma ancora por secao real da pagina, na mesma ordem em que elas
 // aparecem ao rolar: Recursos, Integracoes, Interface (o showcase da
-// dashboard) e Precos. As antigas "Como funciona" e "Demonstracao" sairam com
-// a secao que elas linkavam.
+// dashboard), Depoimentos e Precos. As antigas "Como funciona" e
+// "Demonstracao" sairam com a secao que elas linkavam.
 const navLinksData = [
   { label: "Recursos", href: "#recursos" },
   { label: "Integrações", href: "#integracoes" },
   { label: "Interface", href: "#interface" },
+  { label: "Depoimentos", href: "#depoimentos" },
   { label: "Preços", href: "#precos" },
 ];
 

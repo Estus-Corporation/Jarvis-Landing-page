@@ -131,7 +131,7 @@ function Cell({
 // leitura com o texto. Sao decorativas, entao alt vazio e aria-hidden no
 // wrapper, e nenhuma delas carrega informacao que so exista na imagem.
 //
-// As tres tem no maximo 800px de largura. Por isso entram como textura de
+// Sao pequenas (no maximo 800px de largura). Por isso entram como textura de
 // fundo, nunca como imagem focal em escala grande, onde a falta de resolucao
 // apareceria.
 function CellTexture({
@@ -166,7 +166,7 @@ function CellTexture({
 function SpokenExample({ text, big = false }: { text: string; big?: boolean }) {
   return (
     <p
-      className={`mt-6 border-l border-white/15 pl-4 italic leading-[1.5] text-white/70 ${
+      className={`border-l border-white/15 pl-4 italic leading-[1.5] text-white/70 ${
         big ? "text-base sm:text-lg" : "text-sm"
       }`}
     >
@@ -200,6 +200,30 @@ function PillarHead({ item, big = false }: { item: Pillar; big?: boolean }) {
         {item.body}
       </p>
     </>
+  );
+}
+
+// Corpo comum das 4 celulas-pilar (tudo, menos a de alcance). No desktop o
+// comando falado fica escondido ate o hover: o titulo e o corpo sobem um
+// pouco e a fala do Jarvis entra por baixo, como se a celula so "respondesse"
+// depois de ser acionada, do mesmo jeito que o produto real so fala depois de
+// ouvir o comando. Em touch nao existe hover (ver Secao 2 do guia de UX), por
+// isso o celular ve o comando direto, sempre visivel, sem depender de toque.
+function PillarContent({ item, big = false }: { item: Pillar; big?: boolean }) {
+  return (
+    <div className="relative flex h-full flex-col p-8 sm:p-10">
+      <div className="pointer-events-none transition-transform duration-300 lg:group-hover:-translate-y-3">
+        <PillarHead item={item} big={big} />
+      </div>
+
+      <div className="mt-6 lg:hidden">
+        <SpokenExample text={item.quote} big={big} />
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden translate-y-3 p-8 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:p-10 lg:block">
+        <SpokenExample text={item.quote} big={big} />
+      </div>
+    </div>
   );
 }
 
@@ -240,12 +264,20 @@ export default function Features() {
           </p>
         </motion.div>
 
-        {/* Bento assimetrico de 5 celulas. Row 1: 7+5. Row 2: a dominante
-            continua + 5. Row 3: 7+5. No mobile tudo vira coluna unica. */}
-        <div className="mt-16 grid grid-cols-1 gap-4 lg:grid-cols-12">
+        {/* Bento de verdadeiro grid-cols-3 com altura de linha fixa (o mesmo
+            mecanismo do bento grid de referencia), em vez do grid-cols-12 com
+            row-span de antes. A dominante ocupa a coluna esquerda inteira (2
+            colunas de largura, 2 linhas de altura); memoria e voz empilham na
+            coluna estreita ao lado; alcance e personalidade fecham embaixo no
+            mesmo ritmo largo+estreito da primeira linha, espelhado. 5 celulas
+            de conteudo, 9 posicoes no grid, nenhuma sobra. */}
+        <div className="mt-16 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:auto-rows-[18rem]">
           {/* Dominante: a capacidade mais dificil de acreditar ganha o maior
               espaco e a maior escala de tipo. */}
-          <Cell className="bg-ink-800 lg:col-span-7 lg:row-span-2" delay={0}>
+          <Cell
+            className="bg-ink-800 lg:col-start-1 lg:col-span-2 lg:row-start-1 lg:row-span-2"
+            delay={0}
+          >
             {/* Campo de blocos: le como uma tela cheia de janelas vista de
                 lado, que e exatamente o que esta celula afirma. */}
             <CellTexture
@@ -263,15 +295,13 @@ export default function Features() {
               aria-hidden
               className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/[0.07] blur-[90px]"
             />
-            <div className="relative flex h-full flex-col justify-between p-8 sm:p-11">
-              <div>
-                <PillarHead item={screen} big />
-              </div>
-              <SpokenExample text={screen.quote} big />
-            </div>
+            <PillarContent item={screen} big />
           </Cell>
 
-          <Cell className="bg-ink-900 lg:col-span-5" delay={0.08}>
+          <Cell
+            className="bg-ink-900 lg:col-start-3 lg:row-start-1"
+            delay={0.08}
+          >
             {/* Fitas em camadas: leem como coisas guardadas uma sobre a outra,
                 que e o que esta celula afirma. Cobrem a celula inteira porque a
                 imagem e continua, sem assunto central. */}
@@ -279,34 +309,42 @@ export default function Features() {
               src="/images/i6.avif"
               className="inset-0"
               opacity="opacity-[0.3]"
-              sizes="(max-width: 1024px) 100vw, 42vw"
+              sizes="(max-width: 1024px) 100vw, 33vw"
             />
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 bg-gradient-to-br from-ink-900 via-ink-900/88 to-ink-900/50"
             />
-            <div className="relative p-8 sm:p-10">
-              <PillarHead item={memory} />
-              <SpokenExample text={memory.quote} />
-            </div>
+            <PillarContent item={memory} />
           </Cell>
 
-          {/* Celula da voz: a esfera real do app, parada. Uma so gira na
-              pagina, no hero. Duas malhas animadas custam caro em rAF. */}
-          <Cell className="bg-ink-900 lg:col-span-5" delay={0.16}>
-            <div className="flex items-center gap-6 p-8 sm:p-10">
-              <div className="min-w-0 flex-1">
-                <PillarHead item={voice} />
-                <SpokenExample text={voice.quote} />
-              </div>
-              <div className="-mr-16 hidden shrink-0 opacity-70 sm:block">
-                <JarvisOrb state="speaking" sphereSize={130} paused />
-              </div>
+          {/* Celula da voz: a esfera real do app, parada, como textura de
+              fundo no canto (antes vivia ao lado do texto, em linha; a coluna
+              estreita do grid novo nao sobra espaco pra isso). Uma so gira na
+              pagina, no hero — duas malhas animadas custam caro em rAF, e esta
+              nem anima (paused). */}
+          <Cell
+            className="bg-ink-900 lg:col-start-3 lg:row-start-2"
+            delay={0.16}
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-10 -top-10 opacity-40 transition-opacity duration-300 group-hover:opacity-60"
+            >
+              <JarvisOrb state="speaking" sphereSize={150} paused />
             </div>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-bl from-ink-900/25 via-ink-900/75 to-ink-900"
+            />
+            <PillarContent item={voice} />
           </Cell>
 
           {/* Alcance: as outras oito, como amplitude e nao como cartao. */}
-          <Cell className="bg-ink-900/60 lg:col-span-7" delay={0.24}>
+          <Cell
+            className="bg-ink-900/60 lg:col-start-1 lg:col-span-2 lg:row-start-3"
+            delay={0.24}
+          >
             {/* Trilhas saindo de um nucleo: alcance se espalhando, que e o
                 argumento desta celula. */}
             <CellTexture
@@ -319,7 +357,7 @@ export default function Features() {
               aria-hidden
               className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-900 via-ink-900/85 to-ink-900/45"
             />
-            <div className="relative p-8 sm:p-10">
+            <div className="relative flex h-full flex-col justify-center p-8 sm:p-10">
               <h3 className="text-sm font-medium text-white/45">
                 E também comanda
               </h3>
@@ -344,11 +382,23 @@ export default function Features() {
             </div>
           </Cell>
 
-          <Cell className="bg-ink-800 lg:col-span-5" delay={0.32}>
-            <div className="p-8 sm:p-10">
-              <PillarHead item={personality} />
-              <SpokenExample text={personality.quote} />
-            </div>
+          <Cell
+            className="bg-ink-800 lg:col-start-3 lg:row-start-3"
+            delay={0.32}
+          >
+            {/* i4 estava sem uso no projeto: da materia a esta celula, que
+                antes era a unica sem nenhuma textura de fundo. */}
+            <CellTexture
+              src="/images/i4.avif"
+              className="inset-0"
+              opacity="opacity-[0.16]"
+              sizes="(max-width: 1024px) 100vw, 33vw"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-tl from-ink-800 via-ink-800/90 to-ink-800/55"
+            />
+            <PillarContent item={personality} />
           </Cell>
         </div>
       </div>

@@ -13,7 +13,7 @@ const GLYPHS = Array.from(new Set(SOURCE.replace(/\s+/g, "").split("")));
 
 const FONT_SIZE = 13;
 const COLUMN_WIDTH = FONT_SIZE * 1.15;
-const FRAME_MS = 55; // ~18fps. Chuva nao precisa de 60, e economiza bateria.
+const FRAME_MS = 95; // ~10fps. Mais lento que antes (55ms/~18fps) a pedido.
 
 export default function CodeRain() {
   const canvasRef = useRef<HTMLCanvasElement>(null);

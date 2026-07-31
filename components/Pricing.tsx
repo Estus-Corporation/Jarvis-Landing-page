@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
-  Tag,
+  Check,
   ShieldCheck,
   Microphone,
   AppWindow,
@@ -20,31 +19,46 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import PixelCard from "@/components/ui/pixel-card";
+import { FloatingPathsBackground } from "@/components/ui/floating-paths";
 
 // Dois planos, mesmo produto, periodicidade diferente. Por isso a lista de
 // recursos aparece UMA vez, embaixo, em vez de repetida dentro de cada cartao:
 // listar os mesmos oito itens duas vezes finge uma diferenca que nao existe e
 // faz a pessoa procurar o que muda entre as colunas.
 //
-// Numeros conferidos: 147 - 97 = 50 de desconto, que da 34% (50/147 = 0,3401).
-// 97 x 12 = 1164. 1164 - 1000 = 164 de economia no anual.
-// 1000 / 12 = 83,33 por mes.
+// Numeros conferidos: 139,90 - 79 = 60,90 de desconto no mensal, 43,5%
+// (60,90/139,90 = 0,4353). 987 - 650 = 337 de desconto no anual, 34,1%
+// (337/987 = 0,3415).
 //
-// A urgencia do mensal vem so do que e verdade: o preco sobe para 147 quando o
-// lancamento acabar. Sem contador regressivo (nao ha data definida) e sem
-// "restam X vagas". Escassez inventada derruba a confianca justamente em quem
-// le com atencao, que e o publico deste produto.
+// Os dois planos agora seguem a MESMA estrutura de nota: preco de
+// lancamento, com o preco normal (pos-lancamento) e o desconto ao lado. Antes
+// o anual comparava com o mensal cheio ("economize XXX"); virou comparacao
+// direta contra o proprio preco normal do anual, simetrico ao mensal, porque
+// agora existe um preco normal proprio pro anual (987) — nao precisa mais
+// pedir emprestado o preco do outro plano pra parecer vantajoso.
+//
+// A urgencia do mensal vem so do que e verdade: o preco sobe para 139,90
+// quando o lancamento acabar (e o anual para 987). Sem contador regressivo
+// (nao ha data definida) e sem "restam X vagas". Escassez inventada derruba a
+// confianca justamente em quem le com atencao, que e o publico deste produto.
+// `highlights` NAO repete a lista de recursos (essa e identica nos dois
+// planos, repetir dentro dos cartoes so fingiria uma diferenca que nao
+// existe). Sao 3 pontos sobre a UNICA coisa que de fato muda entre os
+// planos: a forma de cobranca.
 const plans = [
   {
     id: "mensal",
     name: "Mensal",
     icon: ArrowsClockwise,
-    price: "R$ 97",
-    period: "por mês",
-    anchor: "R$ 147",
-    discount: "-34%",
-    savingLine: "R$ 50 a menos por mês, enquanto durar o lançamento.",
+    subtitle: "Para começar sem compromisso",
+    price: "R$ 79",
+    period: "/mês",
+    billingNote: "Preço de lançamento, depois R$ 139,90 · -44%",
+    highlights: [
+      "Comece hoje, sem burocracia",
+      "Ideal pra testar antes de decidir",
+      "Sem multa se você cancelar",
+    ],
     note: "Cobrado todo mês. Cancele quando quiser.",
     highlighted: false,
   },
@@ -52,18 +66,24 @@ const plans = [
     id: "anual",
     name: "Anual",
     icon: Trophy,
-    price: "R$ 1.000",
-    period: "por ano",
-    equivalent: "R$ 83,33 por mês",
-    saving: "R$ 164 a menos que doze meses no plano mensal",
+    subtitle: "Para quem já decidiu usar todo dia",
+    price: "R$ 650",
+    period: "/ano",
+    billingNote: "Preço de lançamento, depois R$ 987 · -34%",
+    highlights: [
+      "Equivale a R$ 54,17 por mês",
+      "Pague uma vez, esqueça o resto do ano",
+      "Preço de lançamento travado por 12 meses",
+    ],
     note: "Cobrado uma vez, vale 12 meses.",
     highlighted: true,
   },
 ];
 
-// Cada recurso ganha um icone proprio, que diz do que se trata de relance.
-// Melhor que oito checks identicos: o icone diferencia e da ritmo visual a
-// grade sem precisar de mais texto.
+// So icone + rotulo: essa lista agora roda numa esteira (mesmo mecanismo de
+// Integrations.tsx), entao um rotulo curto por item basta pra ler de relance
+// enquanto passa. A descricao de uma frase que existia aqui saiu com a versao
+// em lista.
 const included: { icon: Icon; label: string }[] = [
   { icon: Microphone, label: "Ativação por voz e atalho global" },
   { icon: AppWindow, label: "Controle de navegador e programas" },
@@ -75,8 +95,67 @@ const included: { icon: Icon; label: string }[] = [
   { icon: Headset, label: "Suporte prioritário" },
 ];
 
+function IncludedChip({
+  item,
+  clone = false,
+}: {
+  item: { icon: Icon; label: string };
+  clone?: boolean;
+}) {
+  const Glyph = item.icon;
+  return (
+    <div
+      aria-hidden={clone || undefined}
+      className="flex h-12 shrink-0 items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] py-2 pl-3 pr-5 text-sm text-white/65"
+    >
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-white/70">
+        <Glyph size={14} weight="light" aria-hidden />
+      </span>
+      <span className="whitespace-nowrap">{item.label}</span>
+    </div>
+  );
+}
+
+// Esteira continua, mesma logica de Track em Integrations.tsx: duas copias
+// identicas lado a lado, anda -50%, o corte do loop fica invisivel. REPEAT
+// maior aqui porque cada chip e mais estreito (so icone + rotulo curto), pra
+// cada metade continuar mais larga que telas grandes.
+function IncludedTrack() {
+  const REPEAT = 4;
+  const half = Array.from({ length: REPEAT }, (_, r) =>
+    included.map((item) => ({ ...item, key: `${r}-${item.label}` }))
+  ).flat();
+
+  return (
+    <div
+      className="relative flex overflow-hidden"
+      style={{
+        maskImage:
+          "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
+        WebkitMaskImage:
+          "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
+      }}
+    >
+      <div className="group/track flex shrink-0 animate-marquee-left-slow hover:[animation-play-state:paused]">
+        {half.map((item) => (
+          <div key={item.key} className="mr-3 shrink-0">
+            <IncludedChip item={item} />
+          </div>
+        ))}
+        {/* Segunda metade, so visual: fora da arvore de acessibilidade pra nao
+            duplicar os mesmos 8 recursos no leitor de tela. */}
+        {half.map((item) => (
+          <div key={`dup-${item.key}`} className="mr-3 shrink-0" aria-hidden>
+            <IncludedChip item={item} clone />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Em fonte monoespacada o caractere de espaco ocupa uma largura inteira, que
-// no text-7xl vira um vao enorme entre "R$" e o numero. Separar os dois deixa
+// no text-5xl vira um vao grande entre "R$" e o numero. Separar os dois deixa
 // o respiro sob controle em em, proporcional ao tamanho da fonte.
 function Price({ value, className }: { value: string; className?: string }) {
   const [symbol, ...rest] = value.split(" ");
@@ -91,18 +170,25 @@ function Price({ value, className }: { value: string; className?: string }) {
 export default function Pricing() {
   const reduce = useReducedMotionSafe();
 
+  // Mesmo gate de Integrations.tsx: a esteira troca a ARVORE renderizada
+  // (chips duplicados pra loop vs. lista unica envolvida), entao so decide
+  // qual versao mostrar depois de montar no cliente — servidor e cliente
+  // comecam iguais (esteira), a versao estatica so entra depois.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const staticList = mounted && reduce;
+
   return (
     <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 py-28 sm:py-36">
-      {/* Curvas de nivel ao fundo da secao.
-          A versao anterior entrava com corte seco: a mascara comecava em #000
-          (opaco total) em 0%, entao a primeira linha da imagem aparecia inteira
-          de uma vez e desenhava uma borda reta no topo da secao.
-          Agora a mascara nasce em transparent e so atinge o pico la pelos 34%,
-          o que faz a textura emergir do fundo em vez de comecar. A area tambem
-          ficou mais alta para a rampa ser mais longa e portanto mais discreta. */}
+      {/* Fios animados no lugar da imagem de curvas de nivel: mesma funcao
+          (textura sutil no topo da secao, esmaecendo pro fundo solido), mas
+          sem depender de uma imagem pequena demais esticada a 100vw. A
+          mascara em gradiente e a mesma logica de antes: nasce transparente,
+          pico no meio, esmaece antes do fim, pra emergir do fundo em vez de
+          comecar com corte seco. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[760px] opacity-[0.85]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[760px] opacity-[0.5]"
         style={{
           maskImage:
             "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
@@ -110,31 +196,8 @@ export default function Pricing() {
             "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
         }}
       >
-        {/* Trocada pela mesma imagem (i6) usada no fundo do card "Ele lembra"
-            em Recursos, a pedido — reforca a mesma textura em vez de uma
-            terceira imagem so pra essa secao. object-top continua valendo:
-            e o topo da imagem que tem a textura mais interessante.
-            i6.avif e nativamente pequena (626x351): foi feita pra uma celula
-            de bento a ~42vw, nunca pra cobrir a secao inteira a 100vw. Nessa
-            largura o navegador amplia mais de 2x, e a ampliacao aparece como
-            borrado/pixelado. blur (com scale para o blur nao revelar a borda
-            crua do recorte) transforma esse borrado indesejado em textura
-            suave proposital — a mesma linguagem dos halos e gradientes que ja
-            existem na secao, entao nao destoa. */}
-        <Image
-          src="/images/i6.avif"
-          alt=""
-          fill
-          sizes="100vw"
-          className="scale-110 object-cover object-top blur-[6px]"
-        />
+        <FloatingPathsBackground position={-1} className="h-full" />
       </div>
-      {/* Scrims laterais na propria cor da secao: matam as bordas verticais da
-          imagem, que apareciam como dois cortes retos nas laterais. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[760px] bg-[linear-gradient(to_right,#0A0A0B_0%,rgba(10,10,11,0)_20%,rgba(10,10,11,0)_80%,#0A0A0B_100%)]"
-      />
       <div
         aria-hidden
         className="pointer-events-none absolute right-0 top-1/4 h-[520px] w-[620px] translate-x-1/3 rounded-full bg-white/[0.045] blur-[130px]"
@@ -146,20 +209,23 @@ export default function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-2xl"
+          className="mx-auto max-w-2xl text-center"
         >
           <h2 className="text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
             Escolha como quer usar.
           </h2>
-          <p className="mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55">
-            O Jarvis completo nos dois planos. A única diferença é de quanto em
-            quanto tempo você paga.
+          <p className="mx-auto mt-5 max-w-[56ch] text-lg font-light leading-relaxed text-white/55">
+            O Jarvis completo nos dois planos, com os mesmos 8 recursos, sem
+            diferença entre Mensal e Anual. A única coisa que muda é de
+            quanto em quanto tempo você paga.
           </p>
         </motion.div>
 
-        {/* A escolha. Grid assimetrico: o anual pesa mais na composicao porque
-            e o de melhor custo, nao por decoracao. */}
-        <div className="mt-14 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.15fr]">
+        {/* Estilo de referencia: dois cartoes iguais, compactos, sem efeito
+            de fundo animado dentro deles. O selo do plano em destaque virou
+            uma pilula sobreposta na borda de cima, centralizada, em vez do
+            chip no canto de antes. */}
+        <div className="mx-auto mt-14 grid max-w-[970px] grid-cols-1 gap-4 sm:grid-cols-2">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.id}
@@ -171,233 +237,139 @@ export default function Pricing() {
                 delay: reduce ? 0 : i * 0.09,
                 ease: [0.16, 1, 0.3, 1],
               }}
+              // aspect-ratio saiu: ele calcula a altura a partir da LARGURA
+              // do proprio cartao, e cada cartao aqui e bem largo (~metade
+              // do container), entao qualquer proporcao retrato virava uma
+              // altura enorme (800-900px+) — por isso 9/16 e 3/4 pareciam
+              // igualmente esticados, o numero nao era o problema.
+              // min-h fixo em vez disso: um pouco mais alto que o cartao 100%
+              // compacto de antes, sem depender da largura pra nada.
+              // justify-between espalha o conteudo do topo (identidade +
+              // preco) ate o rodape (CTA + nota) dentro dessa altura.
+              // Sem overflow-hidden: cortava a pilula "Mais popular", que
+              // fica de proposito meio pra fora da borda de cima do cartao.
               className={cn(
-                "group relative flex flex-col overflow-hidden rounded-card border transition-colors duration-300",
-                // Elevacao correta agora que a secao e ink-950: o cartao comum
-                // fica um degrau ACIMA do fundo e o destacado dois. Antes o
-                // cartao comum era ink-950 sobre secao ink-900, ou seja, mais
-                // escuro que a propria superficie, o que o fazia parecer
-                // afundado em vez de elevado.
-                // Hover proprio faltava aqui: todo outro cartao do site
-                // (Features, Integracoes) acende a borda ao passar o mouse;
-                // os planos eram os unicos sem esse retorno visual.
+                "relative flex min-h-[530px] flex-col justify-between rounded-2xl border p-6 transition-colors duration-300 sm:p-7",
                 plan.highlighted
-                  ? "border-white/30 bg-ink-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(255,255,255,0.05),0_28px_70px_-28px_rgba(255,255,255,0.16)] hover:border-white/45"
-                  : "border-white/[0.09] bg-ink-900 hover:border-white/20"
+                  ? "border-white/25 bg-ink-800 hover:border-white/40"
+                  : "border-white/10 bg-ink-900 hover:border-white/20"
               )}
             >
-              {/* Efeito de pixels FIXO (sempre ligado, nao no hover) no fundo
-                  do plano em destaque. A mascara radial desvanece os pixels
-                  antes das bordas, entao eles se fundem no proprio cartao em vez
-                  de cortarem seco na borda e parecerem uma camada a parte. Fica
-                  atras do conteudo (z-0); o texto vive na camada z-10 acima. */}
               {plan.highlighted && (
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 z-0"
-                  style={{
-                    maskImage:
-                      "radial-gradient(115% 85% at 50% 45%, #000 32%, transparent 82%)",
-                    WebkitMaskImage:
-                      "radial-gradient(115% 85% at 50% 45%, #000 32%, transparent 82%)",
-                  }}
-                >
-                  <PixelCard
-                    active
-                    gap={6}
-                    speed={40}
-                    // Paleta ponderada em branco/cinza/preto: a lista repetida
-                    // enviesa o sorteio. Poucos brancos puros viram glints que
-                    // cintilam entre muitos cinzas e quase-pretos, no lugar de um
-                    // ruido de cor uniforme. Mais bonito e mais sutil.
-                    colors="#ffffff,#e4e4e7,#a1a1aa,#a1a1aa,#52525b,#52525b,#3f3f46"
-                    className="h-full w-full opacity-[0.5]"
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#FAFAFA] px-3.5 py-1 text-xs font-semibold text-ink-950">
+                  Mais popular
+                </span>
+              )}
+
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-semibold text-[#FAFAFA]">
+                  <plan.icon
+                    size={17}
+                    weight="light"
+                    className="shrink-0 text-white/50"
+                    aria-hidden
                   />
+                  {plan.name}
+                </h3>
+                <p className="mt-1 text-sm text-white/45">{plan.subtitle}</p>
+
+                <div className="mt-5 flex items-baseline gap-1.5">
+                  <Price
+                    value={plan.price}
+                    className="font-mono text-4xl font-semibold tracking-tight text-[#FAFAFA] sm:text-5xl"
+                  />
+                  <span className="text-sm text-white/45">{plan.period}</span>
                 </div>
-              )}
+                <p className="mt-1.5 text-xs leading-relaxed text-white/40">
+                  {plan.billingNote}
+                </p>
 
-              {/* Charme do Mensal: uma luz suave sangrando do canto superior,
-                  recortada pelo overflow do cartao. Sutil, para nao competir
-                  com o destaque do Anual. */}
-              {!plan.highlighted && (
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -right-16 -top-20 z-0 h-48 w-48 rounded-full bg-white/[0.05] blur-[55px]"
-                />
-              )}
-
-              <div className="relative z-10 flex flex-1 flex-col p-8 sm:p-10">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="flex items-center gap-2.5 text-lg font-medium text-[#FAFAFA]">
-                    <plan.icon
-                      size={19}
-                      weight="light"
-                      className="shrink-0 text-white/50"
-                      aria-hidden
-                    />
-                    {plan.name}
-                  </h3>
-                {plan.highlighted ? (
-                  <span className="rounded-chip bg-[#FAFAFA] px-2.5 py-1 text-xs font-semibold text-ink-950">
-                    Melhor custo
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-chip border border-white/25 bg-white/[0.06] px-2.5 py-1 text-xs font-semibold text-[#FAFAFA]">
-                    <Tag size={13} weight="fill" aria-hidden />
-                    Preço de lançamento
-                  </span>
-                )}
+                {/* Preenche o vao que sobrava entre a nota de preco e o
+                    botao. Antes essa lista repetia 4 dos 8 recursos do
+                    produto, que sao IDENTICOS nos dois planos, entao os dois
+                    cartoes acabavam mostrando quase a mesma coisa — a
+                    diferenca so parecia existir, sem existir de verdade.
+                    Trocado por 3 pontos sobre a forma de cobranca de cada
+                    plano, que e a UNICA diferenca real entre eles. */}
+                <ul className="mt-6 flex flex-col gap-2.5">
+                  {plan.highlights.map((label) => (
+                    <li
+                      key={label}
+                      className="flex items-center gap-2.5 text-sm text-white/65"
+                    >
+                      <Check
+                        size={14}
+                        weight="bold"
+                        className="shrink-0 text-white/40"
+                        aria-hidden
+                      />
+                      {label}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              {/* Ancoragem do mensal. O valor cheio vem ANTES do promocional e
-                  na mesma linha de leitura: a pessoa ve de quanto para quanto
-                  antes de ver o numero grande. O risco e desenhado como barra
-                  propria para poder ser animado; o <s> mantem a semantica de
-                  "preco que nao vale mais" para leitor de tela. */}
-              {plan.anchor && (
-                <p className="mt-8 flex items-center gap-2 text-base">
-                  <span className="text-white/40">De</span>
-                  <s className="relative inline-block font-mono text-white/40 [text-decoration:none]">
-                    <Price value={plan.anchor} />
-                    <motion.span
-                      aria-hidden
-                      initial={reduce ? false : { scaleX: 0 }}
-                      whileInView={{ scaleX: 1 }}
-                      viewport={{ once: true, amount: 0.8 }}
-                      transition={{
-                        duration: 0.5,
-                        delay: reduce ? 0 : 0.35,
-                        ease: [0.16, 1, 0.3, 1],
-                      }}
-                      className="absolute left-0 top-1/2 h-[2px] w-full origin-left rounded-full bg-white/55"
-                    />
-                  </s>
-                  <span className="text-white/40">por</span>
+              <div>
+                <a
+                  href="#top"
+                  className={cn(
+                    "block w-full rounded-full px-6 py-3.5 text-center text-sm font-semibold transition-all duration-200 active:scale-[0.98]",
+                    plan.highlighted
+                      ? "bg-[#FAFAFA] text-ink-950 hover:bg-white"
+                      : "border border-white/15 text-white/85 hover:border-white/40 hover:text-white"
+                  )}
+                >
+                  Começar agora
+                </a>
+
+                <p className="mt-3 text-center text-xs text-white/40">
+                  {plan.note}
                 </p>
-              )}
-
-              <div
-                className={cn(
-                  "flex flex-wrap items-baseline gap-x-3 gap-y-2",
-                  plan.anchor ? "mt-2" : "mt-8"
-                )}
-              >
-                <Price
-                  value={plan.price}
-                  className="font-mono text-6xl font-medium tracking-tight text-[#FAFAFA] sm:text-7xl"
-                />
-                <span className="text-sm text-white/45">{plan.period}</span>
-
-                {/* Chip de desconto: o elemento mais alto contraste do cartao.
-                    Num sistema monocromatico, branco solido e o unico "grito"
-                    disponivel, entao ele fica reservado para o numero que
-                    importa. */}
-                {plan.discount && (
-                  <motion.span
-                    initial={reduce ? false : { opacity: 0, scale: 0.85 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true, amount: 0.8 }}
-                    transition={{
-                      duration: 0.45,
-                      delay: reduce ? 0 : 0.7,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                    className="rounded-chip bg-[#FAFAFA] px-2.5 py-1 font-mono text-sm font-bold text-ink-950"
-                  >
-                    {plan.discount}
-                  </motion.span>
-                )}
-              </div>
-
-              {plan.savingLine && (
-                <p className="mt-4 border-l-2 border-white/25 pl-3 text-sm leading-relaxed text-white/70">
-                  {plan.savingLine}
-                </p>
-              )}
-
-              {plan.equivalent && (
-                <p className="mt-3 text-sm text-white/60">
-                  Equivale a{" "}
-                  <span className="font-medium text-[#FAFAFA]">
-                    {plan.equivalent}
-                  </span>
-                  . {plan.saving}.
-                </p>
-              )}
-
-              <a
-                href="#top"
-                className={cn(
-                  "mt-9 block w-full rounded-full px-6 py-4 text-center text-sm font-semibold transition-all duration-200 active:scale-[0.98]",
-                  plan.highlighted
-                    ? "bg-[#FAFAFA] text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-14px_rgba(255,255,255,0.4)] hover:bg-white"
-                    : "border border-white/15 text-white/85 hover:border-white/40 hover:text-white"
-                )}
-              >
-                Começar agora
-              </a>
-
-              {/* Reversao de risco, no exato ponto de decisao: logo abaixo do
-                  botao, nao rodape apagado. Pedir R$97 a R$1.000 de um produto
-                  que ninguem viu funcionar sem essa linha e pedir ao
-                  comprador para assumir sozinho todo o risco. */}
-              <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-white/60">
-                <ShieldCheck size={14} weight="light" className="shrink-0" aria-hidden />
-                Garantia de 7 dias: não gostou, devolvemos 100%.
-              </p>
-
-              <p className="mt-2 text-center text-xs text-white/40">
-                {plan.note}
-              </p>
               </div>
             </motion.div>
           ))}
         </div>
 
+        {/* Garantia, fora dos cartoes: vale para os dois planos igualmente,
+            entao repeti-la dentro de cada um so inflava os cartoes com a
+            mesma frase duas vezes. Uma linha so, entre a escolha e a lista de
+            recursos. */}
+        <motion.p
+          initial={reduce ? false : { opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.6 }}
+          transition={{ duration: 0.5, delay: reduce ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-6 flex items-center justify-center gap-2 text-center text-sm text-white/55"
+        >
+          <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
+          Garantia de 7 dias: não gostou, devolvemos 100%.
+        </motion.p>
+
         {/* Recursos listados uma vez so, porque valem para os dois planos.
             Sem cartao proprio: um bloco do mesmo peso visual dos planos
             (borda, fundo, padding grande) competia com a decisao real, que e
-            escolher entre Mensal e Anual. Uma linha fina no topo basta para
-            separar do grid de planos; o resto e so lista, sem chrome por
-            item. */}
+            escolher entre Mensal e Anual. Uma linha fina no topo basta pra
+            separar do grid de planos. Virou esteira (icone + rotulo, sem a
+            descricao que tinha antes) em vez de lista parada: mesmo
+            mecanismo de Integrations.tsx, com fallback em grade estatica
+            quando o visitante pede menos movimento. */}
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-14 border-t border-white/[0.08] pt-8 text-center"
+          className="mt-10 border-t border-white/[0.08] pt-8"
         >
-          <p className="text-sm font-medium text-white/45">
-            Incluído nos dois planos{" "}
-            <span className="font-mono text-white/25">
-              · {included.length} recursos
-            </span>
-          </p>
-
-          <ul className="mx-auto mt-5 grid max-w-2xl gap-x-8 gap-y-3.5 sm:grid-cols-2">
-            {included.map(({ icon: Glyph, label }) => (
-              <li
-                key={label}
-                className="flex items-center justify-center gap-3 text-sm text-white/60"
-              >
-                <Glyph
-                  size={16}
-                  weight="light"
-                  className="shrink-0 text-white/35"
-                  aria-hidden
-                />
-                {label}
-              </li>
-            ))}
-          </ul>
+          {staticList ? (
+            <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2.5">
+              {included.map((item) => (
+                <IncludedChip key={item.label} item={item} />
+              ))}
+            </div>
+          ) : (
+            <IncludedTrack />
+          )}
         </motion.div>
-
-        {/* Dizer o aumento na cara constroi mais confianca do que escondê-lo. */}
-        <p className="mt-10 max-w-[60ch] text-sm leading-relaxed text-white/40">
-          O preço de lançamento vale enquanto durar o lançamento. Depois disso, o
-          plano mensal passa a custar R$ 147. Preços em reais, impostos
-          incluídos.
-        </p>
       </div>
     </section>
   );

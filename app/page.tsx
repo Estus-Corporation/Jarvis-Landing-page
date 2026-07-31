@@ -3,8 +3,8 @@ import Hero from "@/components/Hero";
 import Integrations from "@/components/Integrations";
 import Features from "@/components/Features";
 import Showcase from "@/components/Showcase";
+import Testimonials from "@/components/Testimonials";
 import Pricing from "@/components/Pricing";
-import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
 import Grain from "@/components/ui/grain";
 import { SITE, SITE_URL } from "@/lib/site";
@@ -31,12 +31,12 @@ const jsonLd = {
     {
       "@type": "Offer",
       name: "Mensal",
-      price: "97",
+      price: "79",
       priceCurrency: "BRL",
       availability: "https://schema.org/InStock",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "97",
+        price: "79",
         priceCurrency: "BRL",
         billingDuration: 1,
         billingIncrement: 1,
@@ -46,12 +46,12 @@ const jsonLd = {
     {
       "@type": "Offer",
       name: "Anual",
-      price: "1000",
+      price: "650",
       priceCurrency: "BRL",
       availability: "https://schema.org/InStock",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "1000",
+        price: "650",
         priceCurrency: "BRL",
         billingDuration: 12,
         billingIncrement: 12,
@@ -75,8 +75,8 @@ export default function Home() {
         <Features />
         <Integrations />
         <Showcase />
+        <Testimonials />
         <Pricing />
-        <CallToAction />
         <Footer />
       </main>
     </>

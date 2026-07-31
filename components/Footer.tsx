@@ -18,6 +18,7 @@ const footerLinks = [
       { label: "Recursos", href: "#recursos" },
       { label: "Integrações", href: "#integracoes" },
       { label: "Interface", href: "#interface" },
+      { label: "Depoimentos", href: "#depoimentos" },
       { label: "Preços", href: "#precos" },
     ],
   },
@@ -51,8 +52,11 @@ export default function Footer() {
 
   // Era o unico bloco da pagina sem entrada por scroll: todo o resto ja
   // aparece com fade+subida ao entrar na tela, e o rodape so surgia estatico.
+  // ink-900, nao ink-950: a secao anterior (Precos) ja e ink-950. Antes havia
+  // o fechamento (CTA) em ink-900 entre as duas, dando a costura visual; sem
+  // ele, o rodape precisa ser quem quebra a cor.
   return (
-    <footer className="border-t border-white/[0.08] bg-ink-950 px-6 py-16 sm:py-20">
+    <footer className="border-t border-white/[0.08] bg-ink-900 px-6 py-16 sm:py-20">
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}

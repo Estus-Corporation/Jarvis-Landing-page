@@ -192,9 +192,12 @@ export default function Hero() {
             transition={{ duration: 0.7, delay: 0.52, ease: [0.16, 1, 0.3, 1] }}
             className="mt-10 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center"
           >
+            {/* Raio menor e largura maior que o padrao pill do site de
+                proposito: excecao pedida so para este botao (o resto da
+                pagina continua com botoes = full, per o token global). */}
             <a
               href="#precos"
-              className="rounded-full bg-[#FAFAFA] px-9 py-4 text-center text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98] sm:w-fit"
+              className="rounded-xl bg-[#FAFAFA] px-9 py-4 text-center text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98] sm:w-fit sm:min-w-[280px]"
             >
               Começar agora
             </a>

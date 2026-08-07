@@ -65,3 +65,227 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background-color: #33333c;
 }
+
+/* ---------------------------------------------------------------------
+   Linguagem visual "LED": usada nas secoes tecnicas (Recursos, Integracoes,
+   Interface, Proximas atualizacoes) pra dar o charme de luz pedido sem sair
+   do sistema monocromatico — nada de cor, so branco em opacidades + brilho.
+   ------------------------------------------------------------------- */
+
+/* Anel de luz animado: um conic-gradient girando por tras do cartao, mascarado
+   pra so a BORDA aparecer (mask-composite: exclude corta o miolo). @property
+   registra --angle como angulo de verdade, entao o navegador consegue
+   interpolar a rotacao em vez de saltar — sem isso a animacao nao roda. Onde
+   o navegador nao suporta @property, o angulo fica fixo em 0deg e a borda
+   aparece estatica: degrada bem, nunca quebra o layout. */
+@property --glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.glow-ring {
+  position: relative;
+  isolation: isolate;
+}
+
+.glow-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Positivo, nao negativo: o cartao tem camadas de textura/gradiente
+     opacas por cima (overlay de contraste, scrim), pintadas DEPOIS deste
+     pseudo-elemento na ordem do DOM. Com z-index negativo elas cobririam o
+     anel por inteiro. Como o miolo do anel e mascarado (fica transparente),
+     pintar por cima do texto e seguro — so a faixa fina da borda tem cor. */
+  z-index: 5;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--glow-angle),
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 6%,
+    transparent 16%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: glow-spin 3.2s linear infinite;
+  pointer-events: none;
+}
+
+.glow-ring:is(:hover, :focus-within)::before,
+.glow-ring--active::before {
+  opacity: 1;
+}
+
+@keyframes glow-spin {
+  to {
+    --glow-angle: 360deg;
+  }
+}
+
+/* Ponto de status tipo LED: usado nos rotulos "eyebrow" das secoes tecnicas
+   como um indicador vivo (ex.: "● INTEGRACOES"), e nos chips "conectado". O
+   miolo solido, o halo e o ping (anel que expande e some) sao 3 camadas —
+   igual a um LED real de placa, que tem o ponto aceso e o brilho ao redor. */
+.led-dot {
+  position: relative;
+  display: inline-flex;
+  height: 6px;
+  width: 6px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.55);
+}
+
+.led-dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  animation: led-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes led-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  75%,
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Feixe de luz correndo: usado como sweep decorativo em cima de badges e
+   divisores, reforcando o ar "placa de circuito" sem precisar de cor. */
+@keyframes beam-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.beam-sweep {
+  animation: beam-sweep 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Orbita: aneis girando no hub de integracoes. O anel gira; cada logo dentro
+   dele recebe orbit-spin-rev pra CONTRA-girar e ficar sempre em pe (o texto/
+   logo nao roda de cabeca pra baixo). Mesma duracao nos dois, sentidos
+   opostos = revolucao com conteudo estatico. */
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.orbit-spin {
+  animation: orbit-spin 48s linear infinite;
+}
+
+.orbit-spin-rev {
+  animation: orbit-spin 48s linear infinite reverse;
+}
+
+/* Segundo anel um pouco mais rapido e em sentido trocado, pra dar
+   profundidade (nao parecer um disco rigido so). */
+.orbit-spin-2 {
+  animation: orbit-spin 34s linear infinite reverse;
+}
+
+.orbit-spin-2-rev {
+  animation: orbit-spin 34s linear infinite;
+}
+
+/* Linha de varredura descendo por uma "tela": usada na demonstracao de
+   "ele ve a sua tela". Le como um scanner passando pelo monitor. */
+@keyframes scan-y {
+  0% {
+    transform: translateY(-120%);
+  }
+  100% {
+    transform: translateY(320%);
+  }
+}
+
+.scan-y {
+  animation: scan-y 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Barra de forma de onda: usada na demonstracao de voz clonada. Cada barra
+   recebe um animation-delay proprio (inline, por indice) pra formar a onda
+   correndo em vez de todas pulsarem juntas. */
+@keyframes wave-bar {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.wave-bar {
+  transform-origin: center;
+  animation: wave-bar 1.1s ease-in-out infinite;
+}
+
+/* Cursor piscando do terminal simulado. */
+@keyframes caret-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.caret-blink {
+  animation: caret-blink 1.1s steps(1) infinite;
+}
+
+/* Ping grande do nucleo (centro do hub de integracoes): anel que expande e
+   some, como um radar/sonar saindo do Jarvis em direcao aos apps. */
+@keyframes core-ping {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.core-ping {
+  animation: core-ping 3.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Faixa de recursos acima do rodape (secao de Precos). Definida aqui, em CSS
+   puro, em vez de via tailwind.config: adicionar animacao nova no config nao
+   recarrega de forma confiavel no dev server (a regra as vezes nao e
+   regerada e a faixa parece parada). 110s = mais lenta que a esteira comum,
+   mas ainda claramente em movimento. */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  animation: ticker-scroll 110s linear infinite;
+}

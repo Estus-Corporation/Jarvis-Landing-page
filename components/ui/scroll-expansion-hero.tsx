@@ -111,13 +111,13 @@ export default function ScrollExpandMedia({
         >
           <motion.span
             style={{ x: leftX }}
-            className="block text-balance text-4xl font-semibold tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:text-7xl"
+            className="block text-balance font-display text-4xl font-semibold tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:text-7xl"
           >
             {titleTop}
           </motion.span>
           <motion.span
             style={{ x: rightX }}
-            className="block text-balance text-4xl font-semibold tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:text-7xl"
+            className="block text-balance font-display text-4xl font-semibold tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:text-7xl"
           >
             {titleBottom}
           </motion.span>
@@ -148,6 +148,25 @@ export default function ScrollExpandMedia({
             style={{ opacity: overlay }}
             className="pointer-events-none absolute inset-0 bg-black"
           />
+
+          {/* Cantos de mira, estilo HUD: acendem junto com o halo conforme a
+              midia cresce, reforcando a leitura de "tela ativa/rastreada" em
+              vez de so uma foto estatica. */}
+          {(["left-3 top-3", "right-3 top-3", "left-3 bottom-3", "right-3 bottom-3"] as const).map(
+            (pos) => {
+              const [x, y] = pos.split(" ");
+              return (
+                <motion.span
+                  key={pos}
+                  aria-hidden
+                  style={{ opacity: glow }}
+                  className={`pointer-events-none absolute z-20 h-5 w-5 ${x} ${y} ${
+                    x.startsWith("left") ? "border-l" : "border-r"
+                  } ${y.startsWith("top") ? "border-t" : "border-b"} border-white/50`}
+                />
+              );
+            }
+          )}
         </motion.div>
       </div>
     </div>

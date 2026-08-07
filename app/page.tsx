@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import Integrations from "@/components/Integrations";
 import Features from "@/components/Features";
 import Showcase from "@/components/Showcase";
+import Roadmap from "@/components/Roadmap";
 import Testimonials from "@/components/Testimonials";
 import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
@@ -75,6 +76,7 @@ export default function Home() {
         <Features />
         <Integrations />
         <Showcase />
+        <Roadmap />
         <Testimonials />
         <Pricing />
         <Footer />

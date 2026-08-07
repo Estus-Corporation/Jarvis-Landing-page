@@ -3,155 +3,140 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import SectionEyebrow from "@/components/ui/section-eyebrow";
 
-// Estilo novo desta secao.
+// SECAO RECONSTRUIDA DO ZERO — antes eram duas esteiras de chips correndo.
 //
-// Antes: duas grades de cartoes iguais, um por app, com o rotulo impresso
-// embaixo de cada logo. Lia como catalogo estatico e repetia o mesmo layout de
-// grade que a pagina ja usa em outros lugares.
+// Ideia nova: um HUB ORBITAL. No centro, o nucleo do Jarvis (a marca de 4
+// pontos, pulsando como um radar). Em volta, dois aneis giram devagar em
+// sentidos opostos, com os logos dos apps orbitando o nucleo. Cada logo se
+// liga ao centro por um "raio" — a leitura e literal: tudo gira em torno do
+// Jarvis, tudo se conecta a ele. Um app fica ativo por vez (auto-play), seu
+// raio acende e a legenda embaixo conta o que ele faz.
 //
-// Agora: os logos correm em duas esteiras, em sentidos opostos, e o rotulo saiu
-// de dentro de cada cartao. Ele passou a viver numa legenda unica embaixo, que
-// troca conforme o app apontado. Ganhos: a secao ganha movimento continuo (o
-// agente alcancando coisa o tempo todo), o bloco fica muito mais leve de ler, e
-// a informacao de "o que ele faz com esse app" continua toda na pagina.
-//
-// A esteira PARA no hover, entao o alvo nunca foge do cursor.
+// Em telas pequenas a orbita nao cabe: abaixo de lg cai numa grade simples de
+// chips, com a mesma legenda viva. (Mobile ganha tratamento proprio depois.)
+
 type Integration = { name: string; label: string; src: string };
 
-const rowOne: Integration[] = [
-  { name: "Spotify", label: "Toca no aparelho que você pedir", src: "/brands/spotify.svg" },
-  { name: "YouTube", label: "Pausa e comanda o vídeo no Chrome", src: "/brands/youtube.svg" },
-  { name: "Chrome", label: "Navega, abre abas e busca por você", src: "/brands/google-chrome.svg" },
-  { name: "Google", label: "Pesquisa na web em tempo real", src: "/brands/google.svg" },
-  { name: "GitHub", label: "Clona repositórios e roda Git", src: "/brands/github.svg" },
+// Anel interno (mais perto do nucleo) e externo. Divididos pra dar duas
+// velocidades e sentidos, criando profundidade.
+const innerRing: Integration[] = [
+  { name: "Chrome", label: "navega, abre abas e busca por você", src: "/brands/google-chrome.svg" },
+  { name: "Spotify", label: "toca no aparelho que você pedir", src: "/brands/spotify.svg" },
+  { name: "WhatsApp", label: "envia mensagens ditadas por você", src: "/brands/whatsapp.svg" },
+  { name: "PowerShell", label: "executa comandos de terminal", src: "/brands/powershell.svg" },
 ];
 
-const rowTwo: Integration[] = [
-  { name: "WhatsApp", label: "Envia mensagens ditadas por você", src: "/brands/whatsapp.svg" },
-  { name: "Steam", label: "Detecta o jogo em execução", src: "/brands/steam.svg" },
-  { name: "PowerShell", label: "Executa comandos de terminal", src: "/brands/powershell.svg" },
-  { name: "Windows", label: "Abre e fecha programas", src: "/brands/windows.svg" },
+const outerRing: Integration[] = [
+  { name: "GitHub", label: "clona repositórios e roda Git", src: "/brands/github.svg" },
+  { name: "YouTube", label: "pausa e comanda o vídeo no Chrome", src: "/brands/youtube.svg" },
+  { name: "Windows", label: "abre e fecha programas", src: "/brands/windows.svg" },
+  { name: "Steam", label: "detecta o jogo em execução", src: "/brands/steam.svg" },
+  { name: "Google", label: "pesquisa na web em tempo real", src: "/brands/google.svg" },
 ];
+
+const ALL = [...innerRing, ...outerRing];
 
 const brains: Integration[] = [
   { name: "OpenAI", label: "Interpreta o que você pede", src: "/brands/openai.svg" },
   { name: "ElevenLabs", label: "Devolve a resposta na sua voz", src: "/brands/elevenlabs.svg" },
 ];
 
-const ALL = [...rowOne, ...rowTwo];
+const AUTOPLAY_MS = 2600;
 
-function Chip({
-  item,
-  active,
-  onFocusItem,
-  clone = false,
-}: {
-  item: Integration;
-  active: boolean;
-  onFocusItem: (item: Integration) => void;
-  clone?: boolean;
-}) {
+// Marca de 4 pontos do Jarvis (mesma do header/footer), ampliada como nucleo.
+function CoreMark() {
   return (
-    <button
-      type="button"
-      onMouseEnter={() => onFocusItem(item)}
-      onFocus={() => onFocusItem(item)}
-      // As copias da segunda metade saem da ordem de tabulacao. Sem isso o
-      // teclado pararia num botao dentro de uma area aria-hidden, que e foco
-      // preso em conteudo que o leitor de tela nao anuncia.
-      tabIndex={clone ? -1 : undefined}
-      aria-hidden={clone || undefined}
-      // O botao existe para o teclado tambem: quem navega por Tab percorre os
-      // apps e a legenda acompanha, sem depender de mouse.
-      aria-label={`${item.name}: ${item.label}`}
-      className={`group flex h-[74px] w-[184px] shrink-0 cursor-pointer items-center justify-center gap-3 rounded-chip border px-5 transition-colors duration-300 ${
-        active
-          ? "border-white/30 bg-ink-700"
-          : "border-white/[0.08] bg-ink-800/60 hover:border-white/25 hover:bg-ink-700"
-      }`}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={item.src}
-        alt=""
-        width={28}
-        height={28}
-        aria-hidden
-        className={`h-7 w-7 shrink-0 brightness-0 invert transition-opacity duration-300 ${
-          active ? "opacity-100" : "opacity-60 group-hover:opacity-100"
-        }`}
-      />
-      <span
-        className={`truncate text-sm transition-colors duration-300 ${
-          active ? "text-[#FAFAFA]" : "text-white/60 group-hover:text-[#FAFAFA]"
-        }`}
-      >
-        {item.name}
-      </span>
-    </button>
+    <div className="relative flex h-11 w-11 items-center justify-center" aria-hidden>
+      <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
+      <span className="absolute left-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
+      <span className="absolute right-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
+      <span className="absolute bottom-0 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
+    </div>
   );
 }
 
-function Track({
-  items,
-  direction,
-  activeName,
-  onFocusItem,
+// Um logo posicionado na orbita. Tres camadas, cada uma com UMA
+// responsabilidade de transform, pra nenhuma pisar na outra:
+//  - wrapper (0x0, ancorado no centro): rotate(angle) translateX(R) posiciona
+//    o node no anel. Herda a rotacao continua do anel → o node revoluciona.
+//  - counter: translate(-50%,-50%) centra o node no ponto + rotate(-angle)
+//    cancela a inclinacao estatica do wrapper.
+//  - spinner (spinClass): contra-gira a rotacao CONTINUA do anel, entao o
+//    logo fica sempre em pe enquanto tudo gira. Duracao igual a do anel.
+// O raio (spoke) mora no wrapper (nao contra-gira): aponta sempre pro centro.
+function OrbitNode({
+  item,
+  angle,
+  radius,
+  spinClass,
+  active,
+  onActivate,
 }: {
-  items: Integration[];
-  direction: "left" | "right";
-  activeName: string;
-  onFocusItem: (item: Integration) => void;
+  item: Integration;
+  angle: number;
+  radius: number;
+  spinClass: string;
+  active: boolean;
+  onActivate: (i: Integration) => void;
 }) {
-  // A trilha e composta por DUAS METADES IDENTICAS e a animacao anda -50%,
-  // ou seja, exatamente uma metade. No fim do ciclo a segunda metade esta onde
-  // a primeira comecou e o corte fica invisivel.
-  //
-  // Cada metade repete a lista REPEAT vezes por um motivo pratico: com uma
-  // copia so, cinco chips dao cerca de 940px, e num monitor de 1920px a metade
-  // seria mais estreita que a tela, abrindo um vao vazio a cada volta. Tres
-  // copias levam cada metade a ~2800px, que cobre telas largas com folga.
-  const REPEAT = 3;
-  const half = Array.from({ length: REPEAT }, (_, r) =>
-    items.map((item) => ({ item, key: `${r}-${item.name}` }))
-  ).flat();
-
-  // Nada de `gap` aqui de proposito. Com gap, N itens somam N*larg + (N-1)*gap,
-  // e metade disso nao cai num limite de item: sobra um gap e o loop da um
-  // pulinho a cada volta. Com margem direita fixa cada item ocupa exatamente
-  // larg+margem, entao -50% cai sempre no mesmo ponto do ciclo.
   return (
-    <div className="group/track flex overflow-hidden">
+    <div
+      className="absolute left-1/2 top-1/2 h-0 w-0"
+      style={{
+        transform: `rotate(${angle}deg) translateX(${radius}px)`,
+        transformOrigin: "0 0",
+      }}
+    >
+      {/* Raio do node ate o centro. */}
+      <span
+        aria-hidden
+        className={`absolute right-0 top-0 h-px transition-all duration-500 ${
+          active
+            ? "bg-gradient-to-l from-white/70 to-transparent"
+            : "bg-gradient-to-l from-white/15 to-transparent"
+        }`}
+        style={{ width: radius }}
+      />
+      {/* Pulso de luz viajando pelo raio, so no ativo. */}
+      {active && (
+        <span
+          aria-hidden
+          className="beam-sweep absolute right-0 top-0 h-px w-8 -translate-y-px bg-gradient-to-l from-white to-transparent"
+          style={{ width: radius * 0.4 }}
+        />
+      )}
+
       <div
-        className={`flex shrink-0 ${
-          direction === "left"
-            ? "animate-marquee-left"
-            : "animate-marquee-right"
-        } group-hover/track:[animation-play-state:paused]`}
+        className="absolute left-0 top-0"
+        style={{ transform: `translate(-50%, -50%) rotate(${-angle}deg)` }}
       >
-        {half.map(({ item, key }) => (
-          <div key={key} className="mr-3 shrink-0">
-            <Chip
-              item={item}
-              active={activeName === item.name}
-              onFocusItem={onFocusItem}
+        <div className={`${spinClass} group-hover:[animation-play-state:paused]`}>
+          <button
+            type="button"
+            onMouseEnter={() => onActivate(item)}
+            onFocus={() => onActivate(item)}
+            aria-label={`${item.name}: ${item.label}`}
+            className={`glow-ring flex h-16 w-16 items-center justify-center rounded-full border transition-colors duration-300 ${
+              active
+                ? "glow-ring--active border-white/35 bg-ink-700"
+                : "border-white/[0.12] bg-ink-800 hover:border-white/25"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.src}
+              alt=""
+              width={26}
+              height={26}
+              aria-hidden
+              className={`h-6 w-6 brightness-0 invert transition-opacity duration-300 ${
+                active ? "opacity-100" : "opacity-60 hover:opacity-100"
+              }`}
             />
-          </div>
-        ))}
-        {/* Segunda metade: puramente visual. Fica fora da arvore de
-            acessibilidade para o leitor de tela nao anunciar os mesmos apps
-            varias vezes. */}
-        {half.map(({ item, key }) => (
-          <div key={`dup-${key}`} className="mr-3 shrink-0" aria-hidden>
-            <Chip
-              item={item}
-              active={activeName === item.name}
-              onFocusItem={onFocusItem}
-              clone
-            />
-          </div>
-        ))}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -159,27 +144,32 @@ function Track({
 
 export default function Integrations() {
   const reduce = useReducedMotionSafe();
-  // A legenda nunca fica vazia: ela nasce no primeiro app e troca conforme o
-  // ponteiro ou o foco anda. Em touch, onde nao existe hover, o visitante ainda
-  // ve um par nome/acao completo.
-  const [active, setActive] = useState<Integration>(rowOne[0]);
+  const [active, setActive] = useState<Integration>(ALL[0]);
+  const [paused, setPaused] = useState(false);
 
-  // Gate de hidratacao. useReducedMotionSafe() devolve null no servidor e o valor
-  // real no cliente. Como este bloco troca a ARVORE renderizada (esteiras vs
-  // grade estatica), ler o hook direto no render fazia servidor e cliente
-  // produzirem DOM diferente, quebrando a hidratacao. Com o gate os dois
-  // comecam iguais (esteiras) e a versao sem movimento so entra depois de
-  // montar, ja no cliente.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const staticGrid = mounted && reduce;
-  const handleFocusItem = React.useCallback(
-    (item: Integration) => setActive(item),
-    []
-  );
+  // Auto-play: destaca um app por vez, girando pela lista toda. Para no hover.
+  useEffect(() => {
+    if (reduce || paused) return;
+    const id = setInterval(() => {
+      setActive((cur) => {
+        const idx = ALL.findIndex((a) => a.name === cur.name);
+        return ALL[(idx + 1) % ALL.length];
+      });
+    }, AUTOPLAY_MS);
+    return () => clearInterval(id);
+  }, [reduce, paused]);
+
+  const handleActivate = React.useCallback((i: Integration) => setActive(i), []);
+
+  const INNER_R = 118;
+  const OUTER_R = 210;
 
   return (
-    <section id="integracoes" className="relative overflow-hidden bg-ink-900 px-6 py-28 sm:py-36 lg:px-10 wide:px-16">
+    <section
+      id="integracoes"
+      className="relative overflow-hidden bg-ink-900 px-6 py-28 sm:py-36 lg:px-10 wide:px-16"
+    >
+      {/* fundo: grade + halo */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <div
           className="absolute inset-0"
@@ -188,13 +178,15 @@ export default function Integrations() {
               "linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px)",
             backgroundSize: "56px 56px",
             maskImage:
-              "radial-gradient(ellipse 75% 55% at 50% 0%, #000 30%, transparent 100%)",
+              "radial-gradient(ellipse 60% 60% at 50% 45%, #000 25%, transparent 100%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 75% 55% at 50% 0%, #000 30%, transparent 100%)",
+              "radial-gradient(ellipse 60% 60% at 50% 45%, #000 25%, transparent 100%)",
           }}
         />
-        <div className="absolute left-1/2 top-0 h-[440px] w-[880px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-white/[0.05] blur-[130px]" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px overflow-hidden">
+          <div className="beam-sweep h-full w-32 bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+        </div>
       </div>
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">
@@ -205,67 +197,113 @@ export default function Integrations() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
-          <span className="text-xs font-medium uppercase tracking-[0.2em] text-white/35">
-            Integrações
-          </span>
-          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
-            Ele já fala com os seus apps.
+          <SectionEyebrow>Integrações</SectionEyebrow>
+          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+            Tudo gira em torno do Jarvis.
           </h2>
           <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55">
-            Sem clicar, sem caçar janela. Você diz o que quer e o Jarvis aciona
-            o app certo, no aparelho certo, na hora.
+            Seus apps não ficam soltos. Eles orbitam um só cérebro — você diz o
+            que quer e o Jarvis aciona o certo, na hora.
           </p>
         </motion.div>
 
-        {/* Esteiras. Sangram para fora do container e recebem mascara nas
-            pontas, entao os chips entram e saem de cena em vez de aparecerem
-            cortados na borda. */}
+        {/* ---- HUB ORBITAL (lg+) ---- */}
         <motion.div
-          initial={reduce ? false : { opacity: 0 }}
-          whileInView={{ opacity: 1 }}
+          initial={reduce ? false : { opacity: 0, scale: 0.94 }}
+          whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="relative mt-16 flex flex-col gap-3"
-          style={{
-            maskImage:
-              "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
-            WebkitMaskImage:
-              "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
-          }}
+          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          className="group relative mx-auto mt-16 hidden h-[520px] w-[520px] lg:block"
         >
-          {staticGrid ? (
-            // Sem movimento: as esteiras viram uma grade estatica, com todos os
-            // apps visiveis de uma vez.
-            <div className="flex flex-wrap justify-center gap-3">
-              {ALL.map((item) => (
-                <Chip
-                  key={item.name}
-                  item={item}
-                  active={active.name === item.name}
-                  onFocusItem={handleFocusItem}
-                />
-              ))}
-            </div>
-          ) : (
-            <>
-              <Track
-                items={rowOne}
-                direction="left"
-                activeName={active.name}
-                onFocusItem={handleFocusItem}
+          {/* trilhas dos aneis (circulos guia) */}
+          <div
+            aria-hidden
+            className="absolute left-1/2 top-1/2 rounded-full border border-white/[0.06]"
+            style={{
+              width: INNER_R * 2,
+              height: INNER_R * 2,
+              transform: "translate(-50%, -50%)",
+            }}
+          />
+          <div
+            aria-hidden
+            className="absolute left-1/2 top-1/2 rounded-full border border-white/[0.05]"
+            style={{
+              width: OUTER_R * 2,
+              height: OUTER_R * 2,
+              transform: "translate(-50%, -50%)",
+            }}
+          />
+
+          {/* nucleo */}
+          <div className="absolute left-1/2 top-1/2 z-10 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-ink-800 shadow-[0_0_50px_-8px_rgba(255,255,255,0.35)]">
+            <div className="absolute inset-0 rounded-full border border-white/30 core-ping" aria-hidden />
+            <div className="absolute inset-0 rounded-full border border-white/20 core-ping" style={{ animationDelay: "1.7s" }} aria-hidden />
+            <CoreMark />
+          </div>
+
+          {/* anel interno */}
+          <div className="orbit-spin absolute inset-0 group-hover:[animation-play-state:paused]">
+            {innerRing.map((item, i) => (
+              <OrbitNode
+                key={item.name}
+                item={item}
+                angle={(360 / innerRing.length) * i}
+                radius={INNER_R}
+                spinClass="orbit-spin-rev"
+                active={active.name === item.name}
+                onActivate={handleActivate}
               />
-              <Track
-                items={rowTwo}
-                direction="right"
-                activeName={active.name}
-                onFocusItem={handleFocusItem}
+            ))}
+          </div>
+
+          {/* anel externo */}
+          <div className="orbit-spin-2 absolute inset-0 group-hover:[animation-play-state:paused]">
+            {outerRing.map((item, i) => (
+              <OrbitNode
+                key={item.name}
+                item={item}
+                angle={(360 / outerRing.length) * i + 36}
+                radius={OUTER_R}
+                spinClass="orbit-spin-2-rev"
+                active={active.name === item.name}
+                onActivate={handleActivate}
               />
-            </>
-          )}
+            ))}
+          </div>
         </motion.div>
 
-        {/* Legenda viva. min-h fixo: sem isso a caixa pula de altura quando a
-            frase troca por uma de comprimento diferente. */}
+        {/* ---- GRADE (abaixo de lg) ---- */}
+        <div className="mt-14 flex flex-wrap justify-center gap-3 lg:hidden">
+          {ALL.map((item) => (
+            <button
+              key={item.name}
+              type="button"
+              onMouseEnter={() => handleActivate(item)}
+              onFocus={() => handleActivate(item)}
+              aria-label={`${item.name}: ${item.label}`}
+              className={`glow-ring flex h-16 w-16 items-center justify-center rounded-full border transition-colors duration-300 ${
+                active.name === item.name
+                  ? "glow-ring--active border-white/35 bg-ink-700"
+                  : "border-white/[0.12] bg-ink-800"
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.src}
+                alt=""
+                width={26}
+                height={26}
+                aria-hidden
+                className="h-6 w-6 brightness-0 invert"
+              />
+            </button>
+          ))}
+        </div>
+
+        {/* legenda viva */}
         <div className="mt-10 flex min-h-[3.25rem] items-center justify-center px-4">
           <AnimatePresence mode="wait">
             <motion.p
@@ -277,18 +315,18 @@ export default function Integrations() {
               className="text-center text-lg font-light text-white/60"
               aria-live="polite"
             >
-              <span className="font-medium text-[#FAFAFA]">{active.name}</span>{" "}
-              {active.label.charAt(0).toLowerCase() + active.label.slice(1)}
+              <span className="font-display font-semibold text-[#FAFAFA]">
+                {active.name}
+              </span>{" "}
+              {active.label}
             </motion.p>
           </AnimatePresence>
         </div>
 
-        {/* O cerebro e a voz. Dois itens, tratamento proprio: cartoes largos em
-            duas colunas, deliberadamente diferentes dos chips que correm acima,
-            porque aqui nao e mais "no que ele mexe" e sim "o que o move". */}
-        <div className="mt-20">
-          <h3 className="text-center text-sm font-medium uppercase tracking-[0.15em] text-white/35">
-            O cérebro e a voz por trás
+        {/* cerebro e voz */}
+        <div className="mt-16">
+          <h3 className="text-center font-display text-sm font-semibold uppercase tracking-[0.15em] text-white/40">
+            O núcleo que move tudo
           </h3>
           <div className="mx-auto mt-7 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
             {brains.map((item, i) => (
@@ -302,7 +340,7 @@ export default function Integrations() {
                   delay: reduce ? 0 : i * 0.09,
                   ease: [0.16, 1, 0.3, 1],
                 }}
-                className="group relative flex items-center gap-5 overflow-hidden rounded-card border border-white/[0.08] bg-ink-800/60 px-7 py-7 transition-colors duration-300 hover:border-white/25 hover:bg-ink-700"
+                className="glow-ring group relative flex items-center gap-5 overflow-hidden rounded-card border border-white/[0.08] bg-ink-800/60 px-7 py-7 transition-colors duration-300 hover:border-white/25 hover:bg-ink-700"
               >
                 <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -315,7 +353,7 @@ export default function Integrations() {
                   className="h-10 w-10 shrink-0 opacity-70 brightness-0 invert transition-opacity duration-300 group-hover:opacity-100"
                 />
                 <div className="min-w-0">
-                  <p className="text-base font-medium text-[#FAFAFA]">
+                  <p className="font-display text-base font-semibold text-[#FAFAFA]">
                     {item.name}
                   </p>
                   <p className="mt-1 text-sm leading-relaxed text-white/45">

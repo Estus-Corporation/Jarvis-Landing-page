@@ -111,13 +111,13 @@ function TickerItem({
   return (
     <div
       aria-hidden={clone || undefined}
-      className="flex shrink-0 items-center gap-3 px-8"
+      className="flex shrink-0 items-center gap-2.5 px-6"
     >
-      <Glyph size={15} weight="bold" className="shrink-0 text-white/30" aria-hidden />
-      <span className="whitespace-nowrap text-sm font-medium uppercase tracking-[0.12em] text-white/55">
+      <Glyph size={13} weight="bold" className="shrink-0 text-white/30" aria-hidden />
+      <span className="whitespace-nowrap text-xs font-medium uppercase tracking-[0.12em] text-white/55">
         {item.label}
       </span>
-      <span className="text-white/20" aria-hidden>
+      <span className="text-[0.7rem] text-white/20" aria-hidden>
         ◆
       </span>
     </div>
@@ -144,7 +144,7 @@ function IncludedTrack() {
           "linear-gradient(to right, transparent, #000 6%, #000 94%, transparent)",
       }}
     >
-      <div className="group/track flex shrink-0 animate-marquee-left-slow hover:[animation-play-state:paused]">
+      <div className="group/track flex shrink-0 animate-ticker hover:[animation-play-state:paused]">
         {half.map((item) => (
           <TickerItem key={item.key} item={item} />
         ))}
@@ -364,7 +364,7 @@ export default function Pricing() {
           faixa (ela nao ficava centralizada/sangrando, so exposta bagunçada).
           Por isso a centralizacao mora aqui fora, e a animacao de entrada
           mora so no motion.div de dentro, sem disputar a mesma propriedade. */}
-      <div className="relative left-1/2 mt-14 w-screen -translate-x-1/2 overflow-hidden border-y border-white/[0.08] bg-white/[0.02] py-6">
+      <div className="relative left-1/2 mt-14 w-screen -translate-x-1/2 overflow-hidden border-y border-white/[0.08] bg-white/[0.02] py-4">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}

@@ -1,105 +1,139 @@
 "use client";
 
 // PLACEHOLDER: nenhum depoimento aqui e real. O produto ainda nao lancou, e
-// inventar nomes e falas de "clientes" seria prova social falsa — exatamente
-// o que o conselho de IA (rodado nesta mesma sessao, sobre esta mesma pagina)
-// apontou como o maior risco de credibilidade do site. Cada item abaixo tem
-// um tema sugerido (pra saber que tipo de fala procurar) e o texto entre
-// colchetes precisa ser trocado por uma fala real, com nome e contexto reais,
-// antes de publicar. Ate la, o carrossel em si funciona de verdade (setas,
-// indicadores, autoplay, gate de reduced motion) — so o conteudo e
-// provisorio.
-import React, { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+// inventar nomes/falas de "clientes" seria prova social falsa. Cada card e um
+// ESPACO RESERVADO explicito (fala entre colchetes, nome "Seu nome aqui"),
+// pronto pra receber depoimentos reais (com nome + selo de verificado) no
+// lancamento. A esteira em si ja funciona; so o conteudo e provisorio.
+//
+// Layout: MURAL DE DEPOIMENTOS em esteira infinita. Duas fileiras de cards
+// correndo em sentidos opostos, sem fim, com bordas mascaradas e pausa no
+// hover — o efeito de "muita gente falando" que se pediu. Vocabulario de
+// luz/LED das outras secoes.
+import React from "react";
+import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   Quotes,
-  CaretLeft,
-  CaretRight,
+  User,
+  ShieldCheck,
+  HardDrives,
+  ArrowsClockwise,
 } from "@phosphor-icons/react/dist/ssr";
-import { cn } from "@/lib/utils";
+import type { Icon } from "@phosphor-icons/react";
+import SectionEyebrow from "@/components/ui/section-eyebrow";
 
-const testimonials = [
-  {
-    quote:
-      "[Espaço reservado — depoimento sobre a primeira impressão ao usar o Jarvis.]",
-    name: "[Nome do cliente]",
-    role: "[Cargo ou contexto]",
-  },
-  {
-    quote:
-      "[Espaço reservado — depoimento sobre economia de tempo no dia a dia.]",
-    name: "[Nome do cliente]",
-    role: "[Cargo ou contexto]",
-  },
-  {
-    quote: "[Espaço reservado — depoimento sobre a voz clonada.]",
-    name: "[Nome do cliente]",
-    role: "[Cargo ou contexto]",
-  },
-  {
-    quote: "[Espaço reservado — depoimento sobre suporte e confiança.]",
-    name: "[Nome do cliente]",
-    role: "[Cargo ou contexto]",
-  },
+type Testimonial = { quote: string; name: string; role: string };
+
+// Temas variados nos placeholders pra a esteira nao repetir a mesma frase.
+// Nomes ficam como espaco reservado honesto — nada de pessoa inventada.
+const testimonials: Testimonial[] = [
+  { quote: "[Depoimento sobre a primeira impressão ao instalar o Jarvis.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre quanto tempo o Jarvis economiza no dia a dia.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre a experiência de ouvir a própria voz clonada.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre controlar o PC inteiro só falando.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre o suporte e a confiança no produto.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre usar o Jarvis no trabalho todos os dias.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
 ];
 
-const AUTOPLAY_MS = 6000;
+// Divide em duas fileiras pra correrem em sentidos opostos.
+const rowOne = testimonials.slice(0, 3);
+const rowTwo = testimonials.slice(3);
 
-const variants = {
-  enter: (direction: number) => ({ x: direction > 0 ? 32 : -32, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (direction: number) => ({ x: direction > 0 ? -32 : 32, opacity: 0 }),
-};
+const trust: { icon: Icon; title: string; note: string }[] = [
+  { icon: ShieldCheck, title: "Garantia de 7 dias", note: "Não gostou, devolvemos 100%" },
+  { icon: HardDrives, title: "Dados 100% locais", note: "Nada sai do seu computador" },
+  { icon: ArrowsClockwise, title: "Sem fidelidade", note: "Cancele quando quiser" },
+];
+
+function TestimonialCard({
+  item,
+  clone = false,
+}: {
+  item: Testimonial;
+  clone?: boolean;
+}) {
+  return (
+    <div
+      aria-hidden={clone || undefined}
+      className="glow-ring group relative mr-4 flex w-[340px] shrink-0 flex-col overflow-hidden rounded-card border border-white/[0.1] bg-ink-800/60 p-6 transition-colors duration-300 hover:border-white/25"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-1 -top-5 select-none font-display text-[6rem] font-bold leading-none text-transparent"
+        style={{ WebkitTextStroke: "1px rgba(255,255,255,0.05)" }}
+      >
+        ”
+      </span>
+      <Quotes size={20} weight="fill" className="text-white/20" aria-hidden />
+      <p className="mt-4 flex-1 text-[0.95rem] font-light italic leading-relaxed text-white/75">
+        {item.quote}
+      </p>
+      <footer className="mt-6 flex items-center gap-3">
+        <span
+          aria-hidden
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white/45"
+        >
+          <User size={16} weight="light" />
+        </span>
+        <span>
+          <span className="block font-display text-sm font-semibold text-[#FAFAFA]">
+            {item.name}
+          </span>
+          <span className="block text-xs text-white/45">{item.role}</span>
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+// Esteira infinita: duas metades identicas, anda -50%, o corte fecha
+// invisivel. Para no hover.
+function Track({
+  items,
+  direction,
+}: {
+  items: Testimonial[];
+  direction: "left" | "right";
+}) {
+  const REPEAT = 3;
+  const half = Array.from({ length: REPEAT }, (_, r) =>
+    items.map((item, i) => ({ item, key: `${r}-${i}` }))
+  ).flat();
+
+  return (
+    <div className="group/track flex overflow-hidden">
+      <div
+        className={`flex shrink-0 ${
+          direction === "left" ? "animate-marquee-left" : "animate-marquee-right"
+        } group-hover/track:[animation-play-state:paused]`}
+      >
+        {half.map(({ item, key }) => (
+          <div key={key} className="relative shrink-0">
+            <TestimonialCard item={item} />
+          </div>
+        ))}
+        {half.map(({ item, key }) => (
+          <div key={`dup-${key}`} className="relative shrink-0">
+            <TestimonialCard item={item} clone />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Testimonials() {
   const reduce = useReducedMotionSafe();
-  const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(1);
-
-  const next = useCallback(() => {
-    setDirection(1);
-    setIndex((i) => (i + 1) % testimonials.length);
-  }, []);
-
-  const prev = useCallback(() => {
-    setDirection(-1);
-    setIndex((i) => (i - 1 + testimonials.length) % testimonials.length);
-  }, []);
-
-  const goTo = useCallback(
-    (i: number) => {
-      setDirection(i > index ? 1 : -1);
-      setIndex(i);
-    },
-    [index]
-  );
-
-  // Autoplay para sozinho em reduced motion: um carrossel trocando slide sem
-  // aviso e exatamente o tipo de movimento que essa preferencia pede pra
-  // evitar.
-  useEffect(() => {
-    if (reduce) return;
-    const id = setInterval(next, AUTOPLAY_MS);
-    return () => clearInterval(id);
-  }, [reduce, next]);
-
-  const current = testimonials[index];
 
   return (
-    // ink-900, nao ink-950: a secao anterior (Interface) ja e ink-900, e a
-    // seguinte (Precos) e ink-950. Se esta ficasse ink-950 tambem, ela e
-    // Precos ficariam identicas lado a lado, sem nenhuma costura visivel
-    // entre as duas. Com ink-900, a troca de cor acontece bem na virada pra
-    // Precos, exatamente onde ja acontecia antes desta secao existir.
     <section
       id="depoimentos"
       className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 py-28 sm:py-36 lg:px-10 wide:px-16"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.04] blur-[130px]"
-      />
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute left-1/2 top-1/2 h-[440px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.045] blur-[150px]" />
+      </div>
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
@@ -109,78 +143,58 @@ export default function Testimonials() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
-          <h2 className="text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <div className="flex justify-center">
+            <SectionEyebrow>Depoimentos</SectionEyebrow>
+          </div>
+          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
             O que dizem sobre o Jarvis.
           </h2>
         </motion.div>
 
-        <div className="relative mx-auto mt-14 max-w-2xl">
-          <Quotes
-            size={32}
-            weight="fill"
-            className="mx-auto text-white/15"
-            aria-hidden
-          />
+        {/* Mural em duas esteiras infinitas, sentidos opostos, bordas com
+            máscara pros cards entrarem e saírem de cena. */}
+        <motion.div
+          initial={reduce ? false : { opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mt-16 flex flex-col gap-4"
+          style={{
+            maskImage:
+              "linear-gradient(to right, transparent, #000 7%, #000 93%, transparent)",
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent, #000 7%, #000 93%, transparent)",
+          }}
+        >
+          <Track items={rowOne} direction="left" />
+          <Track items={rowTwo} direction="right" />
+        </motion.div>
 
-          <div className="relative mt-6 min-h-[168px] sm:min-h-[144px]">
-            <AnimatePresence mode="wait" custom={direction} initial={false}>
-              <motion.div
-                key={index}
-                custom={direction}
-                variants={variants}
-                initial={reduce ? undefined : "enter"}
-                animate="center"
-                exit={reduce ? undefined : "exit"}
-                transition={{ duration: reduce ? 0 : 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="text-center"
+        {/* Faixa de confiança: fatos REAIS que a página garante. */}
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-14 grid grid-cols-1 gap-3 rounded-card border border-white/[0.08] bg-ink-800/40 p-3 sm:grid-cols-3"
+        >
+          {trust.map(({ icon: Glyph, title, note }) => (
+            <div key={title} className="flex items-center gap-3.5 rounded-chip px-4 py-3">
+              <span
+                aria-hidden
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip border border-white/[0.12] bg-white/[0.04] text-white/70"
               >
-                <p className="text-lg italic leading-relaxed text-white/80 sm:text-xl">
-                  “{current.quote}”
-                </p>
-                <p className="mt-6 text-sm font-medium text-[#FAFAFA]">
-                  {current.name}
-                </p>
-                <p className="text-xs text-white/45">{current.role}</p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          <div className="mt-8 flex items-center justify-center gap-6">
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="Depoimento anterior"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 text-white/60 transition-colors duration-200 hover:border-white/35 hover:text-white"
-            >
-              <CaretLeft size={16} weight="bold" aria-hidden />
-            </button>
-
-            <div className="flex items-center gap-2">
-              {testimonials.map((item, i) => (
-                <button
-                  key={item.name + i}
-                  type="button"
-                  onClick={() => goTo(i)}
-                  aria-label={`Ir para o depoimento ${i + 1}`}
-                  aria-current={i === index}
-                  className={cn(
-                    "h-1.5 rounded-full transition-all duration-300",
-                    i === index ? "w-6 bg-white/70" : "w-1.5 bg-white/20 hover:bg-white/35"
-                  )}
-                />
-              ))}
+                <Glyph size={19} weight="light" />
+              </span>
+              <span>
+                <span className="block font-display text-sm font-semibold text-[#FAFAFA]">
+                  {title}
+                </span>
+                <span className="block text-xs text-white/45">{note}</span>
+              </span>
             </div>
-
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Próximo depoimento"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 text-white/60 transition-colors duration-200 hover:border-white/35 hover:text-white"
-            >
-              <CaretRight size={16} weight="bold" aria-hidden />
-            </button>
-          </div>
-        </div>
+          ))}
+        </motion.div>
       </div>
     </section>
   );

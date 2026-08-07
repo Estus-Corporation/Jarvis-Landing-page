@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import FeatureTicker from "@/components/FeatureTicker";
 import Integrations from "@/components/Integrations";
 import Features from "@/components/Features";
 import Showcase from "@/components/Showcase";
@@ -8,6 +9,7 @@ import Testimonials from "@/components/Testimonials";
 import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
 import Grain from "@/components/ui/grain";
+import { TracingBeam } from "@/components/ui/tracing-beam";
 import { SITE, SITE_URL } from "@/lib/site";
 
 // Dados estruturados do app.
@@ -73,12 +75,19 @@ export default function Home() {
         <Grain />
         <Header />
         <Hero />
-        <Features />
-        <Integrations />
-        <Showcase />
-        <Roadmap />
-        <Testimonials />
-        <Pricing />
+        <FeatureTicker />
+        {/* Barra de progresso do site: comeca em Recursos ("Ele age no
+            computador, nao so no chat."), nao na Hero — a Hero e a esteira
+            de recursos ficam de fora de proposito. Footer tambem fica de
+            fora, entao a barra termina onde Precos acaba, antes do rodape. */}
+        <TracingBeam>
+          <Features />
+          <Integrations />
+          <Showcase />
+          <Roadmap />
+          <Testimonials />
+          <Pricing />
+        </TracingBeam>
         <Footer />
       </main>
     </>

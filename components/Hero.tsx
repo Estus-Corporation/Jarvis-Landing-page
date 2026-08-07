@@ -6,7 +6,7 @@ import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
 import { SpokenCaption } from "@/components/ui/spoken-caption";
-import CodeRain from "@/components/ui/code-rain";
+import { Particles } from "@/components/ui/particles";
 import {
   ShieldCheck,
   Lightning,
@@ -93,18 +93,42 @@ export default function Hero() {
   return (
     <section
       id="top"
-      className="relative flex min-h-[100dvh] w-full items-center overflow-hidden bg-ink-950 px-6 pb-20 pt-24 lg:px-10 wide:px-16"
+      // isolate: a secao tem bg-ink-950 proprio e e position:relative sem
+      // z-index — sem isolar, esse fundo "escapa" pra uma camada de
+      // empilhamento depois dos filhos com z-index negativo (os blobs de luz
+      // do fundo) e pinta POR CIMA deles, escondendo a luz por completo. Com
+      // isolate, o fundo da propria secao vira a base do seu contexto local,
+      // e os filhos com z negativo voltam a aparecer por cima dele.
+      className="relative isolate flex min-h-[100dvh] w-full items-center overflow-hidden bg-ink-950 px-6 pb-20 pt-24 lg:px-10 wide:px-16"
     >
-      <CodeRain />
-
-      {/* Halo com respiro lento, unico loop continuo do fundo. */}
-      <motion.div
-        animate={
-          reduce ? undefined : { scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }
-        }
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-        className="pointer-events-none absolute right-0 top-1/2 h-[640px] w-[640px] -translate-y-1/2 translate-x-1/4 rounded-full bg-white/[0.045] blur-[130px]"
-      />
+      {/* Fundo: luz vindo da esquerda por tras de um campo de particulas
+          sutil. Substitui a chuva de codigo + halo antigos.
+          A primeira tentativa usava caixas com radial-gradient rotacionadas
+          (fiel ao componente de referencia), mas o gradiente nao esvaecia ate
+          o fim antes da borda da propria caixa — com uma caixa dessas bem
+          grande e ainda cortada em pilula (rounded-full), a quina reta da
+          caixa ficava visivel, parecendo um painel cinza em vez de luz.
+          Blur de verdade (filter, nao gradient-in-a-box) nao tem essa
+          borda: some suavemente sempre, entao e o que da o efeito de luz
+          "de verdade" em vez de uma forma geometrica solta no fundo. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      >
+        <div className="absolute -left-40 -top-24 h-[620px] w-[620px] rounded-full bg-white/[0.07] blur-[160px]" />
+        <div className="absolute -left-16 top-[38%] h-[460px] w-[460px] -translate-y-1/2 rounded-full bg-white/[0.05] blur-[140px]" />
+      </div>
+      {/* Particulas desligadas por quem pede menos movimento: e um loop de
+          canvas continuo, sem quadro parado equivalente, entao a saida
+          honesta e nao rodar (mesmo padrao do JarvisOrb `paused`). */}
+      {!reduce && (
+        <Particles
+          color="#ffffff"
+          quantity={90}
+          ease={30}
+          className="absolute inset-0"
+        />
+      )}
 
       {/* lg:pl-* empurra o grid inteiro (as duas colunas, titulo+CTAs e
           esfera+legenda) um pouco para a direita dentro do mesmo max-w-shell,

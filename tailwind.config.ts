@@ -58,25 +58,9 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(16px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
-        // A trilha do marquee guarda a lista DUPLICADA, entao andar -50% coloca
-        // a copia exatamente onde o original estava: o loop fecha sem salto.
-        "marquee-left": {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-50%)" },
-        },
-        "marquee-right": {
-          "0%": { transform: "translateX(-50%)" },
-          "100%": { transform: "translateX(0)" },
-        },
       },
       animation: {
         "fade-up": "fade-up 0.6s cubic-bezier(0.16,1,0.3,1) forwards",
-        "marquee-left": "marquee-left 46s linear infinite",
-        "marquee-right": "marquee-right 52s linear infinite",
-        // Mesma trilha de marquee-left, so mais lenta: usada na esteira de
-        // recursos da secao de precos, que precisa dar tempo de ler cada
-        // rotulo em vez de so passar de relance.
-        "marquee-left-slow": "marquee-left 95s linear infinite",
       },
     },
   },

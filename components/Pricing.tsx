@@ -1,23 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   Check,
   ShieldCheck,
-  Microphone,
-  AppWindow,
-  Terminal,
-  ChatCircleText,
-  Eye,
-  Brain,
-  Waveform,
-  Headset,
   ArrowsClockwise,
   Trophy,
 } from "@phosphor-icons/react/dist/ssr";
-import type { Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { FloatingPathsBackground } from "@/components/ui/floating-paths";
 
@@ -80,84 +71,6 @@ const plans = [
   },
 ];
 
-// So icone + rotulo: essa lista agora roda numa esteira (mesmo mecanismo de
-// Integrations.tsx), entao um rotulo curto por item basta pra ler de relance
-// enquanto passa. A descricao de uma frase que existia aqui saiu com a versao
-// em lista.
-const included: { icon: Icon; label: string }[] = [
-  { icon: Microphone, label: "Ativação por voz e atalho global" },
-  { icon: AppWindow, label: "Controle de navegador e programas" },
-  { icon: Terminal, label: "Terminal, Git e automações de dev" },
-  { icon: ChatCircleText, label: "Integração com Spotify e WhatsApp" },
-  { icon: Eye, label: "Visão de tela e detecção de jogos" },
-  { icon: Brain, label: "Memória persistente ilimitada" },
-  { icon: Waveform, label: "Voz clonada, a sua própria voz" },
-  { icon: Headset, label: "Suporte prioritário" },
-];
-
-// Sem cartao: so icone discreto + rotulo em caixa alta, separados por um
-// losango, no espirito das faixas de "frete gratis" / "ate 50% off" que
-// lojas rodam acima do rodape. Nada de borda, fundo ou pilula por item —
-// isso e o que fazia a esteira antiga parecer uma fileira de cards em vez de
-// uma faixa continua de texto.
-function TickerItem({
-  item,
-  clone = false,
-}: {
-  item: { icon: Icon; label: string };
-  clone?: boolean;
-}) {
-  const Glyph = item.icon;
-  return (
-    <div
-      aria-hidden={clone || undefined}
-      className="flex shrink-0 items-center gap-2.5 px-6"
-    >
-      <Glyph size={13} weight="bold" className="shrink-0 text-white/30" aria-hidden />
-      <span className="whitespace-nowrap text-xs font-medium uppercase tracking-[0.12em] text-white/55">
-        {item.label}
-      </span>
-      <span className="text-[0.7rem] text-white/20" aria-hidden>
-        ◆
-      </span>
-    </div>
-  );
-}
-
-// Esteira continua, mesma logica de Track em Integrations.tsx: duas copias
-// identicas lado a lado, anda -50%, o corte do loop fica invisivel. REPEAT
-// maior aqui porque cada item e mais estreito (so icone + rotulo curto), pra
-// cada metade continuar mais larga que telas grandes.
-function IncludedTrack() {
-  const REPEAT = 4;
-  const half = Array.from({ length: REPEAT }, (_, r) =>
-    included.map((item) => ({ ...item, key: `${r}-${item.label}` }))
-  ).flat();
-
-  return (
-    <div
-      className="relative flex overflow-hidden"
-      style={{
-        maskImage:
-          "linear-gradient(to right, transparent, #000 6%, #000 94%, transparent)",
-        WebkitMaskImage:
-          "linear-gradient(to right, transparent, #000 6%, #000 94%, transparent)",
-      }}
-    >
-      <div className="group/track flex shrink-0 animate-ticker hover:[animation-play-state:paused]">
-        {half.map((item) => (
-          <TickerItem key={item.key} item={item} />
-        ))}
-        {/* Segunda metade, so visual: fora da arvore de acessibilidade pra nao
-            duplicar os mesmos 8 recursos no leitor de tela. */}
-        {half.map((item) => (
-          <TickerItem key={`dup-${item.key}`} item={item} clone />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // Em fonte monoespacada o caractere de espaco ocupa uma largura inteira, que
 // no text-5xl vira um vao grande entre "R$" e o numero. Separar os dois deixa
 // o respiro sob controle em em, proporcional ao tamanho da fonte.
@@ -173,14 +86,6 @@ function Price({ value, className }: { value: string; className?: string }) {
 
 export default function Pricing() {
   const reduce = useReducedMotionSafe();
-
-  // Mesmo gate de Integrations.tsx: a esteira troca a ARVORE renderizada
-  // (chips duplicados pra loop vs. lista unica envolvida), entao so decide
-  // qual versao mostrar depois de montar no cliente — servidor e cliente
-  // comecam iguais (esteira), a versao estatica so entra depois.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const staticList = mounted && reduce;
 
   return (
     <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-8 pt-28 sm:pt-36 lg:px-10 wide:px-16">
@@ -348,39 +253,6 @@ export default function Pricing() {
           <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
           Garantia de 7 dias: não gostou, devolvemos 100%.
         </motion.p>
-      </div>
-
-      {/* Recursos listados uma vez so, porque valem para os dois planos.
-          Faixa de texto corrida, sangrando a largura toda da tela (ignora o
-          max-w-shell do resto da secao de proposito): e o que da o ar de
-          "carrossel de loja" pedido, em vez de uma fileira de cartoes presa
-          dentro do container. Mesmo mecanismo de esteira de Integrations.tsx,
-          com fallback em grade estatica quando o visitante pede menos
-          movimento. */}
-      {/* Full-bleed via left-1/2 + -translate-x-1/2 precisa ficar num elemento
-          PLANO: motion.div escreve seu proprio `transform` inline pra animar
-          (opacity/y), e esse inline style pisa por cima de qualquer classe
-          Tailwind de transform no MESMO elemento — era isso que quebrava a
-          faixa (ela nao ficava centralizada/sangrando, so exposta bagunçada).
-          Por isso a centralizacao mora aqui fora, e a animacao de entrada
-          mora so no motion.div de dentro, sem disputar a mesma propriedade. */}
-      <div className="relative left-1/2 mt-14 w-screen -translate-x-1/2 overflow-hidden border-y border-white/[0.08] bg-white/[0.02] py-4">
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 14 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {staticList ? (
-            <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-2 gap-y-3 px-6">
-              {included.map((item) => (
-                <TickerItem key={item.label} item={item} />
-              ))}
-            </div>
-          ) : (
-            <IncludedTrack />
-          )}
-        </motion.div>
       </div>
     </section>
   );

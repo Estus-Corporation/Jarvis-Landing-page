@@ -239,7 +239,7 @@ export default function Features() {
       // ficou orfao, so afastando o titulo da divisoria. pt reduzido bem alem
       // do padrao py-28/36 do site (que so se aplica ao pb aqui), aproximando
       // o titulo da linha visivel no rodape da hero.
-      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-14 sm:pb-36 sm:pt-20"
+      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-14 sm:pb-36 sm:pt-20 lg:px-10 wide:px-16"
     >
       {/* O acento em degrau que ficava aqui (topo de Recursos) foi para dentro
           da propria Hero, encostado no rodape dela: assim ele fica visivel
@@ -247,7 +247,7 @@ export default function Features() {
           pontos criaria dois degraus quase colados, redundantes. A transicao
           Hero -> Recursos volta a ser a simples troca de cor ink-950 -> ink-900
           entre as secoes. */}
-      <div className="relative mx-auto max-w-shell">
+      <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}

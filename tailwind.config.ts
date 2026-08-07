@@ -17,6 +17,15 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        // Breakpoint proprio para a largura maxima (shell) das secoes. Fica
+        // bem acima do 2xl padrao (1536px) porque notebooks comuns (1440,
+        // 1536, ate 1728 com escala do Windows) tambem caem no 2xl e nao
+        // devem receber o tratamento "monitor grande": eles ficam no nivel
+        // compacto (max-w-6xl) ate aqui. So telas de verdade largas passam
+        // a ver a largura mestra de 1400px.
+        wide: "1800px",
+      },
       colors: {
         ink: {
           950: "#0A0A0B", // base da pagina
@@ -33,6 +42,8 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+        // So para o titulo da Hero, per pedido.
+        display: ["var(--font-exo2)", "system-ui", "sans-serif"],
       },
       maxWidth: {
         // Largura mestra de todas as secoes e do header. Alargada de 1200 para

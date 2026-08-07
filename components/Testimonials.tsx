@@ -94,14 +94,14 @@ export default function Testimonials() {
     // Precos, exatamente onde ja acontecia antes desta secao existir.
     <section
       id="depoimentos"
-      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 py-28 sm:py-36"
+      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 py-28 sm:py-36 lg:px-10 wide:px-16"
     >
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.04] blur-[130px]"
       />
 
-      <div className="relative mx-auto max-w-shell">
+      <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}

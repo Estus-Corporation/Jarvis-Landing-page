@@ -136,7 +136,7 @@ export default function Showcase() {
         mediaAlt="Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor."
       />
 
-      <div className="relative mx-auto max-w-shell px-6">
+      <div className="relative mx-auto max-w-6xl px-6 lg:px-10 wide:max-w-shell wide:px-16">
         {/* Ponte: a legenda que antes ficava sob o titulo agora liga a captura
             expandida ao indice de widgets. */}
         <p className="mx-auto max-w-[54ch] text-center text-lg font-light leading-relaxed text-white/55">

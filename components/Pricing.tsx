@@ -95,7 +95,12 @@ const included: { icon: Icon; label: string }[] = [
   { icon: Headset, label: "Suporte prioritário" },
 ];
 
-function IncludedChip({
+// Sem cartao: so icone discreto + rotulo em caixa alta, separados por um
+// losango, no espirito das faixas de "frete gratis" / "ate 50% off" que
+// lojas rodam acima do rodape. Nada de borda, fundo ou pilula por item —
+// isso e o que fazia a esteira antiga parecer uma fileira de cards em vez de
+// uma faixa continua de texto.
+function TickerItem({
   item,
   clone = false,
 }: {
@@ -106,19 +111,22 @@ function IncludedChip({
   return (
     <div
       aria-hidden={clone || undefined}
-      className="flex h-12 shrink-0 items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] py-2 pl-3 pr-5 text-sm text-white/65"
+      className="flex shrink-0 items-center gap-3 px-8"
     >
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-white/70">
-        <Glyph size={14} weight="light" aria-hidden />
+      <Glyph size={15} weight="bold" className="shrink-0 text-white/30" aria-hidden />
+      <span className="whitespace-nowrap text-sm font-medium uppercase tracking-[0.12em] text-white/55">
+        {item.label}
       </span>
-      <span className="whitespace-nowrap">{item.label}</span>
+      <span className="text-white/20" aria-hidden>
+        ◆
+      </span>
     </div>
   );
 }
 
 // Esteira continua, mesma logica de Track em Integrations.tsx: duas copias
 // identicas lado a lado, anda -50%, o corte do loop fica invisivel. REPEAT
-// maior aqui porque cada chip e mais estreito (so icone + rotulo curto), pra
+// maior aqui porque cada item e mais estreito (so icone + rotulo curto), pra
 // cada metade continuar mais larga que telas grandes.
 function IncludedTrack() {
   const REPEAT = 4;
@@ -131,23 +139,19 @@ function IncludedTrack() {
       className="relative flex overflow-hidden"
       style={{
         maskImage:
-          "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
+          "linear-gradient(to right, transparent, #000 6%, #000 94%, transparent)",
         WebkitMaskImage:
-          "linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)",
+          "linear-gradient(to right, transparent, #000 6%, #000 94%, transparent)",
       }}
     >
       <div className="group/track flex shrink-0 animate-marquee-left-slow hover:[animation-play-state:paused]">
         {half.map((item) => (
-          <div key={item.key} className="mr-3 shrink-0">
-            <IncludedChip item={item} />
-          </div>
+          <TickerItem key={item.key} item={item} />
         ))}
         {/* Segunda metade, so visual: fora da arvore de acessibilidade pra nao
             duplicar os mesmos 8 recursos no leitor de tela. */}
         {half.map((item) => (
-          <div key={`dup-${item.key}`} className="mr-3 shrink-0" aria-hidden>
-            <IncludedChip item={item} clone />
-          </div>
+          <TickerItem key={`dup-${item.key}`} item={item} clone />
         ))}
       </div>
     </div>
@@ -179,7 +183,7 @@ export default function Pricing() {
   const staticList = mounted && reduce;
 
   return (
-    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 py-28 sm:py-36">
+    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-8 pt-28 sm:pt-36 lg:px-10 wide:px-16">
       {/* Fios animados no lugar da imagem de curvas de nivel: mesma funcao
           (textura sutil no topo da secao, esmaecendo pro fundo solido), mas
           sem depender de uma imagem pequena demais esticada a 100vw. A
@@ -203,7 +207,7 @@ export default function Pricing() {
         className="pointer-events-none absolute right-0 top-1/4 h-[520px] w-[620px] translate-x-1/3 rounded-full bg-white/[0.045] blur-[130px]"
       />
 
-      <div className="relative mx-auto max-w-shell">
+      <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -344,26 +348,33 @@ export default function Pricing() {
           <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
           Garantia de 7 dias: não gostou, devolvemos 100%.
         </motion.p>
+      </div>
 
-        {/* Recursos listados uma vez so, porque valem para os dois planos.
-            Sem cartao proprio: um bloco do mesmo peso visual dos planos
-            (borda, fundo, padding grande) competia com a decisao real, que e
-            escolher entre Mensal e Anual. Uma linha fina no topo basta pra
-            separar do grid de planos. Virou esteira (icone + rotulo, sem a
-            descricao que tinha antes) em vez de lista parada: mesmo
-            mecanismo de Integrations.tsx, com fallback em grade estatica
-            quando o visitante pede menos movimento. */}
+      {/* Recursos listados uma vez so, porque valem para os dois planos.
+          Faixa de texto corrida, sangrando a largura toda da tela (ignora o
+          max-w-shell do resto da secao de proposito): e o que da o ar de
+          "carrossel de loja" pedido, em vez de uma fileira de cartoes presa
+          dentro do container. Mesmo mecanismo de esteira de Integrations.tsx,
+          com fallback em grade estatica quando o visitante pede menos
+          movimento. */}
+      {/* Full-bleed via left-1/2 + -translate-x-1/2 precisa ficar num elemento
+          PLANO: motion.div escreve seu proprio `transform` inline pra animar
+          (opacity/y), e esse inline style pisa por cima de qualquer classe
+          Tailwind de transform no MESMO elemento — era isso que quebrava a
+          faixa (ela nao ficava centralizada/sangrando, so exposta bagunçada).
+          Por isso a centralizacao mora aqui fora, e a animacao de entrada
+          mora so no motion.div de dentro, sem disputar a mesma propriedade. */}
+      <div className="relative left-1/2 mt-14 w-screen -translate-x-1/2 overflow-hidden border-y border-white/[0.08] bg-white/[0.02] py-6">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-10 border-t border-white/[0.08] pt-8"
         >
           {staticList ? (
-            <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2.5">
+            <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-2 gap-y-3 px-6">
               {included.map((item) => (
-                <IncludedChip key={item.label} item={item} />
+                <TickerItem key={item.label} item={item} />
               ))}
             </div>
           ) : (

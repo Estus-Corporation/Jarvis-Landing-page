@@ -7,7 +7,6 @@ import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
 import { SpokenCaption } from "@/components/ui/spoken-caption";
 import CodeRain from "@/components/ui/code-rain";
-import StepDivider from "@/components/ui/step-divider";
 import {
   ShieldCheck,
   Lightning,
@@ -17,7 +16,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
-const HEADLINE = ["Fale.", "Ele", "já", "fez."];
+const HEADLINE = ["Sua", "voz", "vira", "ação."];
 
 // Selos flutuantes ao redor da esfera: mostram, de relance, tres coisas
 // concretas que o Jarvis faz, sem exigir que a pessoa leia a secao de
@@ -94,7 +93,7 @@ export default function Hero() {
   return (
     <section
       id="top"
-      className="relative flex min-h-[100dvh] w-full items-center overflow-hidden bg-ink-950 px-6 pb-20 pt-24"
+      className="relative flex min-h-[100dvh] w-full items-center overflow-hidden bg-ink-950 px-6 pb-20 pt-24 lg:px-10 wide:px-16"
     >
       <CodeRain />
 
@@ -107,57 +106,15 @@ export default function Hero() {
         className="pointer-events-none absolute right-0 top-1/2 h-[640px] w-[640px] -translate-y-1/2 translate-x-1/4 rounded-full bg-white/[0.045] blur-[130px]"
       />
 
-      {/* Aceno da proxima secao, DENTRO da propria hero. Antes esse divisor
-          vivia no topo de Recursos, ou seja, logo depois da dobra: como a hero
-          ocupa a tela toda (min-h-[100dvh]), a linha so aparecia depois de
-          rolar. Agora ele mora aqui, encostado no rodape da hero, dentro do
-          respiro que o pb-20 ja reserva, visivel assim que a pagina carrega.
-          `fill=""` desliga a camada solida que cobria a maior parte da caixa:
-          essa area volta a ficar transparente, entao a chuva de codigo e o
-          halo (que ja rodam atras) continuam aparecendo normalmente ate a
-          linha, em vez de baterem numa placa opaca. So a reentrancia (o "furo"
-          que aponta para Recursos) continua colorida, via `notchFill`.
-          `stepWidth` baixo + `dropDepth` cheio (100, a altura toda da caixa)
-          deixam a diagonal ingreme mesmo numa caixa curta: sem esses dois
-          parametros, reduzir a altura da caixa (para aproximar a linha da
-          hero) automaticamente achata o angulo, porque a mesma porcentagem de
-          queda vira poucos pixels reais numa caixa baixa. */}
-      {/* Divisor de volta ao bottom-0: a caixa inteira desceu ate encostar na
-          costura real com Recursos de novo, entao a linha inferior fica
-          alinhada com a base fisica da tela. Sem deslocamento, nao ha mais
-          vao entre a caixa e a costura, entao a "tapa-buraco" que cobria essa
-          folga (usada quando a caixa vivia em bottom-10) nao e mais
-          necessaria e saiu. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-32 sm:h-40"
-      >
-        <StepDivider
-          fill=""
-          notchFill="bg-ink-900"
-          flip
-          stepWidth={10}
-          // dropDepth<100: a linha superior deixa de ficar colada no topo da
-          // caixa e desce um pouco em direcao ao meio, sem mexer na linha de
-          // baixo (essa depende so do bottom-10 do wrapper). Efeito colateral
-          // esperado: a diagonal fica um pouco menos vertical, ja que o
-          // percurso vertical dela encolheu junto.
-          dropDepth={80}
-          lineColor="#ffffff"
-          lineWidth={1.4}
-          className="absolute inset-0 h-full w-full"
-        />
-      </div>
-
       {/* lg:pl-* empurra o grid inteiro (as duas colunas, titulo+CTAs e
           esfera+legenda) um pouco para a direita dentro do mesmo max-w-shell,
           sem mudar a largura total do bloco: sobra mais vazio a esquerda do
           que a direita, na proporcao pedida. */}
-      <div className="relative z-[2] mx-auto grid w-full max-w-shell grid-cols-1 items-center gap-14 lg:grid-cols-[0.95fr_1.15fr] lg:gap-8 lg:pl-10 xl:pl-16">
+      <div className="relative z-[2] mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-14 lg:grid-cols-[0.95fr_1.15fr] lg:gap-8 lg:pl-10 xl:pl-16 wide:max-w-shell">
         <div className="order-2 lg:order-1">
           {/* Revelacao palavra a palavra: o titulo se monta como uma frase
               sendo dita, em vez de aparecer inteiro de uma vez. */}
-          <h1 className="flex max-w-[15ch] flex-wrap gap-x-[0.28em] text-[2.75rem] font-semibold leading-[1.05] tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:text-7xl">
+          <h1 className="flex max-w-[15ch] flex-wrap gap-x-[0.28em] font-display text-[2.75rem] font-semibold leading-[1.05] tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:text-7xl">
             {HEADLINE.map((word, i) => (
               <span key={word + i} className="overflow-hidden pb-[0.08em]">
                 <motion.span

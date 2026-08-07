@@ -56,13 +56,36 @@ export default function Footer() {
   // o fechamento (CTA) em ink-900 entre as duas, dando a costura visual; sem
   // ele, o rodape precisa ser quem quebra a cor.
   return (
-    <footer className="border-t border-white/[0.08] bg-ink-900 px-6 py-16 sm:py-20">
+    <footer className="relative overflow-hidden border-t border-white/[0.08] bg-ink-900 px-6 py-16 sm:py-20 lg:px-10 wide:px-16">
+      {/* Wordmark de fundo de verdade: absolute, atras de tudo (o conteudo
+          real usa z-10 la embaixo), entao nao empurra mais nada no fluxo —
+          antes ele vivia entre o grid e a linha do copyright como um bloco
+          normal, o que o deixava "separado" (abaixo dos elementos) em vez de
+          atras deles. items-end + padding-bottom encosta ele perto da linha
+          do copyright sem precisar medir pixel a pixel. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 flex select-none items-end justify-center overflow-hidden pb-28 sm:pb-32"
+      >
+        <span
+          className="inline-block whitespace-nowrap font-sans font-bold uppercase leading-none text-transparent"
+          style={{
+            WebkitTextStroke: "1px rgba(255,255,255,0.1)",
+            fontSize: "clamp(8rem, 22vw, 22rem)",
+            letterSpacing: "0.02em",
+          }}
+        >
+          Jarvis
+        </span>
+      </div>
+
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto max-w-shell">
+        className="relative z-10 mx-auto max-w-6xl wide:max-w-shell"
+      >
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <a href="#top" className="flex items-center gap-2.5">

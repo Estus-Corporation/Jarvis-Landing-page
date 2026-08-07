@@ -179,7 +179,7 @@ export default function Integrations() {
   );
 
   return (
-    <section id="integracoes" className="relative overflow-hidden bg-ink-900 px-6 py-28 sm:py-36">
+    <section id="integracoes" className="relative overflow-hidden bg-ink-900 px-6 py-28 sm:py-36 lg:px-10 wide:px-16">
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <div
           className="absolute inset-0"
@@ -197,7 +197,7 @@ export default function Integrations() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
       </div>
 
-      <div className="relative mx-auto max-w-shell">
+      <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}

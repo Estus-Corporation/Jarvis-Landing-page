@@ -1,8 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { Exo_2 } from "next/font/google";
 import { SITE, SITE_URL } from "@/lib/site";
 import "./globals.css";
+
+// So para o titulo da Hero: peso 600/700 cobre o font-semibold usado la.
+const exo2 = Exo_2({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-exo2",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -56,7 +64,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${exo2.variable}`}
     >
       <body className="bg-ink-950 font-sans antialiased">
         {/* Atalho de teclado: primeiro Tab pula o menu e vai direto ao conteudo. */}

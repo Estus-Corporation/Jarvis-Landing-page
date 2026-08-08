@@ -188,7 +188,11 @@ export const TracingBeam = ({
   // foi pedido: desce reto, chanfra, para; vao; retoma reto do outro lado.
   const NORMAL_X = 1;
   const STEP_X = 19;
-  const GAP = 15;
+  // Meia-altura do vao em volta de cada divisao de secao: a linha para a
+  // `GAP`px ANTES da fronteira e so retoma `GAP`px DEPOIS, entao o vao total
+  // e 2*GAP. Aumentado (era 15) pra afastar mais a barra da divisoria de
+  // secao, a pedido — sobra mais respiro em volta de cada costura.
+  const GAP = 30;
   const CHAMFER_HEIGHT = 24;
   const pathD = React.useMemo(() => {
     let x = NORMAL_X;

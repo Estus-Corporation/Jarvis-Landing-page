@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Exo_2 } from "next/font/google";
 import { SITE, SITE_URL } from "@/lib/site";
+import SmoothScroll from "@/components/ui/smooth-scroll";
 import "./globals.css";
 
 // So para o titulo da Hero: peso 600/700 cobre o font-semibold usado la.
@@ -74,7 +75,7 @@ export default function RootLayout({
         >
           Pular para o conteúdo
         </a>
-        {children}
+        <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>
   );

@@ -76,10 +76,8 @@ export default function Home() {
         <Header />
         <Hero />
         <FeatureTicker />
-        {/* Barra de progresso do site: comeca em Recursos ("Ele age no
-            computador, nao so no chat."), nao na Hero — a Hero e a esteira
-            de recursos ficam de fora de proposito. Footer tambem fica de
-            fora, entao a barra termina onde Precos acaba, antes do rodape. */}
+        {/* Barra de progresso do site (lado esquerdo/direito), do topo de
+            Recursos ate o fim de Precos. */}
         <TracingBeam>
           <Features />
           <Integrations />

@@ -141,12 +141,8 @@ export function SpokenCaption({
       // vazar do cartao nesse caso extremo. Onda e divisor somem abaixo de
       // sm: e o espaco que falta pra frase mais longa caber numa linha so no
       // celular, onde a coluna e mais estreita.
-      className={`flex w-fit max-w-full items-center gap-4 overflow-hidden rounded-card border border-white/[0.1] bg-ink-800/80 px-4 py-4 backdrop-blur-sm sm:px-5 ${className}`}
+      className={`flex w-fit max-w-full items-center overflow-hidden rounded-card border border-white/[0.1] bg-ink-800/80 px-4 py-4 backdrop-blur-sm sm:px-5 ${className}`}
     >
-      <span className="hidden shrink-0 sm:block">
-        <LiveWave live={speaking} />
-      </span>
-      <span className="hidden h-8 w-px shrink-0 bg-white/10 sm:block" />
       <motion.p
         animate={{ opacity: exiting ? 0 : 1, y: exiting ? -6 : 0 }}
         transition={{ duration: exiting ? EXIT_MS / 1000 : 0.25, ease: "easeOut" }}

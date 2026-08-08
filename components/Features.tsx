@@ -296,7 +296,7 @@ export default function Features() {
                   aria-pressed={isActive}
                   className={`glow-ring group relative flex items-center gap-4 overflow-hidden rounded-card border px-5 py-4 text-left transition-colors duration-300 ${
                     isActive
-                      ? "glow-ring--active border-white/25 bg-ink-800"
+                      ? "glow-ring--active border-white bg-[#FAFAFA]"
                       : "border-white/[0.08] bg-ink-900/60 hover:border-white/20 hover:bg-ink-800/60"
                   }`}
                 >
@@ -304,7 +304,7 @@ export default function Features() {
                     aria-hidden
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-chip border transition-colors duration-300 ${
                       isActive
-                        ? "border-white/25 bg-white/[0.06] text-white"
+                        ? "border-ink-950 bg-ink-950 text-white"
                         : "border-white/[0.1] text-white/55 group-hover:text-white/80"
                     }`}
                   >
@@ -313,17 +313,24 @@ export default function Features() {
                   <span className="min-w-0 flex-1">
                     <span
                       className={`block font-display text-[0.95rem] font-semibold tracking-[-0.01em] transition-colors duration-300 ${
-                        isActive ? "text-[#FAFAFA]" : "text-white/75"
+                        isActive ? "text-ink-950" : "text-white/75"
                       }`}
                     >
                       {cap.tab}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs text-white/40">
+                    <span
+                      className={`mt-0.5 block truncate text-xs transition-colors duration-300 ${
+                        isActive ? "text-ink-950/80" : "text-white/40"
+                      }`}
+                    >
                       {cap.hint}
                     </span>
                   </span>
                   {isActive && (
-                    <span className="led-dot ml-1 shrink-0" aria-hidden />
+                    <span
+                      className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ink-950"
+                      aria-hidden
+                    />
                   )}
                 </button>
               );

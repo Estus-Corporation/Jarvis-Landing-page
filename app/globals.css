@@ -2,8 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* scroll-behavior fica em `auto`: quem cuida da rolagem suave agora e o Lenis
+   (ver components/ui/smooth-scroll.tsx). Deixar `smooth` aqui brigaria com o
+   Lenis nos saltos de ancora (dois motores de scroll ao mesmo tempo). Quando
+   o Lenis nao entra (reduzir movimento), o scroll volta a ser o nativo. */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 /* Quem pediu menos movimento nao deve receber scroll animado. */

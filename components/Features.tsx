@@ -337,8 +337,15 @@ export default function Features() {
             })}
           </div>
 
-          {/* Coluna direita: a janela do console */}
-          <div className="glow-ring glow-ring--active relative flex min-h-[420px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)]">
+          {/* Coluna direita: a janela do console. glow-ring SEM --active: o
+              anel girando e um conic-gradient animado via @property, que o
+              navegador precisa REPINTAR a cada frame (nao e so compositor
+              como transform/opacity) — deixado sempre ligado, isso e um
+              repaint continuo pra sempre numa janela grande e sempre
+              visivel. Vira hover/focus (:is(:hover,:focus-within), ja
+              definido em globals.css), igual o resto dos usos de
+              glow-ring no site. */}
+          <div className="glow-ring relative flex min-h-[420px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)]">
             {/* barra de titulo */}
             <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
               <span className="flex gap-1.5" aria-hidden>

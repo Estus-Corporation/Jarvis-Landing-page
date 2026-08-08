@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { cn } from "@/lib/utils";
 
 // Legenda falada + mixer de onda.
 //
@@ -26,33 +27,38 @@ const BARS = Array.from(
   (_, i) => 0.25 + 0.75 * Math.abs(Math.sin(i * 1.7) * Math.cos(i * 0.55))
 );
 
+// Barras em CSS puro (reaproveita @keyframes wave-bar de globals.css, a
+// mesma usada em Features.tsx), nao mais 28 motion.span com
+// `repeat: Infinity` cada — 28 loops JS-driven simultaneos custam mais que
+// 28 animacoes CSS identicas rodando no motor nativo do navegador. Duracao/
+// atraso por barra (que davam o efeito "onda", nao um pulso uniforme) viram
+// custom properties (--duration/--delay) lidas pelo keyframe.
 export function LiveWave({ live }: { live: boolean }) {
   const reduce = useReducedMotionSafe();
   return (
     <div className="flex h-6 items-center gap-[2px]" aria-hidden>
       {BARS.map((base, i) => (
-        <motion.span
+        <span
           key={i}
-          className="w-[2px] origin-center rounded-full bg-white"
-          style={{ height: `${base * 100}%` }}
-          initial={false}
-          animate={
+          className={cn(
+            "w-[2px] origin-center rounded-full bg-white transition-[opacity,transform] duration-300",
             reduce
-              ? { opacity: live ? 0.55 : 0.2 }
+              ? live
+                ? "opacity-55"
+                : "opacity-20"
               : live
-                ? { scaleY: [0.3, 1, 0.3], opacity: 0.7 }
-                : { scaleY: 0.2, opacity: 0.2 }
-          }
-          transition={
-            reduce || !live
-              ? { duration: 0.3 }
-              : {
-                  duration: 0.6 + (i % 5) * 0.12,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: (i % 7) * 0.05,
-                }
-          }
+                ? "animate-wave-bar-live opacity-70"
+                : "scale-y-[0.2] opacity-20"
+          )}
+          style={{
+            height: `${base * 100}%`,
+            ...(!reduce && live
+              ? ({
+                  "--duration": `${0.6 + (i % 5) * 0.12}s`,
+                  "--delay": `${(i % 7) * 0.05}s`,
+                } as React.CSSProperties)
+              : undefined),
+          }}
         />
       ))}
     </div>

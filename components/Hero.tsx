@@ -7,6 +7,7 @@ import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
 import { SpokenCaption } from "@/components/ui/spoken-caption";
 import { Particles } from "@/components/ui/particles";
+import { cn } from "@/lib/utils";
 import {
   ShieldCheck,
   Lightning,
@@ -257,15 +258,12 @@ export default function Hero() {
                   }}
                   className={`absolute z-10 hidden sm:block ${position}`}
                 >
-                  <motion.div
-                    animate={reduce ? undefined : { y: [0, -8, 0] }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: float,
-                    }}
-                    className="flex items-center gap-3 whitespace-nowrap rounded-2xl border border-white/[0.12] bg-ink-900/80 px-5 py-3.5 shadow-[0_14px_40px_-14px_rgba(0,0,0,0.65)] backdrop-blur-sm"
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 whitespace-nowrap rounded-2xl border border-white/[0.12] bg-ink-900/90 px-5 py-3.5 shadow-[0_14px_40px_-14px_rgba(0,0,0,0.65)]",
+                      !reduce && "animate-float-y"
+                    )}
+                    style={{ "--float-delay": `${float}s` } as React.CSSProperties}
                   >
                     <Glyph
                       size={22}
@@ -276,7 +274,7 @@ export default function Hero() {
                     <span className="text-base font-medium text-white/85">
                       {label}
                     </span>
-                  </motion.div>
+                  </div>
                 </motion.div>
               ))}
             </div>

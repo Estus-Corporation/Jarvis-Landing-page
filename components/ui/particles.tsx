@@ -1,33 +1,17 @@
 "use client";
 
+// Peso: antes disto, o mousemove era escutado no `window` inteiro e
+// atualizava STATE do React a cada movimento — ou seja, este componente
+// re-renderizava a cada pixel que o mouse andava em QUALQUER lugar da
+// pagina, nao so sobre a Hero, pelo resto da sessao. Trocado por um
+// listener `pointermove` escutado so no container deste componente,
+// escrevendo direto numa ref (sem setState, sem re-render nenhum).
+// Tambem ganhou: IntersectionObserver + document.hidden pra pausar o
+// desenho quando a Hero sai da tela ou a aba fica em segundo plano (antes
+// o requestAnimationFrame rodava pra sempre, mesmo 10 secoes abaixo) e um
+// teto de dpr=2 (evita canvas gigante em telas 3x+).
 import { cn } from "@/lib/utils";
-import React, { useEffect, useRef, useState } from "react";
-
-interface MousePosition {
-  x: number;
-  y: number;
-}
-
-function MousePosition(): MousePosition {
-  const [mousePosition, setMousePosition] = useState<MousePosition>({
-    x: 0,
-    y: 0,
-  });
-
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      setMousePosition({ x: event.clientX, y: event.clientY });
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-    };
-  }, []);
-
-  return mousePosition;
-}
+import React, { useEffect, useRef } from "react";
 
 interface ParticlesProps {
   className?: string;
@@ -72,10 +56,11 @@ const Particles: React.FC<ParticlesProps> = ({
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const context = useRef<CanvasRenderingContext2D | null>(null);
   const circles = useRef<Circle[]>([]);
-  const mousePosition = MousePosition();
   const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
+  const isVisible = useRef(true);
+  const dpr =
+    typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 1;
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -92,9 +77,40 @@ const Particles: React.FC<ParticlesProps> = ({
   }, [color]);
 
   useEffect(() => {
-    onMouseMove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mousePosition.x, mousePosition.y]);
+    const container = canvasContainerRef.current;
+    if (!container) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const { w, h } = canvasSize.current;
+      const x = event.clientX - rect.left - w / 2;
+      const y = event.clientY - rect.top - h / 2;
+      const inside = x < w / 2 && x > -w / 2 && y < h / 2 && y > -h / 2;
+      if (inside) {
+        mouse.current.x = x;
+        mouse.current.y = y;
+      }
+    };
+
+    container.addEventListener("pointermove", handlePointerMove, {
+      passive: true,
+    });
+    return () => container.removeEventListener("pointermove", handlePointerMove);
+  }, []);
+
+  useEffect(() => {
+    const container = canvasContainerRef.current;
+    if (!container || !("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]) isVisible.current = entries[0].isIntersecting;
+      },
+      { threshold: 0.01 }
+    );
+    io.observe(container);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     initCanvas();
@@ -104,20 +120,6 @@ const Particles: React.FC<ParticlesProps> = ({
   const initCanvas = () => {
     resizeCanvas();
     drawParticles();
-  };
-
-  const onMouseMove = () => {
-    if (canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const { w, h } = canvasSize.current;
-      const x = mousePosition.x - rect.left - w / 2;
-      const y = mousePosition.y - rect.top - h / 2;
-      const inside = x < w / 2 && x > -w / 2 && y < h / 2 && y > -h / 2;
-      if (inside) {
-        mouse.current.x = x;
-        mouse.current.y = y;
-      }
-    }
   };
 
   type Circle = {
@@ -222,6 +224,10 @@ const Particles: React.FC<ParticlesProps> = ({
   };
 
   const animate = () => {
+    if (!isVisible.current || document.hidden) {
+      window.requestAnimationFrame(animate);
+      return;
+    }
     clearContext();
     circles.current.forEach((circle: Circle, i: number) => {
       // Handle the alpha value

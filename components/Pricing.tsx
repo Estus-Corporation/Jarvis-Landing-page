@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
@@ -10,7 +11,15 @@ import {
   Trophy,
 } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
-import PrismaticBurst from "@/components/ui/prismatic-burst";
+
+// Import dinamico (ssr:false): PrismaticBurst carrega a lib `ogl` (WebGL)
+// inteira so pra desenhar um fundo decorativo no fim da pagina. Import
+// estatico colocaria isso no bundle JS INICIAL que a pagina inteira precisa
+// baixar/rodar pra hidratar — carregando sob demanda, o navegador so busca
+// esse pedaco quando a secao de Precos realmente vai ser renderizada.
+const PrismaticBurst = dynamic(() => import("@/components/ui/prismatic-burst"), {
+  ssr: false,
+});
 
 // Dois planos, mesmo produto, periodicidade diferente. Por isso a lista de
 // recursos aparece UMA vez, embaixo, em vez de repetida dentro de cada cartao:

@@ -136,21 +136,21 @@ export default function Testimonials() {
               }}
             >
               <div style={{ transform: "rotateY(0deg) translateZ(0px)" }}>
-                <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                <Marquee vertical pauseOnHover repeat={2} className="[--duration:40s]">
                   {testimonials.map((item, i) => (
                     <TestimonialCard key={i} item={item} />
                   ))}
                 </Marquee>
               </div>
               <div style={{ transform: "rotateY(6deg) translateZ(-14px)" }}>
-                <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
+                <Marquee vertical pauseOnHover reverse repeat={2} className="[--duration:40s]">
                   {testimonials.map((item, i) => (
                     <TestimonialCard key={i} item={item} />
                   ))}
                 </Marquee>
               </div>
               <div style={{ transform: "rotateY(12deg) translateZ(-28px)" }}>
-                <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                <Marquee vertical pauseOnHover repeat={2} className="[--duration:40s]">
                   {testimonials.map((item, i) => (
                     <TestimonialCard key={i} item={item} />
                   ))}
@@ -174,21 +174,21 @@ export default function Testimonials() {
               }}
             >
               <div style={{ transform: "rotateY(0deg) translateZ(0px)" }}>
-                <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                <Marquee vertical pauseOnHover repeat={2} className="[--duration:40s]">
                   {testimonials.map((item, i) => (
                     <TestimonialCard key={i} item={item} />
                   ))}
                 </Marquee>
               </div>
               <div style={{ transform: "rotateY(-6deg) translateZ(-14px)" }}>
-                <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
+                <Marquee vertical pauseOnHover reverse repeat={2} className="[--duration:40s]">
                   {testimonials.map((item, i) => (
                     <TestimonialCard key={i} item={item} />
                   ))}
                 </Marquee>
               </div>
               <div style={{ transform: "rotateY(-12deg) translateZ(-28px)" }}>
-                <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                <Marquee vertical pauseOnHover repeat={2} className="[--duration:40s]">
                   {testimonials.map((item, i) => (
                     <TestimonialCard key={i} item={item} />
                   ))}
@@ -218,7 +218,7 @@ export default function Testimonials() {
                 um pouco), sem mexer no fluxo (e so visual). */}
             <div className="relative h-[105%] w-[78vw] max-w-[980px] -translate-y-1 sm:h-[115%] sm:w-[62vw] sm:max-w-[1200px] sm:-translate-y-2">
               <Image
-                src="/images/agente.png"
+                src="/images/agente.webp"
                 alt=""
                 fill
                 sizes="(max-width: 640px) 78vw, 62vw"

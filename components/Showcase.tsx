@@ -149,7 +149,11 @@ export default function Showcase() {
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="glow-ring glow-ring--active relative mx-auto w-full max-w-[640px] overflow-hidden rounded-card border border-white/[0.12] bg-ink-950 shadow-[0_50px_140px_-40px_rgba(0,0,0,0.9)] lg:max-w-none"
+            // glow-ring SEM --active: ver comentario equivalente em
+            // Features.tsx — o anel girando repinta a cada frame pra
+            // sempre (nao e compositor-only), caro demais pra deixar ligado
+            // sem interacao numa janela grande e sempre visivel.
+            className="glow-ring relative mx-auto w-full max-w-[640px] overflow-hidden rounded-card border border-white/[0.12] bg-ink-950 shadow-[0_50px_140px_-40px_rgba(0,0,0,0.9)] lg:max-w-none"
           >
             {/* barra de titulo */}
             <div className="flex items-center gap-3 border-b border-white/[0.08] bg-ink-900/80 px-4 py-3">
@@ -170,7 +174,7 @@ export default function Showcase() {
             {/* a imagem */}
             <div className="relative aspect-[16/10] w-full">
               <Image
-                src="/images/jarvis-dashboard.png"
+                src="/images/jarvis-dashboard.webp"
                 alt="Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor."
                 fill
                 sizes="(max-width: 1024px) 100vw, 720px"

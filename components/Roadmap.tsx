@@ -40,7 +40,7 @@ const items: RoadmapItem[] = [
     body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador.",
     quote: "Jarvis, quanto falta pro meu build terminar?",
     image:
-      "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=900&auto=format&fit=crop",
   },
   {
     icon: House,
@@ -49,7 +49,7 @@ const items: RoadmapItem[] = [
     body: "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa.",
     quote: "Jarvis, apaga as luzes e liga o ar-condicionado.",
     image:
-      "https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=900&auto=format&fit=crop",
   },
   {
     icon: Car,
@@ -58,7 +58,7 @@ const items: RoadmapItem[] = [
     body: "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante.",
     quote: "Jarvis, rota para casa. E quem me mandou mensagem no WhatsApp?",
     image:
-      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=900&auto=format&fit=crop",
   },
 ];
 
@@ -288,11 +288,19 @@ export default function Roadmap() {
               >
                 {items.map((item) => (
                   <div key={item.title} className="h-full w-full">
+                    {/* loading="lazy": a secao inteira ja comeca fora da
+                        tela (carrossel abaixo da dobra), entao carregar as
+                        3 imagens (mesmo reduzidas pra w=900) so quando o
+                        navegador estiver perto de mostrar a secao evita
+                        gastar banda com imagens que boa parte de quem
+                        visita a pagina nunca chega a rolar ate ver. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.image}
                       alt=""
                       aria-hidden
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                       onError={(event) => {
                         const target = event.currentTarget;

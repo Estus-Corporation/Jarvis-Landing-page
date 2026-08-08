@@ -243,6 +243,15 @@ body {
   animation: wave-bar 1.1s ease-in-out infinite;
 }
 
+/* Mesmo keyframe acima, reaproveitado pelo LiveWave (spoken-caption.tsx) —
+   duracao e atraso variam por barra via --duration/--delay (em vez de uma
+   .wave-bar de duracao fixa) pra reproduzir o efeito de onda que antes vinha
+   de un `transition` diferente por indice no Framer Motion. */
+.animate-wave-bar-live {
+  animation: wave-bar var(--duration, 0.8s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
 /* Cursor piscando do terminal simulado. */
 @keyframes caret-blink {
   0%,
@@ -292,6 +301,28 @@ body {
 
 .animate-ticker {
   animation: ticker-scroll 110s linear infinite;
+}
+
+/* Balanco dos selos flutuantes da Hero (ORB_CHIPS). Antes era um
+   motion.div com animate={{y:[0,-8,0]}}, repeat: Infinity — animar via
+   Framer Motion custa um recalculo em JS a cada frame, pra sempre, em 3
+   elementos ao mesmo tempo; transform em CSS puro e so compositor (GPU),
+   sem esse custo continuo. animation-delay (via --float-delay, por chip)
+   substitui o antigo `delay` do transition, pra eles nao boiarem em
+   uníssono. */
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float-y {
+  animation: float-y 4s ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
 }
 
 /* Esteiras do carrossel 3D de depoimentos (divisoria Hero -> Recursos). Mesmo

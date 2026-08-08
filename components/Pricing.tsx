@@ -10,7 +10,7 @@ import {
   Trophy,
 } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
-import { FloatingPathsBackground } from "@/components/ui/floating-paths";
+import PrismaticBurst from "@/components/ui/prismatic-burst";
 
 // Dois planos, mesmo produto, periodicidade diferente. Por isso a lista de
 // recursos aparece UMA vez, embaixo, em vez de repetida dentro de cada cartao:
@@ -88,13 +88,20 @@ export default function Pricing() {
   const reduce = useReducedMotionSafe();
 
   return (
-    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-8 pt-28 sm:pt-36 lg:px-10 wide:px-16">
-      {/* Fios animados no lugar da imagem de curvas de nivel: mesma funcao
-          (textura sutil no topo da secao, esmaecendo pro fundo solido), mas
-          sem depender de uma imagem pequena demais esticada a 100vw. A
-          mascara em gradiente e a mesma logica de antes: nasce transparente,
-          pico no meio, esmaece antes do fim, pra emergir do fundo em vez de
-          comecar com corte seco. */}
+    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-8 pt-20 sm:pt-28 lg:px-10 wide:px-16">
+      {/* Fundo animado no lugar da imagem de curvas de nivel: mesma funcao
+          (textura no topo da secao, esmaecendo pro fundo solido). A mascara
+          em gradiente e a mesma logica de antes: nasce transparente, pico no
+          meio, esmaece antes do fim, pra emergir do fundo em vez de comecar
+          com corte seco.
+          PrismaticBurst (React Bits, ver components/ui/prismatic-burst.tsx):
+          raios de luz em 3D via shader WebGL, no lugar do antigo
+          FloatingPathsBackground (fios SVG em CSS). `colors` fica preso a
+          cinzas/branco (nada de rosa/azul do exemplo original) pra caber no
+          sistema monocromatico do site. `paused` respeita reduced motion.
+          E BEM mais pesado que o fundo em CSS de antes (shader rodando no
+          canvas inteiro, todo frame) — se voltar a pesar em maquina fraca,
+          o primeiro ajuste e baixar rayCount/intensity aqui. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[760px] opacity-[0.5]"
@@ -105,7 +112,16 @@ export default function Pricing() {
             "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
         }}
       >
-        <FloatingPathsBackground position={-1} className="h-full" />
+        <PrismaticBurst
+          animationType="rotate3d"
+          intensity={1.4}
+          speed={0.35}
+          distort={0.6}
+          paused={reduce}
+          rayCount={16}
+          mixBlendMode="lighten"
+          colors={["#ffffff", "#9a9a9a", "#4a4a4a"]}
+        />
       </div>
       <div
         aria-hidden

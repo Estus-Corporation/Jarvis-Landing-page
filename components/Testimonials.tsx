@@ -6,10 +6,15 @@
 // nome aqui", sem foto — so um icone generico), pronto pra receber
 // depoimentos reais (com nome, foto e selo de verificado) no lancamento.
 //
-// Layout: carrossel 3D em perspectiva, cartoes tombados pra ESQUERDA, correndo
-// em 4 esteiras verticais (sentidos alternados) — mesmo mecanismo do
+// Layout: carrossel 3D em perspectiva, com 6 esteiras verticais no total —
+// 3 tombadas pra ESQUERDA e 3 espelhadas (tombadas pra DIREITA), uma metade
+// de cada lado da imagem do "agente" no centro. Cada metade vive na sua
+// propria janela com overflow-hidden (ver comentario mais abaixo), o que
+// garante que os cartoes de um lado nunca alcancem o outro, mesmo embaixo
+// onde a inclinacao 3D desloca as fileiras de lado. Mesmo mecanismo do
 // componente Marquee de components/ui/3d-testimonials.tsx.
 import React from "react";
+import Image from "next/image";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
@@ -81,21 +86,9 @@ export default function Testimonials() {
   return (
     <section
       id="depoimentos"
-      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 pb-20 pt-28 sm:pb-28 sm:pt-36"
+      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 pb-20 pt-20 sm:pb-28 sm:pt-28"
     >
       <div className="relative mx-auto max-w-6xl px-6 lg:px-10 wide:max-w-shell wide:px-16">
-        {/* Halo por tras do titulo: escopado a este bloco (nao a secao
-            inteira), baixo, menor e com blur bem mais forte — a versao
-            anterior (440px de altura, blur 150px) ainda tinha alcance/força
-            suficiente pra sobrar um resto visivel bem em cima do carrossel,
-            que aparecia como uma quebra de cor contra a mascara opaca dele.
-            -translate-y-[70%] (em vez de 50%) joga o centro do halo pra
-            ACIMA do bloco do titulo, entao o que sobra na direcao do
-            carrossel ja chega quase zero. */}
-        <div className="pointer-events-none absolute inset-0" aria-hidden>
-          <div className="absolute left-1/2 top-1/2 h-[260px] w-[640px] -translate-x-1/2 -translate-y-[70%] rounded-full bg-white/[0.03] blur-[190px]" />
-        </div>
-
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -125,35 +118,114 @@ export default function Testimonials() {
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           aria-hidden
-          className="relative flex h-[560px] w-full flex-row items-center justify-start gap-1.5 overflow-hidden pl-[4vw] [perspective:300px] sm:h-[720px]"
+          className="relative flex h-[560px] w-full items-center overflow-hidden sm:h-[720px]"
         >
-          <div
-            className="flex flex-row items-center gap-5"
-            style={{
-              transform:
-                "translateX(-40px) translateY(0px) translateZ(-100px) rotateX(20deg) rotateY(10deg) rotateZ(-20deg)",
-            }}
-          >
-            <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
-              {testimonials.map((item, i) => (
-                <TestimonialCard key={i} item={item} />
-              ))}
-            </Marquee>
-            <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
-              {testimonials.map((item, i) => (
-                <TestimonialCard key={i} item={item} />
-              ))}
-            </Marquee>
-            <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
-              {testimonials.map((item, i) => (
-                <TestimonialCard key={i} item={item} />
-              ))}
-            </Marquee>
-            <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
-              {testimonials.map((item, i) => (
-                <TestimonialCard key={i} item={item} />
-              ))}
-            </Marquee>
+          {/* Metade ESQUERDA: 3 esteiras tombadas pra esquerda, presas numa
+              janela propria (w-[46vw] + overflow-hidden) que so cobre a
+              metade esquerda da tela. Isso e o que garante o pedido de "nao
+              deixar os cartoes um em cima do outro embaixo": mesmo que a
+              inclinacao 3D desloque uma fileira de lado conforme desce, o
+              corte da janela impede que ela chegue perto da metade direita —
+              as duas metades nunca podem se encostar, fisicamente. */}
+          <div className="absolute inset-y-0 left-0 flex w-[46vw] items-center overflow-hidden pl-[3vw] [perspective:1000px]">
+            <div
+              className="flex flex-row items-center gap-5"
+              style={{
+                transform:
+                  "translateX(-40px) translateY(0px) translateZ(-100px) rotateX(8deg) rotateY(10deg) rotateZ(-20deg)",
+              }}
+            >
+              <div style={{ transform: "rotateY(0deg) translateZ(0px)" }}>
+                <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                  {testimonials.map((item, i) => (
+                    <TestimonialCard key={i} item={item} />
+                  ))}
+                </Marquee>
+              </div>
+              <div style={{ transform: "rotateY(6deg) translateZ(-14px)" }}>
+                <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
+                  {testimonials.map((item, i) => (
+                    <TestimonialCard key={i} item={item} />
+                  ))}
+                </Marquee>
+              </div>
+              <div style={{ transform: "rotateY(12deg) translateZ(-28px)" }}>
+                <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                  {testimonials.map((item, i) => (
+                    <TestimonialCard key={i} item={item} />
+                  ))}
+                </Marquee>
+              </div>
+            </div>
+          </div>
+
+          {/* Metade DIREITA: espelho exato da esquerda. O sinal trocado em
+              translateX/rotateY/rotateZ (mantendo rotateX igual) reflete a
+              FORMA tombada pro outro lado — geometria de espelho de verdade,
+              nao um scaleX(-1) na esteira inteira, que deixaria o texto dos
+              cartoes escrito de tras pra frente. Mesma janela propria do
+              lado esquerdo, agora ancorada na borda direita. */}
+          <div className="absolute inset-y-0 right-0 flex w-[46vw] items-center justify-end overflow-hidden pr-[3vw] [perspective:1000px]">
+            <div
+              className="flex flex-row items-center gap-5"
+              style={{
+                transform:
+                  "translateX(40px) translateY(0px) translateZ(-100px) rotateX(8deg) rotateY(-10deg) rotateZ(20deg)",
+              }}
+            >
+              <div style={{ transform: "rotateY(0deg) translateZ(0px)" }}>
+                <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                  {testimonials.map((item, i) => (
+                    <TestimonialCard key={i} item={item} />
+                  ))}
+                </Marquee>
+              </div>
+              <div style={{ transform: "rotateY(-6deg) translateZ(-14px)" }}>
+                <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
+                  {testimonials.map((item, i) => (
+                    <TestimonialCard key={i} item={item} />
+                  ))}
+                </Marquee>
+              </div>
+              <div style={{ transform: "rotateY(-12deg) translateZ(-28px)" }}>
+                <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                  {testimonials.map((item, i) => (
+                    <TestimonialCard key={i} item={item} />
+                  ))}
+                </Marquee>
+              </div>
+            </div>
+          </div>
+
+          {/* Imagem "agente": grande, SEM moldura de cartao de proposito
+              (nada de borda/rounded/sombra) — e pra parecer que o busto
+              esta flutuando por cima dos cartoes do carrossel, nao mais um
+              elemento de UI encaixotado ao lado. Vem DEPOIS das esteiras no
+              DOM (fica por cima delas) e ANTES das mascaras de borda (que
+              ainda a esmaecem nas bordas, igual fazem com os cartoes).
+              object-contain (nao mais object-cover): a foto original e
+              paisagem (3:2) e a caixa e bem mais alta que larga, entao
+              "cover" cortava as laterais pra preencher a caixa inteira.
+              "contain" mostra a foto inteira, sem cortar nada.
+              `right` positivo (nao negativo): "right: -Xvw" empurra o
+              elemento PRA ALEM da borda direita (ou seja, pra direita) —
+              era isso que fazia parecer pouco deslocado pra esquerda antes.
+              Valor bem maior e positivo agora, puxando de verdade pro
+              centro-esquerda, com uma caixa bem maior (em vw, acompanha a
+              largura da tela). */}
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center">
+            {/* translate-y: pequeno deslocamento vertical (negativo = sobe
+                um pouco), sem mexer no fluxo (e so visual). */}
+            <div className="relative h-[105%] w-[78vw] max-w-[980px] -translate-y-1 sm:h-[115%] sm:w-[62vw] sm:max-w-[1200px] sm:-translate-y-2">
+              <Image
+                src="/images/agente.png"
+                alt=""
+                fill
+                sizes="(max-width: 640px) 78vw, 62vw"
+                quality={90}
+                className="object-contain"
+              />
+            </div>
           </div>
 
           {/* Mascara de cima: a versao anterior (2-3 paradas de cor, com um

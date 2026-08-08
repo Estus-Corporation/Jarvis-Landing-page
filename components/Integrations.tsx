@@ -167,7 +167,7 @@ export default function Integrations() {
   return (
     <section
       id="integracoes"
-      className="relative overflow-hidden bg-ink-900 px-6 py-28 sm:py-36 lg:px-10 wide:px-16"
+      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
     >
       {/* fundo: grade + halo */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>

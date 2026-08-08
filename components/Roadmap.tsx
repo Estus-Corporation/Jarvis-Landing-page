@@ -179,7 +179,7 @@ export default function Roadmap() {
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
-      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 py-28 sm:py-36 lg:px-10 wide:px-16"
+      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
     >
       <SectionBackdrop />
 

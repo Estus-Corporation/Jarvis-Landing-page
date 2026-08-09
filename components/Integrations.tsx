@@ -38,11 +38,6 @@ const outerRing: Integration[] = [
 
 const ALL = [...innerRing, ...outerRing];
 
-const brains: Integration[] = [
-  { name: "OpenAI", label: "Interpreta o que você pede", src: "/brands/openai.svg" },
-  { name: "ElevenLabs", label: "Devolve a resposta na sua voz", src: "/brands/elevenlabs.svg" },
-];
-
 const AUTOPLAY_MS = 2600;
 
 // Marca de 4 pontos do Jarvis (mesma do header/footer), ampliada como nucleo.
@@ -167,7 +162,12 @@ export default function Integrations() {
   return (
     <section
       id="integracoes"
-      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
+      // bg-[#0C0C0E]: bg-ink-900 (#0E0E10) escurecido de leve — bg-ink-950
+      // (#0A0A0B) e o proximo tom da escala, mas o salto direto ate la ficava
+      // forte demais (a secao ficava identica ao fundo puro da pagina), e um
+      // ajuste de so ~25% do caminho (#0D0D0F) ficou leve demais no sentido
+      // oposto. Este tom fica a ~40% do caminho ate ink-950.
+      className="relative overflow-hidden bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
     >
       {/* fundo: grade + halo */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
@@ -323,47 +323,6 @@ export default function Integrations() {
           </AnimatePresence>
         </div>
 
-        {/* cerebro e voz */}
-        <div className="mt-16">
-          <h3 className="text-center font-display text-sm font-semibold uppercase tracking-[0.15em] text-white/40">
-            O núcleo que move tudo
-          </h3>
-          <div className="mx-auto mt-7 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
-            {brains.map((item, i) => (
-              <motion.div
-                key={item.name}
-                initial={reduce ? false : { opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.4 }}
-                transition={{
-                  duration: 0.6,
-                  delay: reduce ? 0 : i * 0.09,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                className="glow-ring group relative flex items-center gap-5 overflow-hidden rounded-card border border-white/[0.08] bg-ink-800/60 px-7 py-7 transition-colors duration-300 hover:border-white/25 hover:bg-ink-700"
-              >
-                <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.src}
-                  alt=""
-                  width={40}
-                  height={40}
-                  aria-hidden
-                  className="h-10 w-10 shrink-0 opacity-70 brightness-0 invert transition-opacity duration-300 group-hover:opacity-100"
-                />
-                <div className="min-w-0">
-                  <p className="font-display text-base font-semibold text-[#FAFAFA]">
-                    {item.name}
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-white/45">
-                    {item.label}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

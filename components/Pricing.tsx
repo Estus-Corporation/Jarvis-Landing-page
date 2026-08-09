@@ -97,7 +97,7 @@ export default function Pricing() {
   const reduce = useReducedMotionSafe();
 
   return (
-    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-8 pt-20 sm:pt-28 lg:px-10 wide:px-16">
+    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-14 pt-20 sm:pb-16 sm:pt-28 lg:px-10 wide:px-16">
       {/* Fundo animado no lugar da imagem de curvas de nivel: mesma funcao
           (textura no topo da secao, esmaecendo pro fundo solido). A mascara
           em gradiente e a mesma logica de antes: nasce transparente, pico no

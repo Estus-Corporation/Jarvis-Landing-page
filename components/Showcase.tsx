@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
@@ -15,22 +15,21 @@ import {
 import type { Icon } from "@phosphor-icons/react";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
 
-// SECAO RECONSTRUIDA DO ZERO — antes era um scroll-expand que crescia a
-// imagem enquanto a pagina rolava (sequestrava a rolagem visualmente) + uma
-// grade de cartoes de widgets embaixo.
+// SECAO RECONSTRUIDA DO ZERO (2a vez) — antes a dashboard dividia espaco com
+// 6 cartoes de widget cheios de texto, 3 de cada lado, o que limitava o
+// tamanho dela a uma coluna estreita do meio.
 //
-// Ideia nova: uma VITRINE ANOTADA, no espirito de pagina de produto premium.
-// A dashboard aparece dentro de uma janela de app de verdade (barra de
-// titulo, cantos de mira HUD, brilho embaixo). Em telas grandes, callouts
-// flutuam nas laterais e se ligam a imagem por fios finos de luz — cada um
-// aponta um recurso da tela. Em telas menores os callouts viram uma grade
-// embaixo. Sem sequestrar scroll, sem imagem gigante crescendo: um "hero
-// shot" do produto com anotacoes, que e o formato que mais vende software.
+// Ideia nova: a imagem e a PROTAGONISTA de verdade (bem maior — sem cartoes
+// de texto competindo por largura). Os widgets viram botoes de icone so,
+// numa selecao automatica (mesmo mecanismo do hub de Integracoes: um ativo
+// por vez, autoplay, para no hover/foco) e a legenda viva embaixo da imagem
+// conta o que aquele widget faz. Menos elementos, mais imagem, mesma
+// informacao — so que contada uma de cada vez em vez de todas de uma vez.
 
 type Widget = { icon: Icon; title: string; note: string };
 
 // 3 a esquerda, 3 a direita: a ordem aqui e a ordem visual de cima pra baixo
-// em cada lado.
+// em cada lado (e a ordem do autoplay, esquerda primeiro).
 const leftWidgets: Widget[] = [
   { icon: CloudSun, title: "Clima e relógio", note: "Previsão e hora local sempre à vista." },
   { icon: MusicNotes, title: "Spotify", note: "Faixa atual com a capa do álbum." },
@@ -45,64 +44,96 @@ const rightWidgets: Widget[] = [
 
 const allWidgets = [...leftWidgets, ...rightWidgets];
 
-function Callout({
+const AUTOPLAY_MS = 2600;
+
+// Botao de icone so, sem texto — mesmo tratamento visual do hub de
+// Integracoes (glow-ring, ativo = borda+fundo mais claros e icone 100%
+// opaco). onMouseEnter/onFocus escolhem o widget tanto no hover (mouse)
+// quanto no toque/tab (foco), igual ao hub.
+function WidgetIcon({
   widget,
-  side,
-  delay,
+  active,
+  onActivate,
 }: {
   widget: Widget;
-  side: "left" | "right";
-  delay: number;
+  active: boolean;
+  onActivate: (w: Widget) => void;
 }) {
-  const reduce = useReducedMotionSafe();
   const Glyph = widget.icon;
   return (
-    <motion.div
-      initial={reduce ? false : { opacity: 0, x: side === "left" ? -20 : 20 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 0.6, delay: reduce ? 0 : delay, ease: [0.16, 1, 0.3, 1] }}
-      className={`glow-ring group relative flex items-start gap-4 rounded-card border border-white/[0.1] bg-ink-800/70 p-5 backdrop-blur-sm transition-colors duration-300 hover:border-white/25 sm:p-6 ${
-        side === "left" ? "text-left" : "flex-row-reverse text-right"
+    <button
+      type="button"
+      onMouseEnter={() => onActivate(widget)}
+      onFocus={() => onActivate(widget)}
+      aria-label={`${widget.title}: ${widget.note}`}
+      className={`glow-ring flex h-14 w-14 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 sm:h-16 sm:w-16 ${
+        active
+          ? "glow-ring--active border-white/35 bg-ink-700"
+          : "border-white/[0.12] bg-ink-800 hover:border-white/25"
       }`}
     >
-      {/* Fio de luz saindo em direcao a imagem (so no lado que aponta pra
-          dentro). Fica na borda interna do callout. */}
-      <span
+      <Glyph
+        size={22}
+        weight="light"
         aria-hidden
-        className={`absolute top-1/2 hidden h-px w-8 -translate-y-1/2 lg:block ${
-          side === "left"
-            ? "left-full bg-gradient-to-r from-white/40 to-transparent"
-            : "right-full bg-gradient-to-l from-white/40 to-transparent"
+        className={`transition-opacity duration-300 ${
+          active ? "text-white opacity-100" : "text-white/60"
         }`}
       />
-      <span
-        aria-hidden
-        className={`absolute top-1/2 hidden h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/70 shadow-[0_0_6px_1px_rgba(255,255,255,0.5)] lg:block ${
-          side === "left" ? "left-full ml-8" : "right-full mr-8"
-        }`}
-      />
-
-      <span
-        aria-hidden
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-chip border border-white/[0.12] bg-white/[0.04] text-white/65 transition-colors duration-300 group-hover:text-white"
-      >
-        <Glyph size={22} weight="light" />
-      </span>
-      <span className="min-w-0">
-        <span className="block font-display text-base font-semibold text-[#FAFAFA] sm:text-lg">
-          {widget.title}
-        </span>
-        <span className="mt-1 block text-sm leading-relaxed text-white/50">
-          {widget.note}
-        </span>
-      </span>
-    </motion.div>
+    </button>
   );
 }
 
 export default function Showcase() {
   const reduce = useReducedMotionSafe();
+  const [active, setActive] = useState<Widget>(allWidgets[0]);
+  const [paused, setPaused] = useState(false);
+
+  // Autoplay: destaca um widget por vez, girando pela lista toda. Para no
+  // hover/foco. Mesmo mecanismo do hub de Integracoes.
+  useEffect(() => {
+    if (reduce || paused) return;
+    const id = setInterval(() => {
+      setActive((cur) => {
+        const idx = allWidgets.findIndex((w) => w.title === cur.title);
+        return allWidgets[(idx + 1) % allWidgets.length];
+      });
+    }, AUTOPLAY_MS);
+    return () => clearInterval(id);
+  }, [reduce, paused]);
+
+  const handleActivate = React.useCallback((w: Widget) => setActive(w), []);
+
+  // Legenda com efeito de escrita, igual ao SpokenCaption de baixo da esfera
+  // na Hero (ver components/ui/spoken-caption.tsx) — so que aqui o "texto"
+  // muda por causa de um widget diferente ficar ativo (hover ou autoplay dos
+  // icones), nao por um ciclo de frases proprio. Titulo + nota viram UMA
+  // string so pra digitar (`combined`); na hora de desenhar, `chars` corta
+  // essa string e o pedaco e repartido de volta em titulo (negrito) e nota
+  // (normal) pelo comprimento do titulo.
+  const combined = `${active.title} ${active.note}`;
+  const [chars, setChars] = useState(reduce ? combined.length : 0);
+
+  useEffect(() => {
+    if (reduce) {
+      setChars(combined.length);
+      return;
+    }
+    setChars(0);
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      setChars(i);
+      if (i >= combined.length) clearInterval(id);
+    }, 26);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active.title, reduce]);
+
+  const typed = combined.slice(0, chars);
+  const typedTitle = typed.slice(0, active.title.length);
+  const typedNote = typed.slice(active.title.length);
+  const typing = chars < combined.length;
 
   return (
     <section
@@ -132,14 +163,26 @@ export default function Showcase() {
           </p>
         </motion.div>
 
-        {/* Palco: 3 colunas em lg (callouts | janela | callouts). A janela e a
-            coluna dominante (a dashboard e o heroi da secao); os callouts
-            ocupam faixas mais estreitas dos lados. */}
-        <div className="mt-16 grid grid-cols-1 items-center gap-6 lg:grid-cols-[0.8fr_1.75fr_0.8fr] lg:gap-8">
-          {/* callouts esquerda (lg) */}
-          <div className="hidden flex-col gap-4 lg:flex">
-            {leftWidgets.map((w, i) => (
-              <Callout key={w.title} widget={w} side="left" delay={0.15 + i * 0.1} />
+        {/* Palco: 3 colunas em lg (icones | janela | icones), mas agora as
+            colunas de icone sao "auto" (largura do proprio botao, ~64px) em
+            vez de fracoes — a janela (1fr) fica com QUASE toda a largura
+            disponivel. E a mudanca central deste redesenho: antes eram
+            0.8fr/1.75fr/0.8fr (a janela levava ~52% do espaco), agora e
+            auto/1fr/auto (a janela leva tudo que sobra, ~85-90%). */}
+        <div
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          className="mt-16 grid grid-cols-1 items-center gap-6 lg:grid-cols-[auto_1fr_auto] lg:gap-8"
+        >
+          {/* icones esquerda (lg) */}
+          <div className="hidden flex-col gap-5 lg:flex">
+            {leftWidgets.map((w) => (
+              <WidgetIcon
+                key={w.title}
+                widget={w}
+                active={active.title === w.title}
+                onActivate={handleActivate}
+              />
             ))}
           </div>
 
@@ -171,15 +214,29 @@ export default function Showcase() {
               </span>
             </div>
 
-            {/* a imagem */}
-            <div className="relative aspect-[16/10] w-full">
+            {/* a imagem: aspect-[16/9], igual a proporcao real do arquivo
+                (1536x864) — antes era 16/10 (proporcao da imagem antiga),
+                que cortava as laterais desta por object-cover tentar
+                preencher uma caixa mais "quadrada" que a imagem. Com a
+                caixa na MESMA proporcao do arquivo, cover nao corta nada.
+
+                unoptimized: o arquivo fonte JA e um .webp comprimido. Sem
+                isso, o otimizador de imagem do Next decodifica esse webp e
+                RE-comprime pra outro webp (uma 2a passada com perda, mesmo
+                em quality=100 — webp 100 nao e bit-a-bit identico ao
+                original, e comprimir duas vezes acumula perda, visivel
+                sobretudo nos pontinhos da esfera e nas estrelas de fundo).
+                unoptimized manda o Next servir os bytes originais direto,
+                sem reprocessar nada — a imagem fica identica ao arquivo
+                fonte. Custo: sem srcset responsivo, mas o arquivo ja e leve
+                (165KB) e nao vale a pena trocar fidelidade por isso aqui. */}
+            <div className="relative aspect-[16/9] w-full">
               <Image
-                src="/images/jarvis-dashboard.webp"
+                src="/images/dashjarvis.webp"
                 alt="Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor."
                 fill
-                sizes="(max-width: 1024px) 100vw, 720px"
-                quality={90}
-                className="object-cover object-top"
+                unoptimized
+                className="object-cover"
                 draggable={false}
               />
               {/* realce especular no topo */}
@@ -205,19 +262,53 @@ export default function Showcase() {
             </div>
           </motion.div>
 
-          {/* callouts direita (lg) */}
-          <div className="hidden flex-col gap-4 lg:flex">
-            {rightWidgets.map((w, i) => (
-              <Callout key={w.title} widget={w} side="right" delay={0.15 + i * 0.1} />
+          {/* icones direita (lg) */}
+          <div className="hidden flex-col gap-5 lg:flex">
+            {rightWidgets.map((w) => (
+              <WidgetIcon
+                key={w.title}
+                widget={w}
+                active={active.title === w.title}
+                onActivate={handleActivate}
+              />
             ))}
           </div>
         </div>
 
-        {/* callouts em grade (abaixo de lg) */}
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden">
-          {allWidgets.map((w, i) => (
-            <Callout key={w.title} widget={w} side="left" delay={i * 0.06} />
+        {/* icones em linha (abaixo de lg): mesma selecao, so que todos os 6
+            numa fileira so em vez de duas colunas de 3. */}
+        <div
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:hidden"
+        >
+          {allWidgets.map((w) => (
+            <WidgetIcon
+              key={w.title}
+              widget={w}
+              active={active.title === w.title}
+              onActivate={handleActivate}
+            />
           ))}
+        </div>
+
+        {/* legenda viva, em caixa com efeito de escrita — mesmo tratamento
+            visual do SpokenCaption debaixo da esfera na Hero (borda, fundo
+            translucido com blur, cursor piscando), so que o texto muda
+            porque um widget diferente ficou ativo, nao por um ciclo de
+            frases proprio. */}
+        <div className="mt-8 flex min-h-[4.5rem] items-center justify-center px-4">
+          <div className="flex w-fit max-w-full items-center justify-center rounded-card border border-white/[0.1] bg-ink-800/80 px-5 py-4 text-center backdrop-blur-sm sm:px-6">
+            <p className="text-balance text-base leading-relaxed sm:text-lg" aria-live="polite">
+              <span className="font-display font-semibold text-[#FAFAFA]">
+                {typedTitle}
+              </span>
+              <span className="font-light text-white/60">{typedNote}</span>
+              {typing && !reduce && (
+                <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </section>

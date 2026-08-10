@@ -252,28 +252,31 @@ export default function Testimonials() {
       </div>
 
       <div className="relative z-10 mx-auto -mt-28 max-w-6xl px-6 sm:-mt-36 lg:px-10 wide:max-w-shell wide:px-16">
-        {/* Faixa de confianca: fatos REAIS que a pagina garante. Fundo mais
-            opaco + blur pra continuar legivel por cima do carrossel. */}
+        {/* Faixa de confianca: fatos REAIS que a pagina garante. Cartao
+            branco solido + icones em chip preto — mesmo tratamento do botao
+            selecionado em "Ele age no computador, nao so no chat."
+            (Features.tsx), pra destacar essa faixa como um "selo" de
+            garantia em vez de mais um bloco escuro entre secoes escuras. */}
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-1 gap-3 rounded-card border border-white/[0.08] bg-ink-900/80 p-3 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] backdrop-blur-md sm:grid-cols-3"
+          className="grid grid-cols-1 gap-3 rounded-card border border-white bg-[#FAFAFA] p-3 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] sm:grid-cols-3"
         >
           {trust.map(({ icon: Glyph, title, note }) => (
             <div key={title} className="flex items-center gap-3.5 rounded-chip px-4 py-3">
               <span
                 aria-hidden
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip border border-white/[0.12] bg-white/[0.04] text-white/70"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip border border-ink-950 bg-ink-950 text-white"
               >
                 <Glyph size={19} weight="light" />
               </span>
               <span>
-                <span className="block font-display text-sm font-semibold text-[#FAFAFA]">
+                <span className="block font-display text-sm font-semibold text-ink-950">
                   {title}
                 </span>
-                <span className="block text-xs text-white/45">{note}</span>
+                <span className="block text-xs text-ink-950/80">{note}</span>
               </span>
             </div>
           ))}

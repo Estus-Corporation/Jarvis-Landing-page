@@ -46,10 +46,12 @@ const allWidgets = [...leftWidgets, ...rightWidgets];
 
 const AUTOPLAY_MS = 2600;
 
-// Botao de icone so, sem texto — mesmo tratamento visual do hub de
-// Integracoes (glow-ring, ativo = borda+fundo mais claros e icone 100%
-// opaco). onMouseEnter/onFocus escolhem o widget tanto no hover (mouse)
-// quanto no toque/tab (foco), igual ao hub.
+// Botao de icone so, sem texto. Ativo = fundo branco solido + icone preto
+// (mesmo tratamento do botao selecionado em "Ele age no computador, nao so
+// no chat.", Features.tsx, e da faixa de garantia em Testimonials.tsx) — o
+// resto do site converge pro mesmo "selo branco" pra indicar selecao/ativo.
+// onMouseEnter/onFocus escolhem o widget tanto no hover (mouse) quanto no
+// toque/tab (foco).
 function WidgetIcon({
   widget,
   active,
@@ -63,12 +65,18 @@ function WidgetIcon({
   return (
     <button
       type="button"
-      onMouseEnter={() => onActivate(widget)}
-      onFocus={() => onActivate(widget)}
+      // onClick, nao onMouseEnter/onFocus: precisa de uma acao explicita
+      // (clique ou Enter/Espaco com o botao focado — onClick cobre os dois)
+      // pra trocar o widget selecionado, em vez de mudar so por passar o
+      // mouse por cima. O container ao redor ainda pausa o autoplay no
+      // hover (onMouseEnter/onMouseLeave la fora), so a SELECAO em si que
+      // agora exige clique.
+      onClick={() => onActivate(widget)}
       aria-label={`${widget.title}: ${widget.note}`}
+      aria-pressed={active}
       className={`glow-ring flex h-14 w-14 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 sm:h-16 sm:w-16 ${
         active
-          ? "glow-ring--active border-white/35 bg-ink-700"
+          ? "glow-ring--active border-white bg-[#FAFAFA]"
           : "border-white/[0.12] bg-ink-800 hover:border-white/25"
       }`}
     >
@@ -76,8 +84,8 @@ function WidgetIcon({
         size={22}
         weight="light"
         aria-hidden
-        className={`transition-opacity duration-300 ${
-          active ? "text-white opacity-100" : "text-white/60"
+        className={`transition-colors duration-300 ${
+          active ? "text-ink-950" : "text-white/60"
         }`}
       />
     </button>

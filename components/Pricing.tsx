@@ -97,7 +97,7 @@ export default function Pricing() {
   const reduce = useReducedMotionSafe();
 
   return (
-    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-14 pt-20 sm:pb-16 sm:pt-28 lg:px-10 wide:px-16">
+    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-9 pt-20 sm:pb-10 sm:pt-28 lg:px-10 wide:px-16">
       {/* Fundo animado no lugar da imagem de curvas de nivel: mesma funcao
           (textura no topo da secao, esmaecendo pro fundo solido). A mascara
           em gradiente e a mesma logica de antes: nasce transparente, pico no
@@ -159,7 +159,7 @@ export default function Pricing() {
             de fundo animado dentro deles. O selo do plano em destaque virou
             uma pilula sobreposta na borda de cima, centralizada, em vez do
             chip no canto de antes. */}
-        <div className="mx-auto mt-14 grid max-w-[970px] grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mx-auto mt-10 grid max-w-[970px] grid-cols-1 gap-4 sm:grid-cols-2">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.id}
@@ -182,11 +182,16 @@ export default function Pricing() {
               // preco) ate o rodape (CTA + nota) dentro dessa altura.
               // Sem overflow-hidden: cortava a pilula "Mais popular", que
               // fica de proposito meio pra fora da borda de cima do cartao.
+              // Sem hover nos dois cartoes de proposito: o brilho da borda
+              // do Anual (que antes so aparecia no hover) virou permanente
+              // (border-white/40 direto), e o Mensal fica parado no
+              // border-white/10 sempre — nenhum dos dois reage mais ao
+              // mouse passando por cima.
               className={cn(
-                "relative flex min-h-[530px] flex-col justify-between rounded-2xl border p-6 transition-colors duration-300 sm:p-7",
+                "relative flex min-h-[530px] flex-col justify-between rounded-2xl border p-6 sm:p-7",
                 plan.highlighted
-                  ? "border-white/25 bg-ink-800 hover:border-white/40"
-                  : "border-white/10 bg-ink-900 hover:border-white/20"
+                  ? "border-white/40 bg-ink-800"
+                  : "border-white/10 bg-ink-900"
               )}
             >
               {plan.highlighted && (
@@ -246,14 +251,53 @@ export default function Pricing() {
               <div>
                 <a
                   href="#top"
+                  // Botao do Mensal: anel de borda que acende no hover,
+                  // igual pedido — mas NAO via .glow-ring (gradiente conico
+                  // girando por angulo). Num botao bem mais largo que alto
+                  // (pilula), girar por ANGULO faz o brilho parecer andar
+                  // rapido nas bordas retas e "engasgar" (ficar lento, com
+                  // comprimento diferente) nas pontas arredondadas — o
+                  // gradiente cobre arcos de tamanho bem diferente pra cada
+                  // grau de rotacao, dependendo de onde esse angulo cai no
+                  // formato. Um SVG com stroke-dasharray/dashoffset anda
+                  // pela BORDA DE VERDADE (nao por angulo a partir do
+                  // centro), entao velocidade e comprimento do traco ficam
+                  // sempre iguais em qualquer ponto do contorno.
+                  // pathLength="100" normaliza o perimetro pra 100 unidades
+                  // sempre, nao importa o tamanho real em pixels — dasharray
+                  // "18 82" (18% aceso) e a animacao (ver .border-beam em
+                  // globals.css) funcionam iguais em qualquer largura de
+                  // tela, sem precisar medir nada em JS.
                   className={cn(
-                    "block w-full rounded-full px-6 py-3.5 text-center text-sm font-semibold transition-all duration-200 active:scale-[0.98]",
+                    "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-sm font-semibold transition-all duration-300 active:scale-[0.98]",
                     plan.highlighted
-                      ? "bg-[#FAFAFA] text-ink-950 hover:bg-white"
-                      : "border border-white/15 text-white/85 hover:border-white/40 hover:text-white"
+                      ? "border-transparent bg-[#FAFAFA] text-ink-950 hover:bg-white"
+                      : "border-white/15 text-white/85 hover:border-white/40 hover:text-white"
                   )}
                 >
-                  Começar agora
+                  {!plan.highlighted && (
+                    <svg
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 h-full w-full opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    >
+                      <rect
+                        x="1"
+                        y="1"
+                        width="calc(100% - 2px)"
+                        height="calc(100% - 2px)"
+                        rx="9999"
+                        ry="9999"
+                        fill="none"
+                        stroke="white"
+                        strokeOpacity="0.8"
+                        strokeWidth="1.5"
+                        pathLength={100}
+                        strokeDasharray="18 82"
+                        className="border-beam"
+                      />
+                    </svg>
+                  )}
+                  <span className="relative">Começar agora</span>
                 </a>
 
                 <p className="mt-3 text-center text-xs text-white/40">

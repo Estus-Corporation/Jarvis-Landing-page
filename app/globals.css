@@ -325,6 +325,28 @@ body {
   animation-delay: var(--float-delay, 0s);
 }
 
+/* Anel de borda do botao "Comecar agora" (plano Mensal, Pricing.tsx) — um
+   traco correndo pelo CONTORNO de verdade via stroke-dasharray/dashoffset,
+   nao um conic-gradient girando por angulo (.glow-ring). Num formato bem
+   mais largo que alto (pilula), girar por angulo faz o brilho parecer andar
+   rapido nas bordas retas e mudar de velocidade/comprimento nas pontas
+   arredondadas, porque o mesmo grau de rotacao cobre arcos de tamanhos bem
+   diferentes dependendo de onde cai no formato. Aqui o SVG usa
+   pathLength={100} (normaliza o perimetro pra 100 unidades sempre, nao
+   importa o tamanho real em pixels), entao mover o dashoffset de 0 a -100 e
+   uma volta inteira a velocidade CONSTANTE de verdade, com o mesmo
+   comprimento de traco (18% do contorno) em qualquer ponto — funciona igual
+   em qualquer largura de tela, sem medir nada em JS. */
+@keyframes border-beam {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+.border-beam {
+  animation: border-beam 2.6s linear infinite;
+}
+
 /* Esteiras do carrossel 3D de depoimentos (divisoria Hero -> Recursos). Mesmo
    motivo do ticker acima: animacao nova em CSS puro, nao via tailwind.config. */
 @keyframes marquee {

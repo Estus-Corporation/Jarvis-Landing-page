@@ -267,6 +267,25 @@ export default function Showcase() {
                   />
                 );
               })}
+
+              {/* legenda viva, agora SOBREPOSTA na parte inferior da imagem
+                  (antes era uma caixa solta abaixo das fileiras de icones).
+                  Mesmo efeito de escrita do SpokenCaption da Hero; fica
+                  ancorada no rodape da janela, centralizada. bg mais opaco
+                  (ink-950/80) + blur pra o texto ler por cima da imagem. */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-3 sm:p-4">
+                <div className="pointer-events-auto flex max-w-[calc(100%-2rem)] items-center justify-center rounded-card border border-white/[0.12] bg-ink-950/80 px-5 py-3 text-center backdrop-blur-md">
+                  <p className="text-balance text-sm leading-relaxed sm:text-base" aria-live="polite">
+                    <span className="font-display font-semibold text-[#FAFAFA]">
+                      {typedTitle}
+                    </span>
+                    <span className="font-light text-white/60">{typedNote}</span>
+                    {typing && !reduce && (
+                      <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
           </motion.div>
 
@@ -300,24 +319,6 @@ export default function Showcase() {
           ))}
         </div>
 
-        {/* legenda viva, em caixa com efeito de escrita — mesmo tratamento
-            visual do SpokenCaption debaixo da esfera na Hero (borda, fundo
-            translucido com blur, cursor piscando), so que o texto muda
-            porque um widget diferente ficou ativo, nao por um ciclo de
-            frases proprio. */}
-        <div className="mt-8 flex min-h-[4.5rem] items-center justify-center px-4">
-          <div className="flex w-fit max-w-full items-center justify-center rounded-card border border-white/[0.1] bg-ink-800/80 px-5 py-4 text-center backdrop-blur-sm sm:px-6">
-            <p className="text-balance text-base leading-relaxed sm:text-lg" aria-live="polite">
-              <span className="font-display font-semibold text-[#FAFAFA]">
-                {typedTitle}
-              </span>
-              <span className="font-light text-white/60">{typedNote}</span>
-              {typing && !reduce && (
-                <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
-              )}
-            </p>
-          </div>
-        </div>
       </div>
     </section>
   );

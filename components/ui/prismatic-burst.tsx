@@ -147,7 +147,11 @@ void main(){
       hoverMat = rotY(ang.y) * rotX(ang.x);
     }
 
-    for (int i = 0; i < 44; ++i) {
+    // 24 passos de raymarch (antes: 44). Este loop roda por pixel, todo frame,
+    // e domina o custo de GPU do shader. Menos passos = raios um pouco menos
+    // densos, imperceptivel neste fundo borrado/mascarado a 50% de opacidade,
+    // e ~1.8x menos trabalho por pixel.
+    for (int i = 0; i < 24; ++i) {
         vec3 P = marchT * dir;
         P.z -= 2.0;
         float rad = length(P);
@@ -267,7 +271,14 @@ const PrismaticBurst = ({
     const container = containerRef.current;
     if (!container) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // dpr 0.5 (antes: min(devicePixelRatio, 2)). Num shader de raymarching o
+    // custo cresce com o NUMERO DE PIXELS. Este e o maior fator de travamento
+    // ao rolar pela secao de Precos em GPU integrada. Renderizamos o canvas na
+    // METADE da resolucao e deixamos o CSS (width/height 100%) esticar de
+    // volta: como o fundo e decorativo, borrado, mascarado em gradiente e a
+    // 50% de opacidade, a perda de nitidez e invisivel e o trabalho de GPU cai
+    // ~4x. Se em alguma tela ficar visivelmente serrilhado, subir pra 0.75.
+    const dpr = 0.5;
     const renderer = new Renderer({ dpr, alpha: false, antialias: false });
     rendererRef.current = renderer;
 
@@ -362,7 +373,13 @@ const PrismaticBurst = ({
 
     let raf = 0;
     let last = performance.now();
+    let lastRender = last;
     let accumTime = 0;
+    // Limita a renderizacao a ~30fps. O shader e pesado e a animacao aqui e
+    // lenta (speed 0.35), entao 60fps so dobra o custo de GPU sem ganho
+    // visivel. O tempo (accumTime) continua avancando por dt a cada rAF, logo
+    // pular frames nao muda a velocidade da animacao — so a taxa de desenho.
+    const minFrameMs = 1000 / 30;
 
     const update = (now: number) => {
       const dt = Math.max(0, now - last) * 0.001;
@@ -373,6 +390,11 @@ const PrismaticBurst = ({
         raf = requestAnimationFrame(update);
         return;
       }
+      if (now - lastRender < minFrameMs) {
+        raf = requestAnimationFrame(update);
+        return;
+      }
+      lastRender = now;
       const tau = 0.02 + Math.max(0, Math.min(1, hoverDampRef.current)) * 0.5;
       const alpha = 1 - Math.exp(-dt / tau);
       const tgt = mouseTargetRef.current;

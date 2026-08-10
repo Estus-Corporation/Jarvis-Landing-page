@@ -116,9 +116,27 @@ export default function Hero() {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <div className="absolute -left-40 -top-24 h-[620px] w-[620px] rounded-full bg-white/[0.07] blur-[160px]" />
+        {/* opacity-40 abaixo de lg: no mobile este blob e a principal fonte
+            de "claro" no alto do hero; reduzi-lo (junto com o scrim mais alto
+            logo abaixo) deixa o topo bem mais escuro. Volta ao cheio em lg. */}
+        <div className="absolute -left-40 -top-24 h-[620px] w-[620px] rounded-full bg-white/[0.07] opacity-40 blur-[160px] lg:opacity-100" />
         <div className="absolute -left-16 top-[38%] h-[460px] w-[460px] -translate-y-1/2 rounded-full bg-white/[0.05] blur-[140px]" />
       </div>
+
+      {/* No mobile, a luz do canto superior esquerdo sobe ate a faixa onde o
+          header (de vidro) flutua, deixando o vidro "claro". Este scrim
+          empurra a luz pra cima: mantem o topo TOTALMENTE preto (ink-950
+          opaco de verdade — `via-ink-950`, sem transparencia no meio, pra nao
+          vazar luz na altura do header) por uma faixa alta e so entao esmaece
+          pra transparente perto da esfera. Resultado: header e todo o alto do
+          hero pretos, a luz aparece so mais embaixo, em volta do orb. Fica
+          acima dos blobs (-z-[5] > -z-10) e abaixo do conteudo (z-[2]). Some
+          a partir de lg, onde o header e largo/centralizado e isso nao
+          acontece. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-[5] h-96 bg-gradient-to-b from-ink-950 via-ink-950 to-transparent lg:hidden"
+      />
       {/* Particulas desligadas por quem pede menos movimento: e um loop de
           canvas continuo, sem quadro parado equivalente, entao a saida
           honesta e nao rodar (mesmo padrao do JarvisOrb `paused`). */}
@@ -139,7 +157,7 @@ export default function Hero() {
         <div className="order-2 lg:order-1">
           {/* Revelacao palavra a palavra: o titulo se monta como uma frase
               sendo dita, em vez de aparecer inteiro de uma vez. */}
-          <h1 className="flex max-w-[15ch] flex-wrap gap-x-[0.28em] font-display text-[2.75rem] font-semibold leading-[1.05] tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:text-7xl">
+          <h1 className="mx-auto flex max-w-[15ch] flex-wrap justify-center gap-x-[0.28em] text-center font-display text-[2.75rem] font-semibold leading-[1.05] tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:mx-0 lg:justify-start lg:text-left lg:text-7xl">
             {HEADLINE.map((word, i) => (
               <span key={word + i} className="overflow-hidden pb-[0.08em]">
                 <motion.span
@@ -162,7 +180,7 @@ export default function Hero() {
             initial={reduce ? false : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.42, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-7 max-w-[46ch] text-lg font-light leading-relaxed text-white/60"
+            className="mx-auto mt-7 max-w-[46ch] text-center text-lg font-light leading-relaxed text-white/60 lg:mx-0 lg:text-left"
           >
             Um assistente de voz que vive no seu Windows. Controla o navegador,
             abre programas e roda comandos de terminal.

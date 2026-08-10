@@ -11,6 +11,7 @@ import {
   Trophy,
 } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 
 // Import dinamico (ssr:false): PrismaticBurst carrega a lib `ogl` (WebGL)
 // inteira so pra desenhar um fundo decorativo no fim da pagina. Import
@@ -95,6 +96,7 @@ function Price({ value, className }: { value: string; className?: string }) {
 
 export default function Pricing() {
   const reduce = useReducedMotionSafe();
+  const [mensalHovered, setMensalHovered] = React.useState(false);
 
   return (
     <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-9 pt-20 sm:pb-10 sm:pt-28 lg:px-10 wide:px-16">
@@ -251,53 +253,37 @@ export default function Pricing() {
               <div>
                 <a
                   href="#top"
-                  // Botao do Mensal: anel de borda que acende no hover,
-                  // igual pedido — mas NAO via .glow-ring (gradiente conico
-                  // girando por angulo). Num botao bem mais largo que alto
-                  // (pilula), girar por ANGULO faz o brilho parecer andar
-                  // rapido nas bordas retas e "engasgar" (ficar lento, com
-                  // comprimento diferente) nas pontas arredondadas — o
-                  // gradiente cobre arcos de tamanho bem diferente pra cada
-                  // grau de rotacao, dependendo de onde esse angulo cai no
-                  // formato. Um SVG com stroke-dasharray/dashoffset anda
-                  // pela BORDA DE VERDADE (nao por angulo a partir do
-                  // centro), entao velocidade e comprimento do traco ficam
-                  // sempre iguais em qualquer ponto do contorno.
-                  // pathLength="100" normaliza o perimetro pra 100 unidades
-                  // sempre, nao importa o tamanho real em pixels — dasharray
-                  // "18 82" (18% aceso) e a animacao (ver .border-beam em
-                  // globals.css) funcionam iguais em qualquer largura de
-                  // tela, sem precisar medir nada em JS.
+                  onMouseEnter={() => {
+                    if (plan.id === "mensal") setMensalHovered(true);
+                  }}
+                  onMouseLeave={() => {
+                    if (plan.id === "mensal") setMensalHovered(false);
+                  }}
+                  // Botao do Mensal: aro que gira pelas 4 bordas quando ocioso
+                  // e acende branco uniforme no hover (HoverBorderGradient,
+                  // components/ui/hover-border-gradient.tsx, adaptado do
+                  // "Hover Border Gradient" da Aceternity UI). Precisa do
+                  // estado real de hover (mensalHovered) porque o alvo do
+                  // gradiente muda com o hover — group-hover em CSS puro so
+                  // controlaria opacidade, nao decidiria qual gradiente animar.
                   className={cn(
-                    "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-sm font-semibold transition-all duration-300 active:scale-[0.98]",
+                    "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-base font-semibold transition-all duration-300 active:scale-[0.98]",
                     plan.highlighted
                       ? "border-transparent bg-[#FAFAFA] text-ink-950 hover:bg-white"
                       : "border-white/15 text-white/85 hover:border-white/40 hover:text-white"
                   )}
                 >
-                  {!plan.highlighted && (
-                    <svg
+                  {!plan.highlighted && !reduce && (
+                    <div
                       aria-hidden
-                      className="pointer-events-none absolute inset-0 h-full w-full opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      className="pointer-events-none absolute inset-0 rounded-[inherit]"
                     >
-                      <rect
-                        x="1"
-                        y="1"
-                        width="calc(100% - 2px)"
-                        height="calc(100% - 2px)"
-                        rx="9999"
-                        ry="9999"
-                        fill="none"
-                        stroke="white"
-                        strokeOpacity="0.8"
-                        strokeWidth="1.5"
-                        pathLength={100}
-                        strokeDasharray="18 82"
-                        className="border-beam"
-                      />
-                    </svg>
+                      <HoverBorderGradient hovered={mensalHovered} />
+                    </div>
                   )}
-                  <span className="relative">Começar agora</span>
+                  <span className="relative">
+                    {plan.id === "mensal" ? "Obter plano Mensal" : "Obter plano Anual"}
+                  </span>
                 </a>
 
                 <p className="mt-3 text-center text-xs text-white/40">
@@ -317,7 +303,7 @@ export default function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.6 }}
           transition={{ duration: 0.5, delay: reduce ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 flex items-center justify-center gap-2 text-center text-sm text-white/55"
+          className="mt-6 flex translate-y-1 items-center justify-center gap-2 text-center text-sm text-white/55"
         >
           <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
           Garantia de 7 dias: não gostou, devolvemos 100%.

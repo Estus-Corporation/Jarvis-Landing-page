@@ -62,16 +62,93 @@ export default function Header() {
 
   return (
     <header
-      // Cartao de vidro fixo. Radius um pouco maior (rounded-3xl) que antes.
-      // Vidro LEVE de proposito: fundo bem mais translucido (/16 em vez de
-      // /40) e blur reduzido (lg em vez de 2xl), entao o vidro fica sutil,
-      // quase so uma sugestao, em vez do efeito pesado de antes. A linha de
-      // luz interna no topo (refracao da borda) continua, e e o que mantem a
-      // leitura de "vidro" mesmo com o blur baixo. Largura reduzida (5xl em
-      // vez de 6xl) deixa a barra mais compacta.
-      className="glass-surface fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 flex-col items-center rounded-3xl border border-white/[0.1] bg-ink-900/16 px-6 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(255,255,255,0.03),0_18px_50px_-16px_rgba(0,0,0,0.65)] backdrop-blur-lg backdrop-saturate-125"
+      // Cartao de vidro fixo, radius rounded-3xl. O que passa atras (Hero,
+      // particulas, gradientes) sai REFRATADO — nao so borrado — igual ao
+      // "Liquid Glass" (Apple) e as listras curvando na imagem de referencia
+      // do pedido. Blur baixo de proposito (14px, nao 28+): blur forte demais
+      // esconde a curvatura, que e o efeito que da o nome "liquid" — aqui
+      // quem carrega o "vidro" e a distorcao (feDisplacementMap scale 42), o
+      // blur so amacia. baseFrequency baixo (0.006-0.01) da onda GRANDE e
+      // suave — "liquida" — em vez da estatica fina de frequencia alta. A
+      // curvatura vem do filtro SVG #header-liquid-glass logo abaixo:
+      // feTurbulence gera um mapa de ruido, feGaussianBlur suaviza (ruido cru
+      // deixa a distorcao granulada em vez de "liquida"), feDisplacementMap
+      // usa esse ruido pra empurrar cada pixel do fundo pro lado — SEM afetar
+      // o conteudo do proprio header (logo, nav, botao), que fica em cima do
+      // backdrop-filter, nao dentro dele.
+      // Suporte: Chrome/Edge/Firefox aplicam o filtro completo (blur + url()
+      // de refracao). Safari tem suporte instavel pra filtro SVG referenciado
+      // dentro de backdrop-filter, entao a versao prefixada (-webkit-) so leva
+      // blur+saturacao, sem o url() — cai pro vidro forte sem a curvatura em
+      // vez de quebrar.
+      //
+      // O aro de luz (proximo <div>, mask-composite: exclude — mesma tecnica
+      // do brilho do botao Mensal em Pricing.tsx) e o sheen no topo (o <div>
+      // depois) substituem a borda lisa de antes: vidro de verdade nao tem
+      // contorno solido uniforme, tem luz pegando mais forte no topo/bordas
+      // e quase nada no meio — e o que da o "brilho de vidro" da Apple.
+      className="glass-surface fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 flex-col items-center rounded-3xl bg-ink-900/20 px-6 py-3.5 shadow-[0_18px_50px_-16px_rgba(0,0,0,0.65)]"
+      style={{
+        backdropFilter:
+          "blur(14px) saturate(1.9) brightness(1.05) url(#header-liquid-glass)",
+        WebkitBackdropFilter: "blur(14px) saturate(1.9) brightness(1.05)",
+      }}
     >
-      <div className="flex w-full items-center justify-between gap-x-8 sm:gap-x-12">
+      <svg aria-hidden className="absolute h-0 w-0 overflow-hidden">
+        <filter
+          id="header-liquid-glass"
+          x="-20%"
+          y="-20%"
+          width="140%"
+          height="140%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.007 0.011"
+            numOctaves={3}
+            seed={9}
+            result="noise"
+          />
+          <feGaussianBlur in="noise" stdDeviation={6} result="softNoise" />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="softNoise"
+            scale={42}
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </svg>
+
+      {/* Aro: 1px de luz que envolve a pilula inteira, forte no topo e
+          esmaecendo pros lados/embaixo — nao uma borda solida. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[inherit]"
+        style={{
+          padding: 1,
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.16) 30%, rgba(255,255,255,0.05) 55%, rgba(255,255,255,0.2) 100%)",
+          WebkitMask:
+            "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+          WebkitMaskComposite: "xor",
+          mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+          maskComposite: "exclude",
+        }}
+      />
+
+      {/* Sheen: luz ambiente batendo de cima, mais clara perto do topo. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[inherit]"
+        style={{
+          background:
+            "radial-gradient(130% 80% at 50% -30%, rgba(255,255,255,0.22), transparent 55%)",
+        }}
+      />
+
+      <div className="relative z-10 flex w-full items-center justify-between gap-x-8 sm:gap-x-12">
         <Logo />
 
         <nav className="hidden items-center gap-x-7 lg:flex">
@@ -107,7 +184,7 @@ export default function Header() {
       </div>
 
       <div
-        className={`flex w-full flex-col items-center overflow-hidden transition-all duration-300 lg:hidden ${
+        className={`relative z-10 flex w-full flex-col items-center overflow-hidden transition-all duration-300 lg:hidden ${
           isOpen
             ? "max-h-[420px] pt-5 opacity-100"
             : "pointer-events-none max-h-0 pt-0 opacity-0"

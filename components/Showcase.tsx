@@ -162,7 +162,7 @@ export default function Showcase() {
           className="mx-auto max-w-2xl text-center"
         >
           <SectionEyebrow>Interface</SectionEyebrow>
-          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <h2 className="mt-5 whitespace-nowrap font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
             Uma dashboard viva na sua tela.
           </h2>
           <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55">
@@ -180,7 +180,7 @@ export default function Showcase() {
         <div
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
-          className="mt-16 grid grid-cols-1 items-center gap-6 lg:grid-cols-[auto_1fr_auto] lg:gap-8"
+          className="mt-8 grid grid-cols-1 items-center gap-6 lg:grid-cols-[auto_1fr_auto] lg:gap-8"
         >
           {/* icones esquerda (lg) */}
           <div className="hidden flex-col gap-5 lg:flex">

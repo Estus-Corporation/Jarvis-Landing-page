@@ -47,7 +47,6 @@ const socialLinks: { icon: Icon; href: string; label: string }[] = [
 ];
 
 export default function Footer() {
-  const year = new Date().getFullYear();
   const reduce = useReducedMotionSafe();
 
   // Espacamento das letras do "JARVIS" de fundo calculado por JS pra ele
@@ -197,9 +196,8 @@ export default function Footer() {
 
         <div
           ref={lineRef}
-          className="mt-16 flex flex-col justify-between gap-3 border-t border-white/[0.08] pt-8 text-sm text-white/30 sm:flex-row"
+          className="mt-16 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-8 text-center text-sm text-white/30"
         >
-          <span>© {year} Jarvis. Todos os direitos reservados.</span>
           <span>Feito pela Estus Corporation.</span>
         </div>
       </motion.div>

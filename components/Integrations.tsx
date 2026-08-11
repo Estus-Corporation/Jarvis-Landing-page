@@ -1,137 +1,228 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
+import { Keyboard, TextAa, Eye } from "@phosphor-icons/react/dist/ssr";
+import type { Icon } from "@phosphor-icons/react";
 
-// SECAO RECONSTRUIDA DO ZERO — antes eram duas esteiras de chips correndo.
-//
-// Ideia nova: um HUB ORBITAL. No centro, o nucleo do Jarvis (a marca de 4
-// pontos, pulsando como um radar). Em volta, dois aneis giram devagar em
-// sentidos opostos, com os logos dos apps orbitando o nucleo. Cada logo se
-// liga ao centro por um "raio" — a leitura e literal: tudo gira em torno do
-// Jarvis, tudo se conecta a ele. Um app fica ativo por vez (auto-play), seu
-// raio acende e a legenda embaixo conta o que ele faz.
-//
-// Em telas pequenas a orbita nao cabe: abaixo de lg cai numa grade simples de
-// chips, com a mesma legenda viva. (Mobile ganha tratamento proprio depois.)
+// SECAO RECONSTRUIDA DO ZERO (2a vez) — antes era um hub orbital (aneis
+// girando com auto-play, ver historico do arquivo). Trocado por um GRID DE
+// RECURSOS: duas colunas de itens (icone + titulo + descricao) flanqueando um
+// nucleo central estatico — a leitura vira "tudo aponta pro Jarvis" sem
+// depender de animacao continua nem de interacao pra entender a secao.
+// Embaixo, dois cartoes largos para as duas capacidades que nao sao um app de
+// terceiro (ver a tela, mandar mensagem). Layout inspirado num print de
+// referencia trazido pelo usuario.
 
-type Integration = { name: string; label: string; src: string };
+type Item = { title: string; desc: string; brand?: string; icon?: Icon };
 
-// Anel interno (mais perto do nucleo) e externo. Divididos pra dar duas
-// velocidades e sentidos, criando profundidade.
-const innerRing: Integration[] = [
-  { name: "Chrome", label: "navega, abre abas e busca por você", src: "/brands/google-chrome.svg" },
-  { name: "Spotify", label: "toca no aparelho que você pedir", src: "/brands/spotify.svg" },
-  { name: "WhatsApp", label: "envia mensagens ditadas por você", src: "/brands/whatsapp.svg" },
-  { name: "PowerShell", label: "executa comandos de terminal", src: "/brands/powershell.svg" },
+const leftItems: Item[] = [
+  {
+    title: "Windows",
+    desc: "Controla ações, configurações e recursos do sistema com comandos de voz.",
+    brand: "/brands/windows.svg",
+  },
+  {
+    title: "YouTube",
+    desc: "Pesquisa, abre e reproduz vídeos no YouTube rapidamente para você.",
+    brand: "/brands/youtube.svg",
+  },
+  {
+    title: "Chrome",
+    desc: "Navega, abre abas, preenche formulários e executa ações no navegador.",
+    brand: "/brands/google-chrome.svg",
+  },
+  {
+    title: "Google",
+    desc: "Realiza pesquisas, encontra informações e entrega respostas precisas.",
+    brand: "/brands/google.svg",
+  },
 ];
 
-const outerRing: Integration[] = [
-  { name: "GitHub", label: "clona repositórios e roda Git", src: "/brands/github.svg" },
-  { name: "YouTube", label: "pausa e comanda o vídeo no Chrome", src: "/brands/youtube.svg" },
-  { name: "Windows", label: "abre e fecha programas", src: "/brands/windows.svg" },
-  { name: "Steam", label: "detecta o jogo em execução", src: "/brands/steam.svg" },
-  { name: "Google", label: "pesquisa na web em tempo real", src: "/brands/google.svg" },
+const rightItems: Item[] = [
+  {
+    title: "Spotify",
+    desc: "Toca, pausa, pula faixas e controla suas playlists e músicas favoritas.",
+    brand: "/brands/spotify.svg",
+  },
+  {
+    title: "Git",
+    desc: "Executa comandos Git, gerencia repositórios e auxilia no seu fluxo de trabalho.",
+    brand: "/brands/github.svg",
+  },
+  {
+    title: "Digitar por você",
+    desc: "Escreve textos, códigos e comandos automaticamente onde você precisar.",
+    icon: Keyboard,
+  },
+  {
+    title: "Leitura de tela",
+    desc: "Lê e interpreta o que está na tela, trazendo mais acessibilidade e produtividade.",
+    icon: TextAa,
+  },
 ];
 
-const ALL = [...innerRing, ...outerRing];
+const ALL_ITEMS = [...leftItems, ...rightItems];
 
-const AUTOPLAY_MS = 2600;
+const bigCards: Item[] = [
+  {
+    title: "Vê o que está na sua tela",
+    desc: "Enxerga e entende tudo o que aparece na sua tela em tempo real.",
+    icon: Eye,
+  },
+  {
+    title: "Manda mensagem no WhatsApp",
+    desc: "Envia mensagens no WhatsApp por você, de forma rápida e prática.",
+    brand: "/brands/whatsapp.svg",
+  },
+];
 
-// Marca de 4 pontos do Jarvis (mesma do header/footer), ampliada como nucleo.
+function ItemGlyph({ item, size = 20 }: { item: Item; size?: number }) {
+  if (item.brand) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={item.brand}
+        alt=""
+        width={size}
+        height={size}
+        aria-hidden
+        className="opacity-80 brightness-0 invert transition-opacity duration-300 group-hover:opacity-100"
+        style={{ height: size, width: size }}
+      />
+    );
+  }
+  const Glyph = item.icon!;
+  return (
+    <Glyph
+      size={size}
+      weight="light"
+      aria-hidden
+      className="text-white/70 transition-colors duration-300 group-hover:text-white/95"
+    />
+  );
+}
+
+function FeatureRow({ item, delay }: { item: Item; delay: number }) {
+  const reduce = useReducedMotionSafe();
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.6 }}
+      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+      className="group flex items-start gap-4 rounded-card border border-transparent px-2 py-2 transition-colors duration-300 hover:border-white/[0.08] hover:bg-white/[0.02]"
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-ink-800 transition-colors duration-300 group-hover:border-white/25">
+        <ItemGlyph item={item} />
+      </span>
+      <span className="min-w-0 pt-1">
+        <span className="block font-display text-[0.95rem] font-semibold tracking-[-0.01em] text-white/90">
+          {item.title}
+        </span>
+        <span className="mt-1 block text-sm leading-relaxed text-white/45">
+          {item.desc}
+        </span>
+      </span>
+    </motion.div>
+  );
+}
+
+function BigCard({ item, delay }: { item: Item; delay: number }) {
+  const reduce = useReducedMotionSafe();
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.5 }}
+      transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
+      className="glow-ring group relative flex items-center gap-5 overflow-hidden rounded-card border border-white/[0.1] bg-ink-900/60 px-6 py-6 transition-colors duration-300 hover:border-white/20"
+    >
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-chip border border-white/[0.12] bg-ink-800">
+        <ItemGlyph item={item} size={24} />
+      </span>
+      <span className="min-w-0">
+        <span className="block font-display text-sm font-semibold uppercase tracking-[0.08em] text-white">
+          {item.title}
+        </span>
+        <span className="mt-1.5 block max-w-[38ch] text-sm leading-relaxed text-white/50">
+          {item.desc}
+        </span>
+      </span>
+    </motion.div>
+  );
+}
+
+// Marca de 4 pontos do Jarvis (mesma do header/footer), como nucleo flutuando
+// acima da placa hexagonal.
 function CoreMark() {
   return (
-    <div className="relative flex h-11 w-11 items-center justify-center" aria-hidden>
-      <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
-      <span className="absolute left-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
-      <span className="absolute right-0 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
-      <span className="absolute bottom-0 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
+    <div className="relative flex h-full w-full items-center justify-center" aria-hidden>
+      <span className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
+      <span className="absolute left-0 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
+      <span className="absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
+      <span className="absolute bottom-0 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-white shadow-[0_0_8px_2px_rgba(255,255,255,0.5)]" />
     </div>
   );
 }
 
-// Um logo posicionado na orbita. Tres camadas, cada uma com UMA
-// responsabilidade de transform, pra nenhuma pisar na outra:
-//  - wrapper (0x0, ancorado no centro): rotate(angle) translateX(R) posiciona
-//    o node no anel. Herda a rotacao continua do anel → o node revoluciona.
-//  - counter: translate(-50%,-50%) centra o node no ponto + rotate(-angle)
-//    cancela a inclinacao estatica do wrapper.
-//  - spinner (spinClass): contra-gira a rotacao CONTINUA do anel, entao o
-//    logo fica sempre em pe enquanto tudo gira. Duracao igual a do anel.
-// O raio (spoke) mora no wrapper (nao contra-gira): aponta sempre pro centro.
-function OrbitNode({
-  item,
-  angle,
-  radius,
-  spinClass,
-  active,
-  onActivate,
-}: {
-  item: Integration;
-  angle: number;
-  radius: number;
-  spinClass: string;
-  active: boolean;
-  onActivate: (i: Integration) => void;
-}) {
+// Nucleo visual do meio: nucleo de 4 pontos flutuando, um feixe de luz
+// descendo e uma placa hexagonal facetada recebendo a luz — estatico (sem
+// rotacao continua), so com o ping do nucleo e o brilho da placa "respirando".
+// A placa e um <svg> em vez de clip-path porque precisa das linhas de aresta
+// (hexagono externo -> hexagono interno) alem do contorno.
+function CoreHex() {
   return (
-    <div
-      className="absolute left-1/2 top-1/2 h-0 w-0"
-      style={{
-        transform: `rotate(${angle}deg) translateX(${radius}px)`,
-        transformOrigin: "0 0",
-      }}
-    >
-      {/* Raio do node ate o centro. */}
-      <span
-        aria-hidden
-        className={`absolute right-0 top-0 h-px transition-all duration-500 ${
-          active
-            ? "bg-gradient-to-l from-white/70 to-transparent"
-            : "bg-gradient-to-l from-white/15 to-transparent"
-        }`}
-        style={{ width: radius }}
-      />
-      {/* Pulso de luz viajando pelo raio, so no ativo. */}
-      {active && (
-        <span
-          aria-hidden
-          className="beam-sweep absolute right-0 top-0 h-px w-8 -translate-y-px bg-gradient-to-l from-white to-transparent"
-          style={{ width: radius * 0.4 }}
-        />
-      )}
-
+    <div className="relative flex w-56 flex-col items-center sm:w-64 lg:w-72">
       <div
-        className="absolute left-0 top-0"
-        style={{ transform: `translate(-50%, -50%) rotate(${-angle}deg)` }}
-      >
-        <div className={`${spinClass} group-hover:[animation-play-state:paused]`}>
-          <button
-            type="button"
-            onMouseEnter={() => onActivate(item)}
-            onFocus={() => onActivate(item)}
-            aria-label={`${item.name}: ${item.label}`}
-            className={`glow-ring flex h-16 w-16 items-center justify-center rounded-full border transition-colors duration-300 ${
-              active
-                ? "glow-ring--active border-white/35 bg-ink-700"
-                : "border-white/[0.12] bg-ink-800 hover:border-white/25"
-            }`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.src}
-              alt=""
-              width={26}
-              height={26}
-              aria-hidden
-              className={`h-6 w-6 brightness-0 invert transition-opacity duration-300 ${
-                active ? "opacity-100" : "opacity-60 hover:opacity-100"
-              }`}
-            />
-          </button>
-        </div>
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-full bg-white/[0.06] blur-[70px]"
+      />
+
+      <div className="relative z-10 h-14 w-14 lg:h-16 lg:w-16">
+        <div className="absolute inset-0 rounded-full border border-white/25 core-ping" aria-hidden />
+        <div
+          className="absolute inset-0 rounded-full border border-white/15 core-ping"
+          style={{ animationDelay: "1.7s" }}
+          aria-hidden
+        />
+        <CoreMark />
+      </div>
+
+      <div className="h-8 w-px bg-gradient-to-b from-white/50 to-transparent lg:h-10" aria-hidden />
+
+      <div className="relative w-full">
+        <div
+          aria-hidden
+          className="absolute left-1/2 top-0 h-6 w-24 -translate-x-1/2 rounded-full bg-white/25 blur-xl animate-pulse"
+        />
+        <svg viewBox="0 0 260 160" className="relative w-full" aria-hidden>
+          <defs>
+            <radialGradient id="jarvis-plate-glow" cx="50%" cy="30%" r="75%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.10)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+            </radialGradient>
+          </defs>
+          <polygon
+            points="65,10 195,10 250,80 195,150 65,150 10,80"
+            fill="url(#jarvis-plate-glow)"
+            stroke="rgba(255,255,255,0.16)"
+            strokeWidth="1"
+          />
+          <polygon
+            points="91,38 169,38 202,80 169,122 91,122 58,80"
+            fill="none"
+            stroke="rgba(255,255,255,0.24)"
+            strokeWidth="1"
+          />
+          <line x1="65" y1="10" x2="91" y2="38" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+          <line x1="195" y1="10" x2="169" y2="38" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+          <line x1="250" y1="80" x2="202" y2="80" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+          <line x1="195" y1="150" x2="169" y2="122" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+          <line x1="65" y1="150" x2="91" y2="122" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+          <line x1="10" y1="80" x2="58" y2="80" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+        </svg>
       </div>
     </div>
   );
@@ -139,25 +230,6 @@ function OrbitNode({
 
 export default function Integrations() {
   const reduce = useReducedMotionSafe();
-  const [active, setActive] = useState<Integration>(ALL[0]);
-  const [paused, setPaused] = useState(false);
-
-  // Auto-play: destaca um app por vez, girando pela lista toda. Para no hover.
-  useEffect(() => {
-    if (reduce || paused) return;
-    const id = setInterval(() => {
-      setActive((cur) => {
-        const idx = ALL.findIndex((a) => a.name === cur.name);
-        return ALL[(idx + 1) % ALL.length];
-      });
-    }, AUTOPLAY_MS);
-    return () => clearInterval(id);
-  }, [reduce, paused]);
-
-  const handleActivate = React.useCallback((i: Integration) => setActive(i), []);
-
-  const INNER_R = 118;
-  const OUTER_R = 210;
 
   return (
     <section
@@ -199,130 +271,63 @@ export default function Integrations() {
         >
           <SectionEyebrow>Integrações</SectionEyebrow>
           <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
-            Tudo gira em torno do Jarvis.
+            Tudo que você precisa. Em um só lugar.
           </h2>
           <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55">
-            Seus apps não ficam soltos. Eles orbitam um só cérebro — você diz o
-            que quer e o Jarvis aciona o certo, na hora.
+            O Jarvis conecta, automatiza e executa tarefas para você. Conheça
+            tudo o que ele é capaz de fazer.
           </p>
         </motion.div>
 
-        {/* ---- HUB ORBITAL (lg+) ---- */}
-        <motion.div
-          initial={reduce ? false : { opacity: 0, scale: 0.94 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          className="group relative mx-auto mt-16 hidden h-[520px] w-[520px] lg:block"
-        >
-          {/* trilhas dos aneis (circulos guia) */}
-          <div
-            aria-hidden
-            className="absolute left-1/2 top-1/2 rounded-full border border-white/[0.06]"
-            style={{
-              width: INNER_R * 2,
-              height: INNER_R * 2,
-              transform: "translate(-50%, -50%)",
-            }}
-          />
-          <div
-            aria-hidden
-            className="absolute left-1/2 top-1/2 rounded-full border border-white/[0.05]"
-            style={{
-              width: OUTER_R * 2,
-              height: OUTER_R * 2,
-              transform: "translate(-50%, -50%)",
-            }}
-          />
-
-          {/* nucleo */}
-          <div className="absolute left-1/2 top-1/2 z-10 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-ink-800 shadow-[0_0_50px_-8px_rgba(255,255,255,0.35)]">
-            <div className="absolute inset-0 rounded-full border border-white/30 core-ping" aria-hidden />
-            <div className="absolute inset-0 rounded-full border border-white/20 core-ping" style={{ animationDelay: "1.7s" }} aria-hidden />
-            <CoreMark />
-          </div>
-
-          {/* anel interno */}
-          <div className="orbit-spin absolute inset-0 group-hover:[animation-play-state:paused]">
-            {innerRing.map((item, i) => (
-              <OrbitNode
-                key={item.name}
-                item={item}
-                angle={(360 / innerRing.length) * i}
-                radius={INNER_R}
-                spinClass="orbit-spin-rev"
-                active={active.name === item.name}
-                onActivate={handleActivate}
-              />
+        {/* ---- lg+: duas colunas flanqueando o nucleo ---- */}
+        <div className="mt-16 hidden lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-10 xl:gap-16">
+          <div className="flex flex-col gap-2">
+            {leftItems.map((item, i) => (
+              <FeatureRow key={item.title} item={item} delay={i * 0.07} />
             ))}
           </div>
 
-          {/* anel externo */}
-          <div className="orbit-spin-2 absolute inset-0 group-hover:[animation-play-state:paused]">
-            {outerRing.map((item, i) => (
-              <OrbitNode
-                key={item.name}
-                item={item}
-                angle={(360 / outerRing.length) * i + 36}
-                radius={OUTER_R}
-                spinClass="orbit-spin-2-rev"
-                active={active.name === item.name}
-                onActivate={handleActivate}
-              />
+          <motion.div
+            initial={reduce ? false : { opacity: 0, scale: 0.94 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <CoreHex />
+          </motion.div>
+
+          <div className="flex flex-col gap-2">
+            {rightItems.map((item, i) => (
+              <FeatureRow key={item.title} item={item} delay={i * 0.07} />
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* ---- GRADE (abaixo de lg) ---- */}
-        <div className="mt-14 flex flex-wrap justify-center gap-3 lg:hidden">
-          {ALL.map((item) => (
-            <button
-              key={item.name}
-              type="button"
-              onMouseEnter={() => handleActivate(item)}
-              onFocus={() => handleActivate(item)}
-              aria-label={`${item.name}: ${item.label}`}
-              className={`glow-ring flex h-16 w-16 items-center justify-center rounded-full border transition-colors duration-300 ${
-                active.name === item.name
-                  ? "glow-ring--active border-white/35 bg-ink-700"
-                  : "border-white/[0.12] bg-ink-800"
-              }`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.src}
-                alt=""
-                width={26}
-                height={26}
-                aria-hidden
-                className="h-6 w-6 brightness-0 invert"
-              />
-            </button>
+        {/* ---- abaixo de lg: nucleo em cima, grade de 2 colunas embaixo ---- */}
+        <div className="mt-14 lg:hidden">
+          <motion.div
+            initial={reduce ? false : { opacity: 0, scale: 0.94 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="flex justify-center"
+          >
+            <CoreHex />
+          </motion.div>
+
+          <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-4">
+            {ALL_ITEMS.map((item, i) => (
+              <FeatureRow key={item.title} item={item} delay={i * 0.05} />
+            ))}
+          </div>
+        </div>
+
+        {/* ---- cartoes largos: capacidades sem logo de terceiro ---- */}
+        <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {bigCards.map((item, i) => (
+            <BigCard key={item.title} item={item} delay={i * 0.1} />
           ))}
         </div>
-
-        {/* legenda viva */}
-        <div className="mt-10 flex min-h-[3.25rem] items-center justify-center px-4">
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={active.name}
-              initial={reduce ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-              className="text-center text-lg font-light text-white/60"
-              aria-live="polite"
-            >
-              <span className="font-display font-semibold text-[#FAFAFA]">
-                {active.name}
-              </span>{" "}
-              {active.label}
-            </motion.p>
-          </AnimatePresence>
-        </div>
-
       </div>
     </section>
   );

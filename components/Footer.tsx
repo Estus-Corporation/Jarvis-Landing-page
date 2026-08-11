@@ -16,7 +16,7 @@ const footerLinks = [
     title: "Produto",
     links: [
       { label: "Recursos", href: "#recursos" },
-      { label: "Integrações", href: "#integracoes" },
+      { label: "Organização", href: "#organizacao" },
       { label: "Interface", href: "#interface" },
       { label: "Depoimentos", href: "#depoimentos" },
       { label: "Preços", href: "#precos" },

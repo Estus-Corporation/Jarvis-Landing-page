@@ -87,7 +87,7 @@ function IncludedTrack() {
 export default function FeatureTicker() {
   const reduce = useReducedMotionSafe();
 
-  // Gate igual ao de Integrations.tsx: a esteira troca a ARVORE renderizada
+  // Gate igual ao de Organization.tsx: a esteira troca a ARVORE renderizada
   // (chips duplicados pra loop vs. lista unica), entao so decide qual versao
   // mostrar depois de montar no cliente.
   const [mounted, setMounted] = useState(false);

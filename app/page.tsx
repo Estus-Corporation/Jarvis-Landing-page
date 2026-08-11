@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import FeatureTicker from "@/components/FeatureTicker";
-import Integrations from "@/components/Integrations";
+import Organization from "@/components/Organization";
 import Features from "@/components/Features";
 import Showcase from "@/components/Showcase";
 import Roadmap from "@/components/Roadmap";
@@ -80,7 +80,7 @@ export default function Home() {
             Recursos ate o fim de Precos. */}
         <TracingBeam>
           <Features />
-          <Integrations />
+          <Organization />
           <Showcase />
           <Roadmap />
           <Testimonials />

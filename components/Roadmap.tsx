@@ -206,7 +206,7 @@ export default function Roadmap() {
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
-      // bg-[#0C0C0E]: mesmo ajuste sutil de Integrations.tsx — ver comentario
+      // bg-[#0C0C0E]: mesmo ajuste sutil de Organization.tsx — ver comentario
       // la pra detalhes (ink-900 escurecido ~40% do caminho ate ink-950).
       className="relative overflow-hidden border-t border-white/[0.07] bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
     >

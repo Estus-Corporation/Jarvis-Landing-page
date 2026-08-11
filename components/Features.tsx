@@ -11,6 +11,8 @@ import {
   Pause,
   SpeakerLow,
   Checks,
+  Check,
+  X,
   MagnifyingGlass,
   Microphone,
   ArrowDown,
@@ -22,13 +24,31 @@ import {
   ShuffleAngular,
   Repeat,
   Broadcast,
+  DeviceMobile,
+  Desktop,
+  SpeakerHifi,
   GlobeSimple,
   TrendUp,
-  Cpu,
-  HardDrive,
   WifiHigh,
   PaperPlaneTilt,
   Plus,
+  CaretDown,
+  CaretLeft,
+  CheckCircle,
+  CloudArrowUp,
+  GitPullRequest,
+  Terminal,
+  ArrowUp,
+  ArrowsClockwise,
+  CaretRight,
+  ArrowClockwise,
+  VideoCamera,
+  Phone,
+  DotsThreeVertical,
+  Smiley,
+  Paperclip,
+  Camera,
+  Star,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
@@ -36,10 +56,11 @@ import SectionEyebrow from "@/components/ui/section-eyebrow";
 // SECAO RECONSTRUIDA DO ZERO — antes era um bento grid de cartoes estaticos.
 // Depois virou um console de comandos com 5 capacidades abstratas (memoria,
 // voz, tom...). Esta e a 2a reconstrucao do miolo: esta secao passa a ser a
-// vitrine REAL de integracoes/capacidades do Jarvis (a secao "Integracoes"
-// mais abaixo na pagina sera remodelada depois) — por isso agora sao 7 apps/
-// capacidades concretas, cada uma com o app real (logo) ou o icone da
-// capacidade, em vez de conceitos genericos.
+// vitrine REAL de integracoes/capacidades do Jarvis — por isso agora sao 7
+// apps/capacidades concretas, cada uma com o app real (logo) ou o icone da
+// capacidade, em vez de conceitos genericos. (A secao logo abaixo, que era um
+// segundo mostruario de integracoes, virou "Organizacao" justamente por ter
+// ficado redundante com esta: ver Organization.tsx.)
 //
 // Cada capacidade e uma cena de 3 atos, e os 3 atos sao BLOCOS IRMAOS dentro
 // da janela do console — nao mais uma confirmacao escondida dentro de cada
@@ -80,14 +101,66 @@ type Cap = {
   kind: Kind;
 };
 
+// ---- Aparelhos onde a musica pode tocar ----------------------------------
+// Esta lista e o unico lugar que sabe como cada aparelho se chama: ela monta a
+// FRASE do pedido ("...na Alexa e abaixa o volume") e a resposta do Jarvis. O
+// visitante troca o aparelho no seletor dentro da demo do Spotify, e o cartao
+// "Usuário" muda junto — a demo vira, na pratica, um exemplo de COMO FALAR com
+// o Jarvis pra mandar o som pra cada lugar.
+type DeviceId = "computador" | "celular" | "alexa";
+
+const SPOTIFY_DEVICES: {
+  id: DeviceId;
+  name: string;
+  detail: string;
+  icon: Icon;
+  say: string;
+  reply: string;
+}[] = [
+  {
+    id: "computador",
+    name: "Computador",
+    detail: "Este dispositivo",
+    icon: Desktop,
+    say: "aqui no computador",
+    reply: "Tocando aqui no computador, com o volume baixo.",
+  },
+  {
+    id: "celular",
+    name: "Celular",
+    detail: "Galaxy S24",
+    icon: DeviceMobile,
+    say: "no meu celular",
+    reply: "Tocando no seu celular, com o volume baixo.",
+  },
+  {
+    id: "alexa",
+    name: "Alexa",
+    detail: "Sala",
+    icon: SpeakerHifi,
+    say: "na Alexa",
+    reply: "Tocando na Alexa da sala, com o volume baixo.",
+  },
+];
+
+const DEFAULT_DEVICE: DeviceId = "computador";
+
+const findDevice = (id: DeviceId) =>
+  SPOTIFY_DEVICES.find((d) => d.id === id) ?? SPOTIFY_DEVICES[0];
+
+const spotifyCommand = (id: DeviceId) =>
+  `Jarvis, toca minha playlist de foco ${findDevice(id).say} e abaixa o volume.`;
+
 const CAPS: Cap[] = [
   {
     id: "spotify",
     tab: "Spotify",
-    hint: "Toca, pausa e ajusta o volume das músicas",
+    hint: "Toca no aparelho que você escolher e ajusta o volume",
     brand: "/brands/spotify.svg",
-    command: "Jarvis, toca minha playlist de foco e abaixa um pouco o volume.",
-    reply: "Tocando baixinho, do jeito que você pediu.",
+    // texto do aparelho padrao; quando o visitante troca o seletor, a secao
+    // recalcula os dois a partir de SPOTIFY_DEVICES.
+    command: spotifyCommand(DEFAULT_DEVICE),
+    reply: findDevice(DEFAULT_DEVICE).reply,
     replyDelay: 2.3,
     kind: "spotify",
   },
@@ -98,7 +171,9 @@ const CAPS: Cap[] = [
     brand: "/brands/whatsapp.svg",
     command: "Jarvis, diga ao Lucas que estarei lá em 15 minutos.",
     reply: "Avisei o Lucas que você chega em 15 minutos.",
-    replyDelay: 2.8,
+    // a cena do WhatsApp so termina quando a mensagem e entregue (READ_AT, la
+    // embaixo, em ~3,3s) — a resposta cai logo depois dos dois tiques.
+    replyDelay: 3.7,
     kind: "whatsapp",
   },
   {
@@ -108,7 +183,9 @@ const CAPS: Cap[] = [
     brand: "/brands/git.svg",
     command: "Jarvis, clona esse repositório e sobe minhas alterações.",
     reply: "Prontinho, subi tudo pro GitHub em 3 commits.",
-    replyDelay: 2.6,
+    // a cena do Git e a mais longa das sete: o terminal digita 3 comandos e
+    // sobe o push antes de a resposta fazer sentido (GIT_END, ~4,2s).
+    replyDelay: 4.4,
     kind: "git",
   },
   {
@@ -124,11 +201,13 @@ const CAPS: Cap[] = [
   {
     id: "windows",
     tab: "Windows",
-    hint: "Abre programas, lê sua configuração e roda comandos",
+    hint: "Fecha e abre os programas do seu computador",
     brand: "/brands/windows.svg",
-    command: "Jarvis, fecha o Spotify e me diz quanta memória está livre.",
-    reply: "Fechei o Spotify. Restam 9,2 GB de memória livre.",
-    replyDelay: 2.1,
+    command: "Jarvis, fecha o Spotify e abre o Chrome pra mim.",
+    reply: "Fechei o Spotify e abri o Chrome pra você.",
+    // a janela do Spotify some em 1,1s e a do Chrome nasce em 2,0s (WIN_*, la
+    // embaixo) — a resposta so faz sentido depois das duas.
+    replyDelay: 2.8,
     kind: "windows",
   },
   {
@@ -232,355 +311,1094 @@ function JarvisReply({ text, delay }: { text: string; delay: number }) {
   );
 }
 
-// ---- Mini estatistica quadrada, reaproveitada no painel do Windows. -------
-function StatTile({
-  icon: Glyph,
-  label,
-  value,
-}: {
-  icon: Icon;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1 rounded-chip border border-white/[0.08] bg-white/[0.02] py-2.5">
-      <Glyph size={14} aria-hidden className="text-white/35" />
-      <span className="text-[9px] uppercase tracking-[0.08em] text-white/30">{label}</span>
-      <span className="text-xs font-medium text-white/80">{value}</span>
-    </div>
-  );
-}
-
 // ---- Visualizacoes por capacidade (o "miolo" da tela do console) ----------
 // Cada uma usa o espaco inteiro da janela — chrome completo do app (abas,
 // favoritos, paineis, listas), nao so um recorte — pra parecer uma gravacao
 // de tela de verdade em vez de um resumo.
 
-const UP_NEXT = [
-  { title: "Chuva Leve", artist: "Ambient Mix" },
-  { title: "Piano & Café", artist: "Foco Profundo" },
+// A fila da playlist. `now` e a faixa que esta tocando: ela troca o numero por
+// um equalizador e e a unica linha acesa, igual na lista do app.
+const SPOTIFY_TRACKS: {
+  title: string;
+  artist: string;
+  time: string;
+  now?: boolean;
+}[] = [
+  { title: "Chuva Leve", artist: "Ambient Mix", time: "3:58", now: true },
+  { title: "Piano & Café", artist: "Foco Profundo", time: "4:12" },
+  { title: "Ruído Branco", artist: "Sono Leve", time: "5:04" },
+  { title: "Lo-fi Noturno", artist: "Night Study", time: "3:21" },
 ];
 
-function SpotifyViz() {
-  const bars = Array.from({ length: 5 });
+// Barrinhas de equalizador, reaproveitadas na faixa que esta tocando e no
+// cabecalho da lista.
+function EqBars({ className = "" }: { className?: string }) {
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950 p-6">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">
+    <span className={`flex h-3 items-end gap-[2px] ${className}`} aria-hidden>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <span
+          key={i}
+          className="wave-bar w-[2px] rounded-full bg-white/70"
+          style={{ height: "100%", animationDelay: `${i * 0.18}s` }}
+        />
+      ))}
+    </span>
+  );
+}
+
+// Layout refeito: antes era uma pilha de blocos (dispositivos, faixa, barra,
+// controles, volume, "a seguir") que nao lembrava o app em nada. Agora e a
+// arquitetura do Spotify de verdade — capa grande com os dados da playlist em
+// cima, a FILA no meio ocupando o vao, e a barra do tocador colada embaixo.
+//
+// Esta e a UNICA demo com que da pra interagir: o seletor la em cima e de
+// verdade, e quem manda no aparelho. Quem escolhe e o pai (Features), porque a
+// escolha reescreve o cartao "Usuário" e a resposta do Jarvis, que vivem fora
+// desta janela.
+function SpotifyViz({
+  device,
+  onDevice,
+}: {
+  device: DeviceId;
+  onDevice: (id: DeviceId) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = findDevice(device);
+  const CurrentGlyph = current.icon;
+  const others = SPOTIFY_DEVICES.filter((d) => d.id !== device);
+
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950">
+      {/* brilho da capa vazando pro topo, como o degrade do app */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-56"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 70% 100% at 18% 0%, rgba(255,255,255,0.11), transparent 65%)",
+        }}
+      />
+
+      <div className="relative flex items-center gap-2.5 border-b border-white/[0.06] px-5 py-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brands/spotify.svg"
+          alt=""
+          width={15}
+          height={15}
+          aria-hidden
+          className="h-[15px] w-[15px] shrink-0 brightness-0 invert opacity-70"
+        />
+        <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/40">
           Tocando agora
-        </p>
-        <span className="flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/45">
-          <Broadcast size={12} aria-hidden />
-          Alto-falantes da sala
         </span>
+
+        {/* seletor de aparelho — o unico controle vivo das sete demos. O
+            ml-auto fica no GRUPO: o rotulo some em telas estreitas, e se ele
+            carregasse o ml-auto sozinho o botao deixaria de ser empurrado pra
+            direita junto. */}
+        <div className="ml-auto flex min-w-0 items-center gap-2.5">
+          <span className="hidden items-center gap-1.5 text-[10px] text-white/35 sm:flex">
+            <Broadcast size={11} aria-hidden />
+            Especifique o dispositivo a ser tocado
+          </span>
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              aria-expanded={open}
+              aria-label={`Tocar em: ${current.name}`}
+              className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.07] px-2.5 py-1 text-[10px] text-white/75 transition-colors duration-200 hover:border-white/40 hover:bg-white/[0.13] hover:text-white"
+            >
+              <CurrentGlyph size={11} aria-hidden />
+              {current.name}
+              <CaretDown
+                size={9}
+                weight="bold"
+                aria-hidden
+                className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            <AnimatePresence>
+              {open && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute right-0 top-full z-20 mt-1.5 w-48 rounded-chip border border-white/[0.12] bg-ink-800 p-1 shadow-[0_24px_50px_-20px_rgba(0,0,0,1)]"
+                >
+                  {others.map((d) => {
+                    const Glyph = d.icon;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => {
+                          onDevice(d.id);
+                          setOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-chip px-2 py-1.5 text-left transition-colors duration-200 hover:bg-white/[0.08]"
+                      >
+                        <Glyph size={15} aria-hidden className="shrink-0 text-white/50" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[11px] text-white/80">
+                            {d.name}
+                          </span>
+                          <span className="block truncate text-[9px] text-white/30">
+                            {d.detail}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div
-          className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-white/[0.12] shadow-[0_0_30px_-6px_rgba(255,255,255,0.25)]"
-          style={{
-            background:
-              "conic-gradient(from 180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.16), rgba(255,255,255,0.02))",
-          }}
-        >
-          <span className="absolute inset-2 rounded-full border border-white/[0.1]" aria-hidden />
-          <div className="animate-spin" style={{ animationDuration: "7s" }}>
+      {/* capa + dados da playlist. gap-9 e nao gap-4: o disco e absoluto, entao
+          ele nao entra na conta do gap — 16px dele vazam pra fora da capa e
+          comiam quase todo o respiro ate o texto. */}
+      <div className="relative flex items-end gap-9 px-5 pb-4 pt-5">
+        <div className="relative shrink-0">
+          {/* O disco assoma so um pedaco por tras da capa. Duas caixas de
+              proposito: a de fora POSICIONA (o -translate-y-1/2 que centraliza)
+              e a de dentro GIRA. Juntar as duas era o bug do disco "caindo": o
+              animate-spin do Tailwind escreve `transform: rotate(...)`, que
+              apaga o translate — a cada volta o disco pulava meia altura pra
+              baixo. */}
+          <div
+            className="absolute -right-4 top-1/2 h-[74px] w-[74px] -translate-y-1/2"
+            aria-hidden
+          >
+            <div
+              className="relative h-full w-full animate-spin rounded-full border border-white/[0.12]"
+              style={{
+                animationDuration: "9s",
+                background:
+                  "conic-gradient(from 180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.14), rgba(255,255,255,0.02))",
+              }}
+            >
+              <span className="absolute inset-[29px] rounded-full border border-white/20" />
+            </div>
+          </div>
+          {/* bg-ink-800 sob o degrade: sem essa base opaca o disco aparecia
+              ATRAVES da capa (o degrade e todo em branco transparente), que era
+              a sobreposicao esquisita no meio da arte. */}
+          <div
+            className="relative flex h-[86px] w-[86px] items-center justify-center rounded-chip border border-white/[0.12] bg-ink-800 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]"
+            style={{
+              backgroundImage:
+                "linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.09))",
+            }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/brands/spotify.svg"
               alt=""
-              width={20}
-              height={20}
+              width={26}
+              height={26}
               aria-hidden
-              className="h-5 w-5 brightness-0 invert opacity-85"
+              className="h-[26px] w-[26px] brightness-0 invert opacity-80"
             />
           </div>
         </div>
+
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-medium text-white/90">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+            Playlist
+          </p>
+          <p className="mt-1 truncate font-display text-2xl font-semibold tracking-[-0.02em] text-white/95">
             Foco Profundo
           </p>
-          <p className="truncate text-sm text-white/40">Playlist · Jarvis</p>
+          <p className="mt-1 truncate text-[11px] text-white/40">
+            Jarvis · 24 músicas · 1 h 32 min
+          </p>
         </div>
-        <Heart size={18} aria-hidden className="shrink-0 text-white/25" />
-        <div className="flex h-4 items-end gap-[3px]" aria-hidden>
-          {bars.map((_, i) => (
-            <span
-              key={i}
-              className="wave-bar w-[3px] rounded-full bg-white/55"
-              style={{ height: "100%", animationDelay: `${i * 0.18}s` }}
-            />
-          ))}
-        </div>
+
+        <Heart
+          size={19}
+          weight="fill"
+          aria-hidden
+          className="shrink-0 text-white/30"
+        />
       </div>
 
-      <div className="space-y-2">
-        <div className="h-1 w-full overflow-hidden rounded-full bg-white/[0.1]">
+      {/* a fila. min-h-0 + overflow-hidden: se a janela do console encolher, e
+          a lista que cede — sem isso ela empurraria a barra do tocador pra
+          fora da moldura. */}
+      <div className="relative min-h-0 flex-1 overflow-hidden px-5 pb-2">
+        <div className="flex items-center gap-3 border-b border-white/[0.07] pb-1.5 text-[9px] uppercase tracking-[0.14em] text-white/25">
+          <span className="w-4 text-center">#</span>
+          <span className="flex-1">Título</span>
+          <span>Duração</span>
+        </div>
+        {SPOTIFY_TRACKS.map((t, i) => (
           <motion.div
-            initial={{ width: "22%" }}
-            animate={{ width: "68%" }}
-            transition={{ duration: 2.4, ease: [0.16, 1, 0.3, 1] }}
-            className="h-full rounded-full bg-white/70"
-          />
-        </div>
-        <div className="flex justify-between text-[11px] text-white/35">
-          <span>1:42</span>
-          <span>3:58</span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-6 text-white/45">
-        <ShuffleAngular size={16} aria-hidden />
-        <SkipBack size={20} weight="fill" aria-hidden className="text-white/70" />
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink-950 shadow-[0_4px_20px_-4px_rgba(255,255,255,0.45)]">
-          <Pause size={18} weight="fill" aria-hidden />
-        </span>
-        <SkipForward size={20} weight="fill" aria-hidden className="text-white/70" />
-        <Repeat size={16} aria-hidden />
-      </div>
-
-      <div className="flex items-center gap-3 rounded-chip border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
-        <SpeakerLow size={16} aria-hidden className="shrink-0 text-white/40" />
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.1]">
-          <motion.div
-            initial={{ width: "85%" }}
-            animate={{ width: "30%" }}
-            transition={{ duration: 1.4, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="h-full rounded-full bg-white/50"
-          />
-        </div>
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.9, duration: 0.3 }}
-          className="w-8 shrink-0 text-right text-[11px] text-white/40"
-        >
-          30%
-        </motion.span>
-      </div>
-
-      <div className="space-y-1.5 border-t border-white/[0.06] pt-3">
-        <p className="text-[10px] uppercase tracking-[0.14em] text-white/25">A seguir</p>
-        {UP_NEXT.map((t) => (
-          <div key={t.title} className="flex items-center justify-between gap-3 text-xs text-white/35">
-            <span className="truncate">{t.title}</span>
-            <span className="shrink-0 truncate text-white/20">{t.artist}</span>
-          </div>
+            key={t.title}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.35 + i * 0.1, duration: 0.35 }}
+            className={`-mx-2 flex items-center gap-3 rounded-chip px-2 py-[7px] text-xs ${
+              t.now ? "bg-white/[0.06]" : ""
+            }`}
+          >
+            <span className="flex w-4 justify-center">
+              {t.now ? (
+                <EqBars />
+              ) : (
+                <span className="text-[11px] text-white/25">{i + 1}</span>
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span
+                className={`block truncate ${t.now ? "text-white/90" : "text-white/60"}`}
+              >
+                {t.title}
+              </span>
+              <span className="block truncate text-[10px] text-white/30">
+                {t.artist}
+              </span>
+            </span>
+            <span className="shrink-0 text-[11px] text-white/25">{t.time}</span>
+          </motion.div>
         ))}
+      </div>
+
+      {/* Barra do tocador, tudo numa linha so: controles, progresso e mixer. A
+          faixa "saída de áudio" saiu daqui — quem diz onde o som esta tocando
+          agora e o proprio seletor no topo da janela. */}
+      <div className="relative flex items-center gap-4 border-t border-white/[0.08] bg-white/[0.02] px-5 py-3">
+        <div className="flex shrink-0 items-center gap-4 text-white/45">
+          <ShuffleAngular size={15} aria-hidden />
+          <SkipBack size={17} weight="fill" aria-hidden className="text-white/70" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink-950 shadow-[0_4px_18px_-4px_rgba(255,255,255,0.5)]">
+            <Pause size={15} weight="fill" aria-hidden />
+          </span>
+          <SkipForward size={17} weight="fill" aria-hidden className="text-white/70" />
+          <Repeat size={15} aria-hidden />
+        </div>
+
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <span className="shrink-0 text-[10px] tabular-nums text-white/35">
+            1:42
+          </span>
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.1]">
+            <motion.div
+              initial={{ width: "22%" }}
+              animate={{ width: "68%" }}
+              transition={{ duration: 2.4, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full rounded-full bg-white/70"
+            />
+          </div>
+          <span className="shrink-0 text-[10px] tabular-nums text-white/35">
+            3:58
+          </span>
+        </div>
+
+        {/* mixer, agora vizinho do progresso na mesma linha */}
+        <div className="flex w-36 shrink-0 items-center gap-2">
+          <SpeakerLow size={14} aria-hidden className="shrink-0 text-white/40" />
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.1]">
+            <motion.div
+              initial={{ width: "85%" }}
+              animate={{ width: "30%" }}
+              transition={{ duration: 1.4, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full rounded-full bg-white/50"
+            />
+          </div>
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.9, duration: 0.3 }}
+            className="w-7 shrink-0 text-right text-[10px] tabular-nums text-white/40"
+          >
+            30%
+          </motion.span>
+        </div>
       </div>
     </div>
   );
 }
 
-const WHATS_WORDS = "Estarei lá em 15 minutos.".split(" ");
+const WHATS_TEXT = "Estarei lá em 15 minutos.";
+const WHATS_CHARS = Array.from(WHATS_TEXT);
+
+// Papel de parede da conversa. A 1a versao era a grade de rabiscos do app, mas
+// os icones brigavam com os baloes; agora e uma textura de trama (duas series
+// de fios finos cruzados) com um brilho suave descendo do topo — le como
+// "papel de parede de conversa" sem virar desenho, e some atras do texto.
+function WhatsWallpaper() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      aria-hidden
+    >
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 10px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.022) 0 1px, transparent 1px 10px)",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 85% 55% at 50% 0%, rgba(255,255,255,0.05), transparent 70%)",
+        }}
+      />
+    </div>
+  );
+}
+
+// Balao de mensagem: a hora (e os dois tiques, quando e sua) mora DENTRO do
+// balao, no canto inferior direito — e assim no app, e era o detalhe que mais
+// faltava aqui. O pr-* extra abre o vao pra essa etiqueta nao encostar no
+// texto, e o "rabinho" e o canto reto virado pro lado de quem falou.
+function WhatsBubble({
+  mine,
+  time,
+  delay,
+  children,
+  meta,
+}: {
+  mine?: boolean;
+  time: string;
+  delay: number;
+  children: React.ReactNode;
+  meta?: React.ReactNode;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.3 }}
+      // fundo solido (ink-600/700 da escala) em vez de branco translucido: por
+      // cima da textura do papel de parede o balao transparente deixava a
+      // trama aparecer atras do texto e sujava a leitura.
+      className={`relative max-w-[76%] rounded-lg px-3 py-2 text-sm leading-relaxed text-white/90 ${
+        mine
+          ? "ml-auto rounded-br-none bg-ink-600 pr-[4.25rem]"
+          : "mr-auto rounded-bl-none bg-ink-700 pr-11"
+      }`}
+    >
+      {/* rabinho do balao */}
+      <span
+        aria-hidden
+        className={`absolute bottom-0 h-2.5 w-2.5 ${
+          mine
+            ? "-right-[9px] bg-ink-600 [clip-path:polygon(0_0,0_100%,100%_0)]"
+            : "-left-[9px] bg-ink-700 [clip-path:polygon(100%_0,100%_100%,0_0)]"
+        }`}
+      />
+      {children}
+      {/* absoluto (e nao float) pra hora ficar colada no canto de baixo do
+          balao; o pr-* la em cima e o vao reservado pra ela. */}
+      <span className="absolute bottom-1.5 right-2.5 flex items-center gap-1 text-[10px] text-white/40">
+        {time}
+        {meta}
+      </span>
+    </motion.div>
+  );
+}
+
+// Grupo de acoes do WhatsApp (video + ligacao no topo, anexo + camera na
+// barra de baixo): UM card so abrigando os dois icones — nao um card pra cada,
+// que picotava a barra. Raio full (e nao chip) pra casar com a pilula da caixa
+// de mensagem, que e a vizinha direta dele na barra de baixo.
+function WhatsActions({
+  items,
+  size,
+  box,
+}: {
+  items: { icon: Icon; rotate?: boolean }[];
+  size: number;
+  box: string;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-white/[0.09] bg-white/[0.05] p-1 text-white/45">
+      {items.map(({ icon: Glyph, rotate }, i) => (
+        <span key={i} className={`flex items-center justify-center ${box}`}>
+          <Glyph
+            size={size}
+            weight="fill"
+            aria-hidden
+            className={rotate ? "-rotate-45" : undefined}
+          />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// A cena do WhatsApp e uma sequencia, nao um monte de delays soltos: a frase e
+// DIGITADA na caixa de escrever, o botao de enviar pulsa, e so entao a
+// mensagem cai no chat (com um tique, depois dois). Cada fase e um estado, e
+// os tempos abaixo sao a linha do tempo inteira em segundos — mexer num numero
+// aqui move a cena toda junto.
+type WhatsPhase = "idle" | "typing" | "pulse" | "sent" | "read";
+
+const TYPE_START = 0.9; // a caixa comeca a ser preenchida
+const TYPE_CHAR_MS = 46; // uma LETRA a cada — antes era uma palavra inteira
+const TYPE_END = TYPE_START + (WHATS_CHARS.length * TYPE_CHAR_MS) / 1000;
+const PULSE_AT = TYPE_END + 0.2;
+const SEND_AT = PULSE_AT + 0.45;
+const READ_AT = SEND_AT + 0.7;
 
 function WhatsAppViz() {
-  const [sent, setSent] = useState(false);
+  const [phase, setPhase] = useState<WhatsPhase>("idle");
+  const [typed, setTyped] = useState(0);
+
   useEffect(() => {
-    const t = setTimeout(() => setSent(true), 2300);
-    return () => clearTimeout(t);
+    const timers = [
+      setTimeout(() => setPhase("typing"), TYPE_START * 1000),
+      setTimeout(() => setPhase("pulse"), PULSE_AT * 1000),
+      setTimeout(() => setPhase("sent"), SEND_AT * 1000),
+      setTimeout(() => setPhase("read"), READ_AT * 1000),
+    ];
+    return () => timers.forEach(clearTimeout);
   }, []);
+
+  // Maquina de escrever: uma letra por tique enquanto a fase e "typing". Ao
+  // sair dela a frase e completada de uma vez, pra nenhuma sobra de letra ficar
+  // faltando se o intervalo e o cronometro desencontrarem por um frame.
+  useEffect(() => {
+    if (phase === "idle") return;
+    if (phase !== "typing") {
+      setTyped(WHATS_CHARS.length);
+      return;
+    }
+    const id = setInterval(() => {
+      setTyped((n) => {
+        if (n >= WHATS_CHARS.length) return n;
+        return n + 1;
+      });
+    }, TYPE_CHAR_MS);
+    return () => clearInterval(id);
+  }, [phase]);
+
+  const typing = phase === "typing" || phase === "pulse";
+  const delivered = phase === "sent" || phase === "read";
+  const done = typed >= WHATS_CHARS.length;
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950">
-      <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
+      {/* HUD do topo, na ordem do app: voltar, foto, nome + status, e os
+          atalhos de chamada de video, ligacao e menu. */}
+      <div className="flex items-center gap-3 border-b border-white/[0.08] bg-white/[0.03] px-4 py-3">
+        <CaretLeft
+          size={16}
+          weight="bold"
+          aria-hidden
+          className="shrink-0 text-white/35"
+        />
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.06] text-xs font-semibold text-white/80">
           L
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-white/85">Lucas</p>
+          {/* o status acompanha a cena: vira "digitando…" enquanto a frase
+              esta sendo escrita, como no app de verdade */}
           <p className="flex items-center gap-1.5 text-[11px] text-white/40">
-            <span className="led-dot" aria-hidden /> online
+            <span className="led-dot" aria-hidden />
+            {typing ? "digitando…" : "online"}
           </p>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/brands/whatsapp.svg"
-          alt=""
-          width={16}
-          height={16}
-          aria-hidden
-          className="h-4 w-4 shrink-0 brightness-0 invert opacity-25"
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <WhatsActions
+            items={[{ icon: VideoCamera }, { icon: Phone }]}
+            size={19}
+            box="h-7 w-8"
+          />
+          <DotsThreeVertical
+            size={16}
+            weight="bold"
+            aria-hidden
+            className="ml-0.5 text-white/35"
+          />
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col justify-end gap-1.5 px-5 pb-3 pt-4">
-        <div className="mr-auto max-w-[72%]">
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="rounded-2xl rounded-bl-sm bg-white/[0.05] px-4 py-2.5 text-sm leading-relaxed text-white/60"
-          >
+      <div className="relative flex flex-1 flex-col justify-end gap-2 overflow-hidden px-4 pb-3 pt-4">
+        <WhatsWallpaper />
+
+        {/* etiqueta de data + aviso de criptografia: os dois primeiros
+            elementos de qualquer conversa aberta no app */}
+        <div className="relative mb-1 space-y-2 text-center">
+          <span className="inline-block rounded-md bg-white/[0.06] px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] text-white/35">
+            Hoje
+          </span>
+          <p className="mx-auto flex max-w-[85%] items-center justify-center gap-1.5 rounded-md bg-white/[0.04] px-3 py-1.5 text-[10px] leading-snug text-white/30">
+            <LockSimple
+              size={10}
+              weight="fill"
+              aria-hidden
+              className="shrink-0"
+            />
+            As mensagens são protegidas com criptografia de ponta a ponta.
+          </p>
+        </div>
+
+        <div className="relative flex flex-col gap-2">
+          <WhatsBubble time="14:02" delay={0}>
             Bora sair daqui a pouco?
-          </motion.div>
-          <p className="mt-1 text-[10px] text-white/20">14:02</p>
-        </div>
+          </WhatsBubble>
 
-        <div className="mr-auto max-w-[72%]">
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.3 }}
-            className="rounded-2xl rounded-bl-sm bg-white/[0.05] px-4 py-2.5 text-sm leading-relaxed text-white/60"
-          >
+          <WhatsBubble time="14:03" delay={0.4}>
             Alguma novidade? 👀
-          </motion.div>
-          <p className="mt-1 text-[10px] text-white/20">14:03</p>
+          </WhatsBubble>
+
+          {/* so entra no chat depois que o botao de enviar pulsa */}
+          {delivered && (
+            <WhatsBubble
+              mine
+              time="14:03"
+              delay={0}
+              meta={
+                phase === "read" ? (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex"
+                  >
+                    <Checks
+                      size={13}
+                      weight="bold"
+                      aria-hidden
+                      className="text-white/60"
+                    />
+                  </motion.span>
+                ) : (
+                  <Check
+                    size={12}
+                    weight="bold"
+                    aria-hidden
+                    className="text-white/35"
+                  />
+                )
+              }
+            >
+              {WHATS_TEXT}
+            </WhatsBubble>
+          )}
+        </div>
+      </div>
+
+      {/* barra de escrever: a caixa de texto termina antes; o anexo e a camera
+          moram num card proprio, do lado de fora dela, e depois vem o botao
+          redondo de enviar. E aqui que a frase e digitada antes de virar
+          mensagem. */}
+      <div className="flex items-center gap-2 border-t border-white/[0.08] bg-white/[0.02] px-3 py-2.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.04] px-3 py-2">
+          <Smiley size={16} aria-hidden className="shrink-0 text-white/30" />
+          <span className="min-w-0 flex-1 truncate text-xs">
+            {typing ? (
+              // cada letra entra por conta propria (opacidade + um empurrao de
+              // 2px), entao a frase parece batida na tecla em vez de aparecer
+              // em blocos. O cursor so pisca quando a digitacao acaba — durante
+              // ela ele fica aceso, como um cursor de verdade.
+              <span className="text-white/85">
+                {WHATS_CHARS.slice(0, typed).map((ch, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0, y: 2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className="inline-block whitespace-pre"
+                  >
+                    {ch}
+                  </motion.span>
+                ))}
+                <span
+                  className={`ml-px inline-block h-3 w-[1.5px] translate-y-[2px] bg-white/70 ${
+                    done ? "caret-blink" : ""
+                  }`}
+                />
+              </span>
+            ) : (
+              <span className="text-white/25">Mensagem</span>
+            )}
+          </span>
         </div>
 
-        <div className="ml-auto max-w-[78%]">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.0, duration: 0.3 }}
-            className="rounded-2xl rounded-br-sm bg-white/[0.1] px-4 py-2.5 text-sm leading-relaxed text-white/90"
-          >
-            {WHATS_WORDS.map((w, i) => (
+        <WhatsActions
+          items={[{ icon: Paperclip, rotate: true }, { icon: Camera }]}
+          size={19}
+          box="h-7 w-8"
+        />
+
+        {/* o botao dá o pulso no instante em que a mensagem sai: a bolinha
+            cresce e volta e um anel se abre por fora dela. Enquanto nao ha
+            texto o icone e o microfone, como no app. */}
+        <motion.span
+          animate={phase === "pulse" ? { scale: [1, 1.22, 1] } : { scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.14] bg-white/[0.1]"
+        >
+          {phase === "pulse" && (
+            <motion.span
+              aria-hidden
+              initial={{ scale: 1, opacity: 0.75 }}
+              animate={{ scale: 1.9, opacity: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="absolute inset-0 rounded-full border border-white/45"
+            />
+          )}
+          {typing ? (
+            <PaperPlaneTilt
+              size={15}
+              weight="fill"
+              aria-hidden
+              className="text-white/80"
+            />
+          ) : (
+            <Microphone
+              size={15}
+              weight="fill"
+              aria-hidden
+              className="text-white/50"
+            />
+          )}
+        </motion.span>
+      </div>
+    </div>
+  );
+}
+
+// ---- Git ------------------------------------------------------------------
+// A demo mais "cinematografica" das sete, e de proposito: aqui o terminal e o
+// protagonista (ocupa a largura inteira, em cima), e os dois paineis de baixo
+// — o que mudou e o historico em grafo — REAGEM ao que o terminal acabou de
+// rodar, em vez de aparecerem por conta propria num tempo qualquer.
+//
+// A cena e um roteiro: cada entrada tem um tipo e uma duracao, e as horas de
+// entrada saem somadas dai (GIT_STARTS). Mexer numa duracao reacomoda tudo o
+// que vem depois, sem numero magico espalhado pelo JSX.
+
+type GitEntry = {
+  kind: "cmd" | "out" | "bar" | "ok";
+  text: string;
+};
+
+const GIT_SCRIPT: GitEntry[] = [
+  { kind: "cmd", text: "git clone github.com/você/projeto.git" },
+  { kind: "out", text: "Cloning into 'projeto'…" },
+  { kind: "bar", text: "Receiving objects: 100% (312/312)" },
+  { kind: "cmd", text: 'git add . && git commit -m "feat: filtros do carrinho"' },
+  { kind: "out", text: "[main a1b2c3d] 3 arquivos alterados, +47 −12" },
+  { kind: "cmd", text: "git push origin main" },
+  { kind: "bar", text: "Writing objects: 100% (27/27)" },
+  { kind: "ok", text: "main → main · tudo enviado" },
+];
+
+// indices que os paineis de baixo observam
+const GIT_COMMIT_CMD = 3;
+const GIT_COMMIT_OUT = 4;
+
+const GIT_CHAR = 0.014; // segundos por letra digitada
+const GIT_BAR_FILL = 0.6;
+
+const gitDuration = (e: GitEntry) =>
+  e.kind === "cmd"
+    ? 0.1 + e.text.length * GIT_CHAR
+    : e.kind === "bar"
+    ? GIT_BAR_FILL + 0.05
+    : e.kind === "ok"
+    ? 0.35
+    : 0.3;
+
+const GIT_STARTS: number[] = [];
+const GIT_END = GIT_SCRIPT.reduce((t, e) => {
+  GIT_STARTS.push(t);
+  return t + gitDuration(e);
+}, 0.2);
+
+const GIT_FILES = [
+  { name: "src/app.ts", status: "M", add: 32, del: 4 },
+  { name: "src/utils.ts", status: "M", add: 10, del: 6 },
+  { name: "README.md", status: "A", add: 5, del: 2 },
+];
+
+const GIT_LOG = [
+  { hash: "a1b2c3d", msg: "feat: filtros do carrinho", when: "agora", fresh: true },
+  { hash: "9f4e8b2", msg: "fix: total do pedido", when: "2 min" },
+  { hash: "77c1a90", msg: "chore: limpa imports", when: "5 min" },
+];
+
+// Comando batido letra por letra. Monta na hora certa (o pai so renderiza a
+// linha quando chega a vez dela), entao a digitacao comeca junto com o mount e
+// nao precisa carregar atraso proprio. O cursor cheio acompanha as letras e
+// some quando a linha termina — quem pisca e so o prompt final.
+function GitTyped({ text }: { text: string }) {
+  const [n, setN] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setN((v) => {
+        if (v >= text.length) {
+          clearInterval(id);
+          return v;
+        }
+        return v + 1;
+      });
+    }, GIT_CHAR * 1000);
+    return () => clearInterval(id);
+  }, [text]);
+
+  return (
+    <p className="break-all text-white/90">
+      <span className="text-white/45">$</span> {text.slice(0, n)}
+      {n < text.length && (
+        <span className="ml-px inline-block h-3 w-[6px] translate-y-[1px] bg-white/80" />
+      )}
+    </p>
+  );
+}
+
+// Rotulo e barra na MESMA linha: em duas linhas as duas barras do roteiro
+// custavam ~30px cada, e o terminal passava da altura da moldura (a ultima
+// linha, o prompt piscando, ficava cortada).
+function GitBar({ text }: { text: string }) {
+  return (
+    <p className="flex items-center gap-2 text-white/40">
+      <CloudArrowUp size={12} aria-hidden className="shrink-0" />
+      <span className="shrink-0">{text}</span>
+      <span className="h-1 w-24 shrink-0 overflow-hidden rounded-full bg-white/[0.1]">
+        <motion.span
+          initial={{ width: "0%" }}
+          animate={{ width: "100%" }}
+          transition={{ duration: GIT_BAR_FILL, ease: [0.16, 1, 0.3, 1] }}
+          className="block h-full rounded-full bg-white/70"
+        />
+      </span>
+    </p>
+  );
+}
+
+function GitViz() {
+  // quantas entradas do roteiro ja entraram em cena
+  const [step, setStep] = useState(0);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    const timers = GIT_STARTS.map((s, i) =>
+      setTimeout(() => setStep(i + 1), s * 1000)
+    );
+    timers.push(setTimeout(() => setDone(true), GIT_END * 1000));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const staged = step > GIT_COMMIT_CMD;
+  const committed = step > GIT_COMMIT_OUT;
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950">
+      {/* cabecalho do repositorio */}
+      <div className="flex items-center gap-2.5 border-b border-white/[0.08] bg-white/[0.02] px-4 py-2.5">
+        <FolderSimple size={15} weight="fill" aria-hidden className="shrink-0 text-white/35" />
+        <span className="text-xs text-white/70">projeto</span>
+        <span className="flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/55">
+          <GitBranch size={12} aria-hidden />
+          main
+        </span>
+
+        {/* o estado do repo conta a historia sozinho: trabalhando → 3 commits
+            na frente do servidor → sincronizado */}
+        <div className="ml-auto text-[11px]">
+          <AnimatePresence mode="wait">
+            {done ? (
               <motion.span
-                key={i}
+                key="sync"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className="flex items-center gap-1.5 rounded-full border border-white/25 bg-white/[0.08] px-2.5 py-1 text-white/85"
+              >
+                <CheckCircle size={12} weight="fill" aria-hidden />
+                sincronizado
+              </motion.span>
+            ) : committed ? (
+              <motion.span
+                key="ahead"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.25 }}
+                className="flex items-center gap-1 rounded-full border border-white/[0.14] bg-white/[0.05] px-2.5 py-1 text-white/60"
+              >
+                <ArrowUp size={11} weight="bold" aria-hidden />3 à frente
+              </motion.span>
+            ) : (
+              <motion.span
+                key="work"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 1.4 + i * 0.16, duration: 0.15 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.25 }}
+                className="flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-2.5 py-1 text-white/40"
               >
-                {w}{" "}
+                <ArrowsClockwise
+                  size={11}
+                  weight="bold"
+                  aria-hidden
+                  className="animate-spin"
+                  style={{ animationDuration: "1.6s" }}
+                />
+                trabalhando
               </motion.span>
-            ))}
-          </motion.div>
-          {sent && (
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ---- o terminal, agora ocupando a largura inteira ---- */}
+      <div className="flex min-h-0 flex-[1.35] flex-col border-b border-white/[0.08]">
+        <div className="flex items-center gap-2 border-b border-white/[0.06] bg-white/[0.02] px-4 py-2">
+          <span className="flex gap-1.5" aria-hidden>
+            <span className="h-2 w-2 rounded-full bg-white/15" />
+            <span className="h-2 w-2 rounded-full bg-white/15" />
+            <span className="h-2 w-2 rounded-full bg-white/15" />
+          </span>
+          <span className="ml-1 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-white/30">
+            <Terminal size={12} aria-hidden />
+            bash — projeto
+          </span>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-1 overflow-hidden px-4 py-3 font-mono text-[11.5px] leading-snug">
+          {GIT_SCRIPT.slice(0, step).map((entry, i) => {
+            if (entry.kind === "cmd") return <GitTyped key={i} text={entry.text} />;
+            if (entry.kind === "bar") return <GitBar key={i} text={entry.text} />;
+            return (
+              <motion.p
+                key={i}
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.25 }}
+                className={
+                  entry.kind === "ok"
+                    ? "flex items-center gap-1.5 text-white/70"
+                    : "text-white/35"
+                }
+              >
+                {entry.kind === "ok" && (
+                  <CheckCircle size={12} weight="fill" aria-hidden />
+                )}
+                {entry.text}
+              </motion.p>
+            );
+          })}
+
+          {done && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="mt-1 flex items-center justify-end gap-1.5 text-[10px] text-white/25"
+              transition={{ duration: 0.2 }}
+              className="text-white/90"
             >
-              14:03
-              <Checks size={13} weight="bold" aria-hidden className="text-white/45" />
+              <span className="text-white/45">$</span>{" "}
+              <span className="caret-blink inline-block h-3 w-[6px] translate-y-[1px] bg-white/80" />
             </motion.p>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 border-t border-white/[0.08] bg-white/[0.02] px-4 py-3">
-        <Plus size={16} aria-hidden className="shrink-0 text-white/25" />
-        <span className="flex-1 truncate text-xs text-white/25">Mensagem</span>
-        <PaperPlaneTilt size={16} aria-hidden className="shrink-0 text-white/25" />
-      </div>
-    </div>
-  );
-}
+      {/* ---- os dois paineis, reagindo ao terminal ---- */}
+      <div className="flex min-h-0 flex-1">
+        <div className="flex w-1/2 shrink-0 flex-col overflow-hidden border-r border-white/[0.06] px-4 py-3">
+          <p className="mb-2 flex items-center gap-1.5 text-[9px] uppercase tracking-[0.14em] text-white/25">
+            Alterações
+            <motion.span
+              initial={false}
+              animate={{ opacity: staged ? 1 : 0.35 }}
+              className="rounded-full bg-white/[0.08] px-1.5 py-px text-[9px] text-white/45"
+            >
+              {staged ? GIT_FILES.length : 0}
+            </motion.span>
+          </p>
+          <div className="space-y-1.5">
+            {GIT_FILES.map((f, i) => (
+              <motion.div
+                key={f.name}
+                initial={{ opacity: 0, x: -8 }}
+                animate={staged ? { opacity: 1, x: 0 } : { opacity: 0, x: -8 }}
+                transition={{
+                  delay: staged ? i * 0.09 : 0,
+                  duration: 0.3,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="flex items-center gap-2 text-[11px]"
+              >
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-white/[0.12] bg-white/[0.05] font-mono text-[9px] text-white/60">
+                  {f.status}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-mono text-white/60">
+                  {f.name}
+                </span>
+                <span className="shrink-0 font-mono text-[10px] text-white/70">
+                  +{f.add}
+                </span>
+                <span className="shrink-0 font-mono text-[10px] text-white/30">
+                  −{f.del}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
 
-const GIT_LINES = [
-  { text: "git clone github.com/você/projeto.git", cmd: true },
-  { text: "Cloning into 'projeto'… done.", cmd: false },
-  { text: 'git add . && git commit -m "update"', cmd: true },
-  { text: "2 files changed, 47 insertions(+), 12 deletions(-)", cmd: false },
-  { text: "git push origin main", cmd: true },
-];
-
-const GIT_FILES = [
-  { name: "src/app.ts", add: 32, del: 4 },
-  { name: "src/utils.ts", add: 10, del: 6 },
-  { name: "README.md", add: 5, del: 2 },
-];
-
-function GitViz() {
-  const filesDelay = 0.15 + GIT_LINES.length * 0.28 + 0.35;
-  return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950">
-      <div className="flex items-center gap-2.5 border-b border-white/[0.08] px-4 py-2.5">
-        <FolderSimple size={15} weight="fill" aria-hidden className="text-white/30" />
-        <span className="text-xs text-white/60">projeto</span>
-        <span className="ml-auto flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/50">
-          <GitBranch size={12} aria-hidden />
-          main
-        </span>
-      </div>
-
-      <div className="flex-1 space-y-1.5 p-5 font-mono text-[12.5px] leading-relaxed">
-        {GIT_LINES.map((line, i) => (
-          <motion.p
-            key={i}
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15 + i * 0.28, duration: 0.3 }}
-            className={line.cmd ? "text-white/85" : "text-white/35"}
-          >
-            {line.cmd && <span className="text-white/35">$ </span>}
-            {line.text}
-          </motion.p>
-        ))}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 + GIT_LINES.length * 0.28, duration: 0.2 }}
-          className="text-white/85"
-        >
-          <span className="text-white/35">$ </span>
-          <span className="caret-blink inline-block h-3.5 w-2 translate-y-0.5 bg-white/80" />
-        </motion.p>
-      </div>
-
-      <div className="space-y-1.5 border-t border-white/[0.06] px-5 py-3">
-        <p className="text-[10px] uppercase tracking-[0.14em] text-white/25">
-          Arquivos alterados
-        </p>
-        {GIT_FILES.map((f, i) => (
-          <motion.div
-            key={f.name}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: filesDelay + i * 0.12, duration: 0.25 }}
-            className="flex items-center justify-between gap-3 text-xs"
-          >
-            <span className="truncate font-mono text-white/55">{f.name}</span>
-            <span className="shrink-0 font-mono text-[11px] text-white/35">
-              +{f.add} −{f.del}
-            </span>
-          </motion.div>
-        ))}
+        {/* historico em grafo: o fio ligando os commits e o que faz isso
+            parecer Git, e nao uma lista qualquer. O commit de cima so nasce
+            quando o terminal termina o commit de verdade. */}
+        <div className="min-w-0 flex-1 overflow-hidden px-4 py-3">
+          <p className="mb-2 text-[9px] uppercase tracking-[0.14em] text-white/25">
+            Histórico
+          </p>
+          <div className="relative pl-1">
+            <span
+              aria-hidden
+              className="absolute bottom-3 left-[7px] top-2 w-px bg-white/[0.12]"
+            />
+            {GIT_LOG.map((c, i) => (
+              <motion.div
+                key={c.hash}
+                initial={{ opacity: 0, x: -6 }}
+                animate={
+                  c.fresh && !committed
+                    ? { opacity: 0, x: -6 }
+                    : { opacity: 1, x: 0 }
+                }
+                transition={{
+                  delay: c.fresh ? 0 : 0.4 + i * 0.1,
+                  duration: 0.35,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="relative flex gap-2.5 pb-2.5"
+              >
+                <span
+                  className={`relative z-10 mt-[3px] h-[7px] w-[7px] shrink-0 rounded-full ring-4 ring-ink-950 ${
+                    c.fresh ? "bg-white" : "bg-white/30"
+                  }`}
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block truncate text-[11px] ${
+                      c.fresh ? "text-white/90" : "text-white/55"
+                    }`}
+                  >
+                    {c.msg}
+                  </span>
+                  <span className="block truncate font-mono text-[9px] text-white/25">
+                    {c.hash} · {c.when}
+                  </span>
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 border-t border-white/[0.08] bg-white/[0.02] px-4 py-2.5 text-[11px] text-white/40">
-        <GitCommit size={13} aria-hidden />3 commits hoje · +47 −12
+        <GitCommit size={13} aria-hidden />3 commits hoje
+        <span className="text-white/20">·</span>
+        <span className="font-mono text-white/60">+47</span>
+        <span className="font-mono text-white/25">−12</span>
+        <span className="ml-auto flex items-center gap-1.5 text-white/30">
+          <GitPullRequest size={12} aria-hidden />
+          origin/main
+        </span>
       </div>
     </div>
   );
 }
 
-const CHROME_BOOKMARKS = ["Finance", "Gmail", "Drive", "Docs"];
+// As abas da propria pagina de resultados do Google (Todos / Imagens / ...),
+// nao as abas do navegador — e um dos pedacos mais reconheciveis da tela.
+const GOOGLE_TABS = ["Todos", "Imagens", "Notícias", "Vídeos", "Ferramentas"];
+
 const CHROME_RESULTS = [
-  { title: "Cotação Dólar Comercial — Investing.com", url: "investing.com/currencies/usd-brl" },
-  { title: "Conversor de Moedas — Banco Central", url: "bcb.gov.br/conversao" },
+  {
+    site: "Investing.com",
+    url: "investing.com › currencies › usd-brl",
+    title: "Cotação Dólar Comercial (USD/BRL) hoje",
+    desc: "Acompanhe a cotação do dólar comercial em tempo real, com gráfico e variação do dia.",
+  },
+  {
+    site: "Banco Central",
+    url: "bcb.gov.br › conversao",
+    title: "Conversor de moedas — Banco Central do Brasil",
+    desc: "Converta valores pela taxa de câmbio oficial divulgada pelo Banco Central.",
+  },
 ];
 
 function ChromeViz() {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950">
-      <div className="flex items-center gap-1.5 border-b border-white/[0.08] px-3 pt-2.5">
-        <div className="flex items-center gap-2 rounded-t-md bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/70">
+      {/* aba do navegador */}
+      <div className="flex items-center gap-1.5 bg-white/[0.02] px-3 pt-2.5">
+        <div className="flex min-w-0 max-w-[62%] items-center gap-2 rounded-t-md bg-white/[0.06] px-3 py-1.5 text-[11px] text-white/70">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/brands/google-chrome.svg"
+            src="/brands/google.svg"
             alt=""
             width={11}
             height={11}
             aria-hidden
-            className="h-[11px] w-[11px] brightness-0 invert opacity-70"
+            className="h-[11px] w-[11px] shrink-0 brightness-0 invert opacity-70"
           />
-          google.com
+          <span className="truncate">
+            preço do dólar hoje - Pesquisa Google
+          </span>
+          <X
+            size={9}
+            weight="bold"
+            aria-hidden
+            className="shrink-0 text-white/30"
+          />
         </div>
-        <div className="flex items-center gap-1.5 rounded-t-md px-3 py-1.5 text-[11px] text-white/25">
-          <GlobeSimple size={11} aria-hidden />
-          Nova aba
-        </div>
+        <Plus size={12} aria-hidden className="shrink-0 text-white/25" />
       </div>
 
-      <div className="relative border-b border-white/[0.06]">
-        <div className="flex items-center gap-2 px-4 py-2.5 text-xs text-white/45">
-          <LockSimple size={12} aria-hidden className="text-white/30" />
-          google.com/search?q=preço+do+dólar+hoje
+      {/* barra de navegacao: voltar, avancar, recarregar e a omnibox */}
+      <div className="relative flex items-center gap-3 border-b border-white/[0.06] bg-white/[0.02] px-3 py-2">
+        <div className="flex shrink-0 items-center gap-2.5 text-white/30">
+          <CaretLeft size={13} weight="bold" aria-hidden />
+          <CaretRight
+            size={13}
+            weight="bold"
+            aria-hidden
+            className="text-white/15"
+          />
+          <ArrowClockwise size={12} weight="bold" aria-hidden />
         </div>
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.05] px-3 py-1.5 text-xs text-white/45">
+          <LockSimple
+            size={11}
+            weight="fill"
+            aria-hidden
+            className="shrink-0 text-white/30"
+          />
+          <span className="truncate">
+            google.com/search?q=preço+do+dólar+hoje
+          </span>
+          <Star
+            size={12}
+            aria-hidden
+            className="ml-auto shrink-0 text-white/25"
+          />
+        </div>
+        <DotsThreeVertical
+          size={14}
+          weight="bold"
+          aria-hidden
+          className="shrink-0 text-white/25"
+        />
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
@@ -590,48 +1408,109 @@ function ChromeViz() {
         />
       </div>
 
-      <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-2 text-[11px] text-white/30" aria-hidden>
-        {CHROME_BOOKMARKS.map((b) => (
-          <span key={b} className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-white/15" />
-            {b}
-          </span>
-        ))}
-      </div>
-
-      <div className="flex-1 space-y-4 overflow-hidden p-5">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-        >
-          <p className="flex items-center gap-1.5 text-[11px] text-white/30">
-            <MagnifyingGlass size={11} aria-hidden />
-            Resultado da pesquisa
-          </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-3">
-            <p className="text-sm text-white/90">Dólar hoje</p>
-            <span className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white/80">
-              <TrendUp size={11} aria-hidden />
-              R$ 5,42 · +0,3%
+      {/* ---- a pagina do Google ---- */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* cabecalho: logo + campo de busca com a pergunta digitada */}
+        <div className="flex items-center gap-4 px-5 pb-2.5 pt-4">
+          <span className="flex shrink-0 items-center gap-1.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brands/google.svg"
+              alt=""
+              width={16}
+              height={16}
+              aria-hidden
+              className="h-4 w-4 brightness-0 invert opacity-80"
+            />
+            <span className="font-display text-lg font-semibold tracking-[-0.03em] text-white/85">
+              Google
             </span>
-            <svg viewBox="0 0 60 20" className="h-4 w-14" aria-hidden>
-              <polyline
-                points="0,16 10,14 20,15 30,10 40,11 50,6 60,4"
-                fill="none"
-                stroke="rgba(255,255,255,0.45)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          </span>
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-4 py-2 shadow-[0_2px_10px_-6px_rgba(0,0,0,0.9)]">
+            <span className="min-w-0 flex-1 truncate text-xs text-white/75">
+              preço do dólar hoje
+            </span>
+            <X
+              size={11}
+              weight="bold"
+              aria-hidden
+              className="shrink-0 text-white/25"
+            />
+            <span aria-hidden className="h-4 w-px shrink-0 bg-white/10" />
+            <Microphone
+              size={13}
+              weight="fill"
+              aria-hidden
+              className="shrink-0 text-white/40"
+            />
+            <MagnifyingGlass
+              size={13}
+              weight="bold"
+              aria-hidden
+              className="shrink-0 text-white/50"
+            />
           </div>
-          <p className="mt-1 text-xs text-white/35">
-            google.com/finance › quote › USD-BRL
-          </p>
-        </motion.div>
+        </div>
 
-        <div className="space-y-3 border-t border-white/[0.06] pt-3">
+        {/* abas da busca + contagem de resultados */}
+        <div
+          className="flex items-center gap-5 border-b border-white/[0.06] px-5 text-[11px]"
+          aria-hidden
+        >
+          {GOOGLE_TABS.map((t, i) => (
+            <span
+              key={t}
+              className={`pb-2 ${
+                i === 0
+                  ? "border-b-2 border-white/70 font-medium text-white/85"
+                  : "text-white/30"
+              }`}
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+        <p className="px-5 pt-2 text-[10px] text-white/25">
+          Aproximadamente 38.400.000 resultados (0,42 segundos)
+        </p>
+
+        <div className="flex-1 space-y-3 overflow-hidden px-5 pb-4 pt-2.5">
+          {/* o quadro de cotacao que o Google mostra no topo */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.4 }}
+            className="rounded-lg border border-white/[0.1] bg-white/[0.03] px-4 py-3"
+          >
+            <p className="text-[11px] text-white/40">
+              1 Dólar americano é igual a
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <p className="font-display text-xl font-semibold tracking-[-0.02em] text-white/90">
+                5,42 Real brasileiro
+              </p>
+              <span className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80">
+                <TrendUp size={11} aria-hidden />
+                +0,3%
+              </span>
+              <svg viewBox="0 0 60 20" className="h-4 w-14" aria-hidden>
+                <polyline
+                  points="0,16 10,14 20,15 30,10 40,11 50,6 60,4"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.45)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <p className="mt-1.5 text-[10px] text-white/25">
+              14:03 · Dados de câmbio · Aviso legal
+            </p>
+          </motion.div>
+
+          {/* resultados organicos, no formato do Google: favicon + site +
+              caminho, titulo e o trecho embaixo */}
           {CHROME_RESULTS.map((r, i) => (
             <motion.div
               key={r.url}
@@ -639,8 +1518,27 @@ function ChromeViz() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 + i * 0.15, duration: 0.3 }}
             >
-              <p className="truncate text-xs font-medium text-white/50">{r.title}</p>
-              <p className="truncate text-[11px] text-white/25">{r.url}</p>
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.05]">
+                  <GlobeSimple
+                    size={10}
+                    aria-hidden
+                    className="text-white/40"
+                  />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[11px] leading-tight text-white/55">
+                    {r.site}
+                  </span>
+                  <span className="block truncate text-[10px] leading-tight text-white/25">
+                    {r.url}
+                  </span>
+                </span>
+              </div>
+              <p className="mt-1 truncate text-[13px] text-white/80">
+                {r.title}
+              </p>
+              <p className="line-clamp-1 text-[11px] text-white/30">{r.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -649,92 +1547,311 @@ function ChromeViz() {
   );
 }
 
+// ---- Windows --------------------------------------------------------------
+// A versao anterior contava o "abre e fecha programas" por escrito: dois chips
+// de status e um terminal. Esta conta por IMAGEM — e uma area de trabalho de
+// verdade, com janelas que somem e nascem na sua frente e uma barra de tarefas
+// embaixo onde a luzinha de "rodando" apaga num app e acende no outro. O
+// terminal continua ali, mas como mais uma janela na mesa, nao como a prova.
+
+const WIN_CLOSE_AT = 1.1; // a janela do Spotify some
+const WIN_OPEN_AT = 2.0; // a do Chrome nasce
+const WIN_END_AT = 2.5;
+
+// Barra de tarefas: seis apps. Os dois do comando trocam de estado; os outros
+// quatro ficam ali parados de propósito — sao eles que dizem "podia ser
+// qualquer um destes".
+const WIN_TASKBAR: {
+  brand: string;
+  name: string;
+  role?: "closes" | "opens";
+}[] = [
+  { brand: "/brands/spotify.svg", name: "Spotify", role: "closes" },
+  { brand: "/brands/google-chrome.svg", name: "Chrome", role: "opens" },
+  { brand: "/brands/steam.svg", name: "Steam" },
+  { brand: "/brands/discord.svg", name: "Discord" },
+  { brand: "/brands/notion.svg", name: "Notion" },
+  { brand: "/brands/telegram.svg", name: "Telegram" },
+];
+
+// Uma janela na area de trabalho. `live` e o estado do programa: aberto vira
+// uma janela solida com conteudo; fechado vira um contorno tracejado com o
+// nome apagado. Sao os dois extremos do mesmo quadro, entao a troca de um pro
+// outro le como "o programa abriu" / "o programa fechou" sem legenda nenhuma.
+function WinWindow({
+  brand,
+  name,
+  live,
+  children,
+}: {
+  brand: string;
+  name: string;
+  live: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.div
+      animate={{ opacity: live ? 1 : 0.45, scale: live ? 1 : 0.97 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      className={`flex min-w-0 flex-1 flex-col overflow-hidden rounded-chip border ${
+        live
+          ? "border-white/[0.14] bg-ink-800 shadow-[0_18px_40px_-24px_rgba(0,0,0,1)]"
+          : "border-dashed border-white/[0.14] bg-white/[0.015]"
+      }`}
+    >
+      <div
+        className={`flex items-center gap-2 px-3 py-2 ${
+          live ? "border-b border-white/[0.08] bg-white/[0.03]" : ""
+        }`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={brand}
+          alt=""
+          width={13}
+          height={13}
+          aria-hidden
+          className={`h-[13px] w-[13px] shrink-0 brightness-0 invert ${
+            live ? "opacity-90" : "opacity-35"
+          }`}
+        />
+        <span
+          className={`min-w-0 flex-1 truncate text-[11px] ${
+            live ? "text-white/80" : "text-white/40"
+          }`}
+        >
+          {name}
+        </span>
+        {live ? (
+          <span className="flex shrink-0 items-center gap-2 text-white/30" aria-hidden>
+            <span className="h-px w-2 bg-current" />
+            <span className="h-2 w-2 border border-current" />
+            <X size={9} weight="bold" />
+          </span>
+        ) : (
+          <span className="flex shrink-0 items-center gap-1 text-[9px] uppercase tracking-[0.1em] text-white/35">
+            <X size={9} weight="bold" aria-hidden />
+            fechado
+          </span>
+        )}
+      </div>
+
+      <div className="relative min-h-0 flex-1 p-3">
+        <AnimatePresence mode="wait">
+          {live ? (
+            <motion.div
+              key="on"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="h-full"
+            >
+              {children}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="off"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
+              className="flex h-full items-center justify-center"
+            >
+              <span className="text-[10px] text-white/20">janela encerrada</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+}
+
 function WindowsViz() {
-  const r = 25;
-  const c = 2 * Math.PI * r;
-  const freePct = 0.57; // 9,2 GB livres de 16 GB
+  const [closed, setClosed] = useState(false);
+  const [opened, setOpened] = useState(false);
+  const [ended, setEnded] = useState(false);
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setClosed(true), WIN_CLOSE_AT * 1000),
+      setTimeout(() => setOpened(true), WIN_OPEN_AT * 1000),
+      setTimeout(() => setEnded(true), WIN_END_AT * 1000),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950 p-5">
-      <div className="mb-3 flex items-center gap-3">
-        <div className="flex-1 rounded-chip border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
-          <p className="text-[11px] text-white/35">Sistema</p>
-          <p className="mt-0.5 truncate text-sm text-white/80">Windows 11 Pro</p>
-          <p className="mt-2 text-[11px] text-white/30">64 bits · build 26100</p>
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950">
+      <div className="flex items-center gap-2.5 border-b border-white/[0.08] bg-white/[0.02] px-4 py-2.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brands/windows.svg"
+          alt=""
+          width={14}
+          height={14}
+          aria-hidden
+          className="h-[14px] w-[14px] shrink-0 brightness-0 invert opacity-70"
+        />
+        <span className="text-xs text-white/70">Windows 11 Pro</span>
+        <span className="text-[11px] text-white/25">· build 26100</span>
+        <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-white/25">
+          Área de trabalho
+        </span>
+      </div>
+
+      {/* ---- a mesa: duas janelas trocando de estado ---- */}
+      <div
+        className="relative flex min-h-0 flex-1 flex-col gap-3 p-4"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 80% 70% at 50% 0%, rgba(255,255,255,0.05), transparent 70%)",
+        }}
+      >
+        <div className="flex min-h-0 flex-[1.1] gap-3">
+          <WinWindow brand="/brands/spotify.svg" name="Spotify" live={!closed}>
+            <div className="flex h-full items-center gap-2.5">
+              <span className="h-9 w-9 shrink-0 rounded bg-white/[0.08]" aria-hidden />
+              <span className="min-w-0 flex-1 space-y-1.5" aria-hidden>
+                <span className="block h-2 w-3/4 rounded-full bg-white/[0.16]" />
+                <span className="block h-2 w-1/2 rounded-full bg-white/[0.08]" />
+              </span>
+              <EqBars className="shrink-0" />
+            </div>
+          </WinWindow>
+
+          <WinWindow brand="/brands/google-chrome.svg" name="Chrome" live={opened}>
+            <div className="flex h-full flex-col gap-2" aria-hidden>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-14 rounded-t bg-white/[0.1]" />
+                <span className="h-2.5 w-8 rounded-t bg-white/[0.04]" />
+              </span>
+              <span className="block h-3.5 w-full rounded-full bg-white/[0.06]" />
+              <span className="block h-2 w-2/3 rounded-full bg-white/[0.1]" />
+            </div>
+          </WinWindow>
         </div>
 
-        <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center">
-          <svg viewBox="0 0 60 60" className="h-full w-full -rotate-90" aria-hidden>
-            <circle cx="30" cy="30" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" />
-            <motion.circle
-              cx="30"
-              cy="30"
-              r={r}
-              fill="none"
-              stroke="rgba(255,255,255,0.75)"
-              strokeWidth="5"
-              strokeLinecap="round"
-              strokeDasharray={c}
-              initial={{ strokeDashoffset: c }}
-              animate={{ strokeDashoffset: c * (1 - freePct) }}
-              transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+        {/* o PowerShell e so mais uma janela na mesa */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-chip border border-white/[0.14] bg-ink-800">
+          <div className="flex items-center gap-2 border-b border-white/[0.08] bg-white/[0.03] px-3 py-1.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brands/powershell.svg"
+              alt=""
+              width={12}
+              height={12}
+              aria-hidden
+              className="h-3 w-3 shrink-0 brightness-0 invert opacity-70"
             />
-          </svg>
-          <div className="absolute flex flex-col items-center">
-            <span className="text-sm font-semibold text-white/90">57%</span>
-            <span className="text-[9px] text-white/35">livre</span>
+            <span className="text-[10px] text-white/50">Windows PowerShell</span>
+          </div>
+          <div className="min-h-0 flex-1 space-y-1 overflow-hidden px-3 py-2 font-mono text-[11.5px] leading-snug">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35 }}
+              className="text-white/85"
+            >
+              <span className="text-white/35">PS&gt; </span>Stop-Process -Name spotify
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: WIN_CLOSE_AT + 0.1 }}
+              className="text-white/35"
+            >
+              Spotify encerrado.
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: WIN_CLOSE_AT + 0.35 }}
+              className="text-white/85"
+            >
+              <span className="text-white/35">PS&gt; </span>Start-Process chrome
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: WIN_OPEN_AT + 0.1 }}
+              className="text-white/35"
+            >
+              Chrome aberto.
+            </motion.p>
+            {ended && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="text-white/85"
+              >
+                <span className="text-white/35">PS&gt; </span>
+                <span className="caret-blink inline-block h-3 w-[6px] translate-y-[1px] bg-white/80" />
+              </motion.p>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="mb-3 grid grid-cols-3 gap-2">
-        <StatTile icon={Cpu} label="CPU" value="18%" />
-        <StatTile icon={HardDrive} label="Disco" value="212 GB" />
-        <StatTile icon={WifiHigh} label="Rede" value="86 Mbps" />
-      </div>
+      {/* ---- barra de tarefas ---- */}
+      <div className="flex items-center gap-1 border-t border-white/[0.08] bg-white/[0.04] px-3 py-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brands/windows.svg"
+          alt=""
+          width={14}
+          height={14}
+          aria-hidden
+          className="mr-1 h-[14px] w-[14px] shrink-0 brightness-0 invert opacity-60"
+        />
+        {WIN_TASKBAR.map((app) => {
+          const running =
+            app.role === "closes" ? !closed : app.role === "opens" ? opened : false;
+          return (
+            <span
+              key={app.name}
+              className="relative flex h-8 w-8 items-center justify-center rounded-chip"
+              title={app.name}
+            >
+              {/* fundinho que acende so no app em execucao */}
+              <motion.span
+                animate={{
+                  backgroundColor: running
+                    ? "rgba(255,255,255,0.09)"
+                    : "rgba(255,255,255,0)",
+                }}
+                transition={{ duration: 0.4 }}
+                className="absolute inset-0 rounded-chip"
+                aria-hidden
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <motion.img
+                src={app.brand}
+                alt=""
+                width={16}
+                height={16}
+                aria-hidden
+                animate={{ opacity: running ? 1 : 0.4, scale: running ? 1 : 0.92 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="relative h-4 w-4 brightness-0 invert"
+              />
+              {/* a luzinha de "rodando" da barra do Windows 11 */}
+              <motion.span
+                aria-hidden
+                animate={{ opacity: running ? 1 : 0, width: running ? 12 : 4 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute -bottom-[3px] h-[2px] rounded-full bg-white"
+              />
+            </span>
+          );
+        })}
 
-      <div className="flex-1 space-y-1.5 overflow-hidden rounded-chip border border-white/[0.08] bg-white/[0.02] p-4 font-mono text-[12.5px] leading-relaxed">
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="text-white/85"
-        >
-          <span className="text-white/35">PS&gt; </span>Stop-Process -Name spotify
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="text-white/35"
-        >
-          Processo encerrado.
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.05 }}
-          className="text-white/85"
-        >
-          <span className="text-white/35">PS&gt; </span>Get-Volume C | Select FreeSpace
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4 }}
-          className="text-white/35"
-        >
-          FreeSpace: 9,2 GB
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.7 }}
-          className="text-white/85"
-        >
-          <span className="text-white/35">PS&gt; </span>
-          <span className="caret-blink inline-block h-3.5 w-2 translate-y-0.5 bg-white/80" />
-        </motion.p>
+        {/* bandeja do sistema */}
+        <span className="ml-auto flex items-center gap-2.5 pl-2 text-white/35">
+          <WifiHigh size={13} aria-hidden />
+          <SpeakerLow size={13} aria-hidden />
+          <span className="text-[10px] tabular-nums text-white/40">14:03</span>
+        </span>
       </div>
     </div>
   );
@@ -883,10 +2000,18 @@ function ScreenViz() {
   );
 }
 
-function ConsoleBody({ cap }: { cap: Cap }) {
+function ConsoleBody({
+  cap,
+  device,
+  onDevice,
+}: {
+  cap: Cap;
+  device: DeviceId;
+  onDevice: (id: DeviceId) => void;
+}) {
   switch (cap.kind) {
     case "spotify":
-      return <SpotifyViz />;
+      return <SpotifyViz device={device} onDevice={onDevice} />;
     case "whatsapp":
       return <WhatsAppViz />;
     case "git":
@@ -906,24 +2031,45 @@ export default function Features() {
   const reduce = useReducedMotionSafe();
   const [activeIdx, setActiveIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  // aparelho escolhido no seletor da demo do Spotify. Mora aqui, e nao dentro
+  // da demo, porque e ele que reescreve o pedido e a resposta — os dois
+  // cartoes que ficam FORA da janela.
+  const [device, setDevice] = useState<DeviceId>(DEFAULT_DEVICE);
+
+  const active = CAPS[activeIdx];
 
   // Auto-play: percorre as capacidades sozinho, como uma demo rodando. Para
   // no hover/foco (o visitante assumiu o controle) e em reduced-motion.
+  //
+  // A permanencia e por cena, e nao fixa: cenas curtas seguem no ritmo de
+  // sempre (AUTOPLAY_MS), e as que demoram pra responder — o Git leva ~4,2s so
+  // digitando e subindo o push — ganham 1,8s de leitura depois da resposta em
+  // vez de serem cortadas no meio.
   useEffect(() => {
     if (reduce || paused) return;
-    const id = setInterval(
+    const dwell = Math.max(AUTOPLAY_MS, active.replyDelay * 1000 + 1800);
+    const t = setTimeout(
       () => setActiveIdx((i) => (i + 1) % CAPS.length),
-      AUTOPLAY_MS
+      dwell
     );
-    return () => clearInterval(id);
-  }, [reduce, paused]);
-
-  const active = CAPS[activeIdx];
+    return () => clearTimeout(t);
+  }, [reduce, paused, activeIdx, active.replyDelay]);
+  // Na cena do Spotify o pedido e a resposta sao montados a partir do aparelho
+  // escolhido; nas outras seis eles vem prontos do CAPS.
+  const isSpotify = active.kind === "spotify";
+  const command = isSpotify ? spotifyCommand(device) : active.command;
+  const reply = isSpotify ? findDevice(device).reply : active.reply;
+  // trocar de aparelho remonta a cena inteira (a demo, o pedido e a resposta),
+  // entao ela toca de novo ja com o novo destino.
+  const sceneKey = isSpotify ? `${active.id}:${device}` : active.id;
 
   return (
     <section
       id="recursos"
-      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-14 sm:pb-36 sm:pt-20 lg:px-10 wide:px-16"
+      // pb curto de proposito: o link "Veja tudo que ele ja conecta" e uma
+      // ponte pra secao seguinte, entao ele precisa ficar perto dela — com o
+      // pb-28/36 antigo o link ficava boiando no meio de um vao enorme.
+      className="relative overflow-hidden bg-ink-900 px-6 pb-12 pt-14 sm:pb-16 sm:pt-20 lg:px-10 wide:px-16"
     >
       {/* halo suave atras do console */}
       <div
@@ -1075,14 +2221,14 @@ export default function Features() {
                 <div className="flex min-h-[1.75rem] min-w-0 flex-1 items-center">
                   <AnimatePresence mode="wait">
                     <motion.p
-                      key={active.id}
+                      key={sceneKey}
                       initial={reduce ? false : { opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={reduce ? undefined : { opacity: 0, y: -6 }}
                       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                       className="text-lg italic leading-snug text-white/90 sm:text-xl"
                     >
-                      “{active.command}”
+                      “{command}”
                     </motion.p>
                   </AnimatePresence>
                 </div>
@@ -1092,14 +2238,14 @@ export default function Features() {
               <div className="relative min-h-[450px] flex-1">
                 <AnimatePresence mode="wait">
                   <motion.div
-                    key={active.id}
+                    key={sceneKey}
                     initial={reduce ? false : { opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={reduce ? undefined : { opacity: 0, y: -12 }}
                     transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     className="absolute inset-0"
                   >
-                    <ConsoleBody cap={active} />
+                    <ConsoleBody cap={active} device={device} onDevice={setDevice} />
                   </motion.div>
                 </AnimatePresence>
               </div>
@@ -1118,8 +2264,8 @@ export default function Features() {
                     pontinhos de "pensando" pela frase. */}
                 <div className="flex min-h-[1.75rem] min-w-0 flex-1 items-center">
                   <JarvisReply
-                    key={active.id}
-                    text={active.reply}
+                    key={sceneKey}
+                    text={reply}
                     delay={active.replyDelay}
                   />
                 </div>
@@ -1128,16 +2274,16 @@ export default function Features() {
           </div>
         </motion.div>
 
-        {/* Ponte para Integracoes */}
+        {/* Ponte para Organizacao (tarefas/agenda/lembretes) */}
         <motion.a
-          href="#integracoes"
+          href="#organizacao"
           initial={reduce ? false : { opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.8 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="group mt-14 flex items-center justify-center gap-2 text-sm font-medium text-white/45 transition-colors duration-300 hover:text-white/85"
         >
-          Veja tudo que ele já conecta
+          Veja como ele organiza sua rotina
           <ArrowDown
             size={15}
             weight="bold"

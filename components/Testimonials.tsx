@@ -6,13 +6,13 @@
 // nome aqui", sem foto — so um icone generico), pronto pra receber
 // depoimentos reais (com nome, foto e selo de verificado) no lancamento.
 //
-// Layout: carrossel 3D em perspectiva, com 6 esteiras verticais no total —
-// 3 tombadas pra ESQUERDA e 3 espelhadas (tombadas pra DIREITA), uma metade
-// de cada lado da imagem do "agente" no centro. Cada metade vive na sua
-// propria janela com overflow-hidden (ver comentario mais abaixo), o que
-// garante que os cartoes de um lado nunca alcancem o outro, mesmo embaixo
-// onde a inclinacao 3D desloca as fileiras de lado. Mesmo mecanismo do
-// componente Marquee de components/ui/3d-testimonials.tsx.
+// Layout: carrossel PLANO, com 6 esteiras verticais no total — 3 de cada
+// lado da imagem do "agente" no centro. Nenhuma transformacao 3D em jogo
+// (nada de perspective/rotate/translateZ): os cartoes ficam retangulares de
+// verdade, sem distorcao de perspectiva, e sobem/descem em linha reta. Cada
+// metade vive na sua propria janela com overflow-hidden (ver comentario mais
+// abaixo), o que garante que os cartoes de um lado nunca alcancem o outro.
+// Mesmo mecanismo do componente Marquee de components/ui/3d-testimonials.tsx.
 import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
@@ -184,14 +184,11 @@ export default function Testimonials() {
         </motion.div>
       </div>
 
-      {/* Carrossel 3D funcionando como FUNDO da secao: sangra a largura toda
-          da tela, tombado pra esquerda, e continua por baixo da faixa de
-          confianca (que sobrepoe a parte de baixo dele, com -mt negativo e
-          fundo semi-opaco com blur). Bem maior que antes e puxado pra
-          esquerda (translateX menor) pra ocupar o vazio que sobrava do lado
-          direito. */}
-      {/* Carrossel 3D: SO no desktop (lg+). No mobile ele e substituido pela
-          versao simplificada logo abaixo (dois carrosseis retos + cartao
+      {/* Carrossel funcionando como FUNDO da secao: sangra a largura toda da
+          tela e continua por baixo da faixa de confianca (que sobrepoe a
+          parte de baixo dele, com -mt negativo).
+          SO no desktop (lg+): no mobile ele e substituido pela versao
+          simplificada logo abaixo (dois carrosseis retos + cartao
           rotativo). */}
       <div className="relative left-1/2 mt-10 hidden w-screen -translate-x-1/2 lg:block">
         <motion.div
@@ -202,89 +199,103 @@ export default function Testimonials() {
           aria-hidden
           className="relative flex h-[560px] w-full items-center overflow-hidden sm:h-[720px]"
         >
-          {/* Metade ESQUERDA: 3 esteiras tombadas pra esquerda, presas numa
-              janela propria (w-[46vw] + overflow-hidden) que so cobre a
-              metade esquerda da tela. Isso e o que garante o pedido de "nao
-              deixar os cartoes um em cima do outro embaixo": mesmo que a
-              inclinacao 3D desloque uma fileira de lado conforme desce, o
-              corte da janela impede que ela chegue perto da metade direita —
-              as duas metades nunca podem se encostar, fisicamente. */}
-          <div className="absolute inset-y-0 left-0 flex w-[46vw] items-center overflow-hidden pl-[3vw] [perspective:1000px]">
-            <div
-              className="flex flex-row items-center gap-5"
-              style={{
-                transform:
-                  "translateX(-40px) translateY(0px) translateZ(-100px) rotateX(8deg) rotateY(10deg) rotateZ(-20deg)",
-              }}
-            >
-              <div style={{ transform: "rotateY(0deg) translateZ(0px)" }}>
-                <Marquee vertical pauseOnHover repeat={2} className="[--duration:40s]">
-                  {testimonials.map((item, i) => (
-                    <TestimonialCard key={i} item={item} />
-                  ))}
-                </Marquee>
-              </div>
-              <div style={{ transform: "rotateY(6deg) translateZ(-14px)" }}>
-                <Marquee vertical pauseOnHover reverse repeat={2} className="[--duration:40s]">
-                  {testimonials.map((item, i) => (
-                    <TestimonialCard key={i} item={item} />
-                  ))}
-                </Marquee>
-              </div>
-              <div style={{ transform: "rotateY(12deg) translateZ(-28px)" }}>
-                <Marquee vertical pauseOnHover repeat={2} className="[--duration:40s]">
-                  {testimonials.map((item, i) => (
-                    <TestimonialCard key={i} item={item} />
-                  ))}
-                </Marquee>
-              </div>
+          {/* Metade ESQUERDA: 3 esteiras presas numa janela propria
+              (w-[46vw] + overflow-hidden) que so cobre a metade esquerda da
+              tela, entao os cartoes de um lado nunca alcancam o outro.
+              SEM nenhuma transformacao 3D: nada de perspective, rotateX,
+              rotateY, rotateZ ou translateZ. Era a perspectiva que deixava
+              os cartoes com cara de "esticados"/tortos (o lado mais distante
+              encolhia e as bordas ficavam trapezoidais). Agora sao colunas
+              retas, cada cartao com a forma real dele.
+
+              repeat={3}, NAO 2: a keyframe `marquee-vertical` sobe CADA copia
+              em exatamente uma altura de bloco (translateY(-100% - gap)), ou
+              seja, no fim do ciclo a copia 2 esta ocupando o lugar onde a
+              copia 1 comecou — e ai a animacao reinicia sem salto. Com so 2
+              copias nao sobra nada DEPOIS da copia 2 nesse instante, entao a
+              parte de baixo da janela ficava vazia por alguns segundos antes
+              do reinicio: era isso que fazia os cartoes "sumirem e voltarem"
+              de tempos em tempos. Com uma copia a mais o rastro nunca acaba.
+              Regra pra nao regredir: com N copias e janela de altura S, a
+              altura de UM bloco precisa ser >= (gap + S)/(N-2) - gap. Aqui
+              N=3, S=720px e gap=1rem -> bloco >= 720px, e 6 cartoes dao
+              ~1200px. Mexer no numero de depoimentos, na altura dos cartoes
+              ou na altura da secao pede refazer essa conta. */}
+          <div className="absolute inset-y-0 left-0 flex w-[46vw] items-center overflow-hidden pl-[3vw]">
+            <div className="flex flex-row items-center gap-5">
+              <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                {testimonials.map((item, i) => (
+                  <TestimonialCard key={i} item={item} />
+                ))}
+              </Marquee>
+              <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
+                {testimonials.map((item, i) => (
+                  <TestimonialCard key={i} item={item} />
+                ))}
+              </Marquee>
+              <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                {testimonials.map((item, i) => (
+                  <TestimonialCard key={i} item={item} />
+                ))}
+              </Marquee>
             </div>
           </div>
 
-          {/* Metade DIREITA: espelho exato da esquerda. O sinal trocado em
-              translateX/rotateY/rotateZ (mantendo rotateX igual) reflete a
-              FORMA tombada pro outro lado — geometria de espelho de verdade,
-              nao um scaleX(-1) na esteira inteira, que deixaria o texto dos
-              cartoes escrito de tras pra frente. Mesma janela propria do
-              lado esquerdo, agora ancorada na borda direita. */}
-          <div className="absolute inset-y-0 right-0 flex w-[46vw] items-center justify-end overflow-hidden pr-[3vw] [perspective:1000px]">
-            <div
-              className="flex flex-row items-center gap-5"
-              style={{
-                transform:
-                  "translateX(40px) translateY(0px) translateZ(-100px) rotateX(8deg) rotateY(-10deg) rotateZ(20deg)",
-              }}
-            >
-              <div style={{ transform: "rotateY(0deg) translateZ(0px)" }}>
-                <Marquee vertical pauseOnHover repeat={2} className="[--duration:40s]">
-                  {testimonials.map((item, i) => (
-                    <TestimonialCard key={i} item={item} />
-                  ))}
-                </Marquee>
-              </div>
-              <div style={{ transform: "rotateY(-6deg) translateZ(-14px)" }}>
-                <Marquee vertical pauseOnHover reverse repeat={2} className="[--duration:40s]">
-                  {testimonials.map((item, i) => (
-                    <TestimonialCard key={i} item={item} />
-                  ))}
-                </Marquee>
-              </div>
-              <div style={{ transform: "rotateY(-12deg) translateZ(-28px)" }}>
-                <Marquee vertical pauseOnHover repeat={2} className="[--duration:40s]">
-                  {testimonials.map((item, i) => (
-                    <TestimonialCard key={i} item={item} />
-                  ))}
-                </Marquee>
-              </div>
+          {/* Metade DIREITA: espelho da esquerda. Sem transformacao nenhuma
+              tambem — o "espelho" agora e so a ancoragem (justify-end +
+              pr, colada na borda direita), o que faz as colunas cortadas
+              ficarem do lado de dentro nas duas metades, simetricas em
+              relacao a imagem do centro. */}
+          <div className="absolute inset-y-0 right-0 flex w-[46vw] items-center justify-end overflow-hidden pr-[3vw]">
+            <div className="flex flex-row items-center gap-5">
+              <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                {testimonials.map((item, i) => (
+                  <TestimonialCard key={i} item={item} />
+                ))}
+              </Marquee>
+              <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
+                {testimonials.map((item, i) => (
+                  <TestimonialCard key={i} item={item} />
+                ))}
+              </Marquee>
+              <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+                {testimonials.map((item, i) => (
+                  <TestimonialCard key={i} item={item} />
+                ))}
+              </Marquee>
             </div>
           </div>
+
+          {/* Mascara de cima: a versao anterior (2-3 paradas de cor, com um
+              trecho reto e depois um trecho linear) tinha uma "quina" onde a
+              inclinacao do gradiente muda de repente — e o olho humano
+              enxerga ISSO como uma linha (efeito de banda de Mach), nao
+              importa quao alta ou suave a area de transicao seja. A curva
+              abaixo segue uma S-curve (smoothstep, inclinacao zero nos dois
+              extremos) com 11 paradas, entao ela encosta no solido
+              acima e no conteudo transparente abaixo sem nenhuma quina —
+              e a mesma logica que faz a faixa de confianca la embaixo
+              "disfarçar" bem a transicao.
+              Fica ANTES da imagem no DOM de proposito: assim ela esmaece so
+              os cartoes do carrossel, e a imagem do agente (logo abaixo,
+              tambem sem z-index, entao pinta por cima) passa limpa, sem o
+              veu escuro no topo. */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-[280px] sm:h-[380px]"
+            style={{
+              background:
+                "linear-gradient(to bottom, #0E0E10 0%, rgba(14,14,16,0.972) 10%, rgba(14,14,16,0.896) 20%, rgba(14,14,16,0.784) 30%, rgba(14,14,16,0.648) 40%, rgba(14,14,16,0.5) 50%, rgba(14,14,16,0.352) 60%, rgba(14,14,16,0.216) 70%, rgba(14,14,16,0.104) 80%, rgba(14,14,16,0.028) 90%, transparent 100%)",
+            }}
+          />
 
           {/* Imagem "agente": grande, SEM moldura de cartao de proposito
               (nada de borda/rounded/sombra) — e pra parecer que o busto
               esta flutuando por cima dos cartoes do carrossel, nao mais um
-              elemento de UI encaixotado ao lado. Vem DEPOIS das esteiras no
-              DOM (fica por cima delas) e ANTES das mascaras de borda (que
-              ainda a esmaecem nas bordas, igual fazem com os cartoes).
+              elemento de UI encaixotado ao lado. Vem DEPOIS das esteiras E
+              da mascara de cima no DOM (fica por cima das duas, entao o
+              gradiente do topo nao escurece mais a foto) e ANTES das
+              mascaras de baixo/laterais, que continuam esmaecendo as bordas
+              pra imagem se fundir na secao.
               object-contain (nao mais object-cover): a foto original e
               paisagem (3:2) e a caixa e bem mais alta que larga, entao
               "cover" cortava as laterais pra preencher a caixa inteira.
@@ -310,23 +321,6 @@ export default function Testimonials() {
             </div>
           </div>
 
-          {/* Mascara de cima: a versao anterior (2-3 paradas de cor, com um
-              trecho reto e depois um trecho linear) tinha uma "quina" onde a
-              inclinacao do gradiente muda de repente — e o olho humano
-              enxerga ISSO como uma linha (efeito de banda de Mach), nao
-              importa quao alta ou suave a area de transicao seja. A curva
-              abaixo segue uma S-curve (smoothstep, inclinacao zero nos dois
-              extremos) com 11 paradas, entao ela encosta no solido
-              acima e no conteudo transparente abaixo sem nenhuma quina —
-              e a mesma logica que faz a faixa de confianca la embaixo
-              "disfarçar" bem a transicao. */}
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-[280px] sm:h-[380px]"
-            style={{
-              background:
-                "linear-gradient(to bottom, #0E0E10 0%, rgba(14,14,16,0.972) 10%, rgba(14,14,16,0.896) 20%, rgba(14,14,16,0.784) 30%, rgba(14,14,16,0.648) 40%, rgba(14,14,16,0.5) 50%, rgba(14,14,16,0.352) 60%, rgba(14,14,16,0.216) 70%, rgba(14,14,16,0.104) 80%, rgba(14,14,16,0.028) 90%, transparent 100%)",
-            }}
-          />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-ink-900 to-transparent sm:h-32" />
           <div className="pointer-events-none absolute inset-y-0 left-0 w-28 bg-gradient-to-r from-ink-900 to-transparent sm:w-48" />
           <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-ink-900 to-transparent" />

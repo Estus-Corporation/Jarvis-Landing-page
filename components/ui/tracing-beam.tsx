@@ -251,7 +251,7 @@ export const TracingBeam = ({
         y1={y1}
         y2={y2}
         svgHeight={svgHeight}
-        positionClassName="left-3 sm:left-5 lg:left-8"
+        positionClassName="hidden left-3 sm:left-5 lg:left-8 lg:block"
         gradientId="tracing-beam-gradient-left"
         svgRef={svgRef}
       />
@@ -264,7 +264,7 @@ export const TracingBeam = ({
         y1={y1}
         y2={y2}
         svgHeight={svgHeight}
-        positionClassName="right-3 sm:right-5 lg:right-8"
+        positionClassName="hidden right-3 sm:right-5 lg:right-8 lg:block"
         gradientId="tracing-beam-gradient-right"
         mirror
       />

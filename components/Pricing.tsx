@@ -97,6 +97,10 @@ function Price({ value, className }: { value: string; className?: string }) {
 export default function Pricing() {
   const reduce = useReducedMotionSafe();
   const [mensalHovered, setMensalHovered] = React.useState(false);
+  // So no mobile: qual dos dois cartoes esta visivel. No desktop os dois
+  // aparecem lado a lado e este estado e ignorado (o alternador tem sm:hidden
+  // e os cartoes voltam a `sm:flex` sempre).
+  const [mobilePlan, setMobilePlan] = React.useState<string>("mensal");
 
   return (
     <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-9 pt-20 sm:pb-10 sm:pt-28 lg:px-10 wide:px-16">
@@ -157,11 +161,36 @@ export default function Pricing() {
           </p>
         </motion.div>
 
+        {/* Alternador so no mobile: os dois cartoes nao cabem lado a lado num
+            celular, e empilhar os dois deixava o de baixo quase sempre
+            invisivel. Aqui mostramos UM cartao por vez, com dois botoes por
+            cima pra trocar. Some em sm+, onde os dois cartoes voltam a
+            aparecer lado a lado no grid. Ativo = "selo branco" (mesmo padrao
+            de selecao do resto do site). */}
+        <div className="mx-auto mt-10 flex w-full max-w-[320px] gap-1 rounded-full border border-white/10 bg-ink-900 p-1 sm:hidden">
+          {plans.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setMobilePlan(p.id)}
+              aria-pressed={mobilePlan === p.id}
+              className={cn(
+                "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
+                mobilePlan === p.id
+                  ? "bg-[#FAFAFA] text-ink-950"
+                  : "text-white/60 hover:text-white"
+              )}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+
         {/* Estilo de referencia: dois cartoes iguais, compactos, sem efeito
             de fundo animado dentro deles. O selo do plano em destaque virou
             uma pilula sobreposta na borda de cima, centralizada, em vez do
             chip no canto de antes. */}
-        <div className="mx-auto mt-10 grid max-w-[970px] grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mx-auto mt-5 grid max-w-[970px] grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.id}
@@ -190,10 +219,13 @@ export default function Pricing() {
               // border-white/10 sempre — nenhum dos dois reage mais ao
               // mouse passando por cima.
               className={cn(
-                "relative flex min-h-[530px] flex-col justify-between rounded-2xl border p-6 sm:p-7",
+                "relative min-h-[530px] flex-col justify-between rounded-2xl border p-6 sm:p-7",
                 plan.highlighted
                   ? "border-white/40 bg-ink-800"
-                  : "border-white/10 bg-ink-900"
+                  : "border-white/10 bg-ink-900",
+                // no mobile so o cartao selecionado aparece; em sm+ os dois
+                // voltam sempre (flex), independente do alternador.
+                plan.id === mobilePlan ? "flex" : "hidden sm:flex"
               )}
             >
               {plan.highlighted && (

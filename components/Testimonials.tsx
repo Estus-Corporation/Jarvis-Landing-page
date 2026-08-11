@@ -15,8 +15,9 @@
 // componente Marquee de components/ui/3d-testimonials.tsx.
 import React from "react";
 import Image from "next/image";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { cn } from "@/lib/utils";
 import {
   Quotes,
   User,
@@ -49,32 +50,110 @@ const trust: { icon: Icon; title: string; note: string }[] = [
   { icon: ArrowsClockwise, title: "Sem fidelidade", note: "Cancele quando quiser" },
 ];
 
-function TestimonialCard({ item }: { item: Testimonial }) {
+// `compact`: versao menor usada nas esteiras de FUNDO do mobile, onde dois
+// carrosseis sobem lado a lado e os cartoes precisam caber estreitos.
+function TestimonialCard({
+  item,
+  compact,
+}: {
+  item: Testimonial;
+  compact?: boolean;
+}) {
   return (
-    <Card className="w-80 sm:w-[22rem]">
-      <CardContent className="p-6">
+    <Card className={compact ? "w-44" : "w-80 sm:w-[22rem]"}>
+      <CardContent className={compact ? "p-4" : "p-6"}>
         <div className="flex items-center gap-3">
-          <Avatar className="size-11 border border-white/15 bg-white/[0.03]">
+          <Avatar
+            className={cn(
+              "border border-white/15 bg-white/[0.03]",
+              compact ? "size-8" : "size-11"
+            )}
+          >
             <AvatarFallback className="bg-transparent">
-              <User size={19} weight="light" />
+              <User size={compact ? 15 : 19} weight="light" />
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
-            <span className="font-display text-base font-semibold text-[#FAFAFA]">
+          <div className="flex min-w-0 flex-col">
+            <span
+              className={cn(
+                "truncate font-display font-semibold text-[#FAFAFA]",
+                compact ? "text-xs" : "text-base"
+              )}
+            >
               {item.name}
             </span>
-            <span className="text-xs text-white/45">{item.role}</span>
+            <span className="truncate text-xs text-white/45">{item.role}</span>
           </div>
-          <Quotes
-            size={22}
-            weight="fill"
-            className="ml-auto shrink-0 text-white/15"
-            aria-hidden
-          />
+          {!compact && (
+            <Quotes
+              size={22}
+              weight="fill"
+              className="ml-auto shrink-0 text-white/15"
+              aria-hidden
+            />
+          )}
         </div>
-        <blockquote className="mt-4 text-base font-light italic leading-relaxed text-white/70">
+        <blockquote
+          className={cn(
+            "mt-4 font-light italic leading-relaxed text-white/70",
+            compact ? "text-xs" : "text-base"
+          )}
+        >
           {item.quote}
         </blockquote>
+      </CardContent>
+    </Card>
+  );
+}
+
+// So no mobile: um unico cartao que alterna, a cada 2s, entre os 3 itens de
+// confianca (os mesmos da faixa branca do desktop: garantia, dados locais, sem
+// fidelidade). Respeita "reduzir movimento": nesse caso fica parado no
+// primeiro item, sem timer nem transicao.
+function RotatingTrust({ reduce }: { reduce: boolean }) {
+  const [index, setIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    if (reduce) return;
+    const id = setInterval(
+      () => setIndex((v) => (v + 1) % trust.length),
+      2000
+    );
+    return () => clearInterval(id);
+  }, [reduce]);
+
+  const { icon: Glyph, title, note } = trust[index];
+
+  return (
+    <Card className="w-full max-w-[340px] border-white bg-[#FAFAFA] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.85)]">
+      {/* min-h fixa a altura pras trocas nao fazerem o cartao "pular" (com
+          mode="wait" o conteudo sai antes do proximo entrar). Mesmo
+          tratamento da faixa branca do desktop: cartao branco, chip do icone
+          preto, icone branco. */}
+      <CardContent className="flex min-h-[5.5rem] items-center p-5">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={index}
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="flex w-full items-center gap-4"
+          >
+            <span
+              aria-hidden
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-chip border border-ink-950 bg-ink-950 text-white"
+            >
+              <Glyph size={20} weight="light" />
+            </span>
+            <span>
+              <span className="block font-display text-base font-semibold text-ink-950">
+                {title}
+              </span>
+              <span className="block text-sm text-ink-950/70">{note}</span>
+            </span>
+          </motion.div>
+        </AnimatePresence>
       </CardContent>
     </Card>
   );
@@ -111,7 +190,10 @@ export default function Testimonials() {
           fundo semi-opaco com blur). Bem maior que antes e puxado pra
           esquerda (translateX menor) pra ocupar o vazio que sobrava do lado
           direito. */}
-      <div className="relative left-1/2 mt-10 w-screen -translate-x-1/2">
+      {/* Carrossel 3D: SO no desktop (lg+). No mobile ele e substituido pela
+          versao simplificada logo abaixo (dois carrosseis retos + cartao
+          rotativo). */}
+      <div className="relative left-1/2 mt-10 hidden w-screen -translate-x-1/2 lg:block">
         <motion.div
           initial={reduce ? false : { opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -251,7 +333,67 @@ export default function Testimonials() {
         </motion.div>
       </div>
 
-      <div className="relative z-10 mx-auto -mt-28 max-w-6xl px-6 sm:-mt-36 lg:px-10 wide:max-w-shell wide:px-16">
+      {/* === Versao MOBILE (lg:hidden) ===
+          No celular as varias esteiras 3D nao cabem. Aqui o FUNDO tem apenas
+          DOIS carrosseis RETOS (sem perspectiva/curva) subindo lado a lado, e
+          na FRENTE a imagem do agente (maior) colada num unico cartao de
+          depoimento que troca de frase a cada 2s. */}
+      <div className="relative mt-8 h-[540px] overflow-hidden lg:hidden">
+        {/* fundo: dois carrosseis retos, um do lado do outro */}
+        <div
+          aria-hidden
+          className="absolute inset-0 flex justify-center gap-3 opacity-[0.45]"
+        >
+          <Marquee vertical repeat={3} className="[--duration:26s] [--gap:0.75rem]">
+            {testimonials.map((item, i) => (
+              <TestimonialCard key={i} item={item} compact />
+            ))}
+          </Marquee>
+          <Marquee vertical reverse repeat={3} className="[--duration:26s] [--gap:0.75rem]">
+            {testimonials.map((item, i) => (
+              <TestimonialCard key={i} item={item} compact />
+            ))}
+          </Marquee>
+        </div>
+
+        {/* mascaras: esteiras nascem/somem no fundo (topo/base) e nas laterais */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-ink-900 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-ink-900 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-ink-900 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-ink-900 to-transparent" />
+
+        {/* frente: imagem GRANDE + cartao rotativo por cima da base dela. O
+            cartao (opaco, branco) sobe via -mt e ESCONDE a parte de baixo da
+            imagem, como pedido. Sem px no container pra imagem poder crescer
+            alem da largura do texto (o overflow-hidden do palco corta as
+            sobras nas laterais, que sao area quase vazia da foto). */}
+        <div className="relative z-10 flex h-full flex-col items-center justify-center">
+          {/* Quadro na MESMA proporcao do arquivo (3:2) pro object-contain nao
+              deixar faixa transparente. z-0: a imagem fica na camada de baixo,
+              pra o cartao (z-10 logo abaixo) SEMPRE passar por cima dela.
+              -translate-y sobe SO a imagem um pouco (transform nao mexe no
+              layout, entao o cartao nao se move junto). */}
+          <div className="relative z-0 aspect-[3/2] w-[30rem] max-w-none shrink-0 -translate-y-5">
+            <Image
+              src="/images/agente.webp"
+              alt=""
+              fill
+              sizes="480px"
+              quality={90}
+              className="object-contain"
+            />
+          </div>
+          {/* z-10: camada acima — o cartao sobrepoe a imagem sempre. O -mt puxa
+              ele pra cima da base da foto (que fica escondida atras dele). */}
+          <div className="relative z-10 -mt-20 flex w-full justify-center px-6">
+            <RotatingTrust reduce={reduce} />
+          </div>
+        </div>
+      </div>
+
+      {/* Faixa branca: SO no desktop. No mobile os mesmos 3 itens ja aparecem
+          no cartao rotativo acima, entao repeti-los aqui seria redundante. */}
+      <div className="relative z-10 mx-auto mt-10 hidden max-w-6xl px-6 lg:-mt-36 lg:block lg:px-10 wide:max-w-shell wide:px-16">
         {/* Faixa de confianca: fatos REAIS que a pagina garante. Cartao
             branco solido + icones em chip preto — mesmo tratamento do botao
             selecionado em "Ele age no computador, nao so no chat."

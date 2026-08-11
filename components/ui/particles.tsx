@@ -62,6 +62,17 @@ const Particles: React.FC<ParticlesProps> = ({
   const dpr =
     typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 1;
 
+  // vx/vy vivem numa ref porque `animate` e criado UMA vez (no efeito de
+  // mount) e se re-agenda chamando a si mesmo — ou seja, ele congela pra
+  // sempre os valores de prop que existiam no primeiro render. Quem passa
+  // um vx que so e decidido DEPOIS de montar (ex.: a Hero, que so sabe se
+  // esta no desktop apos consultar matchMedia) nunca veria a mudanca. Lendo
+  // da ref, o loop que ja esta rodando pega o valor novo no quadro seguinte.
+  const drift = useRef({ vx, vy });
+  useEffect(() => {
+    drift.current = { vx, vy };
+  }, [vx, vy]);
+
   useEffect(() => {
     if (canvasRef.current) {
       context.current = canvasRef.current.getContext("2d");
@@ -249,8 +260,8 @@ const Particles: React.FC<ParticlesProps> = ({
       } else {
         circle.alpha = circle.targetAlpha * remapClosestEdge;
       }
-      circle.x += circle.dx + vx;
-      circle.y += circle.dy + vy;
+      circle.x += circle.dx + drift.current.vx;
+      circle.y += circle.dy + drift.current.vy;
       circle.translateX +=
         (mouse.current.x / (staticity / circle.magnetism) -
           circle.translateX) /
@@ -273,6 +284,18 @@ const Particles: React.FC<ParticlesProps> = ({
         circles.current.splice(i, 1);
         // create a new circle
         const newCircle = circleParams();
+        // Com deriva horizontal, quem sai por um lado precisa voltar pelo
+        // lado OPOSTO, senao a particula reaparece num x aleatorio no meio
+        // da tela e o olho ve pontos "nascendo do nada" em vez de uma
+        // correnteza continua. O y continua aleatorio (a faixa toda) e o
+        // alpha nasce em 0, entao ela entra esmaecida pela borda. Sem
+        // deriva (vx = 0) nada muda: volta ao sorteio livre de antes.
+        if (drift.current.vx !== 0) {
+          newCircle.x =
+            drift.current.vx < 0
+              ? canvasSize.current.w + newCircle.size
+              : -newCircle.size;
+        }
         drawCircle(newCircle);
         // update the circle position
       }

@@ -91,6 +91,23 @@ export default function Hero() {
     []
   );
 
+  // A correnteza das particulas pra esquerda e SO no desktop. 1024px e o
+  // breakpoint `lg` do Tailwind (o config so acrescenta `wide`, nao mexe nos
+  // padroes), entao esta consulta acompanha o mesmo corte que o resto da
+  // pagina usa pra separar mobile de desktop.
+  // Comeca `false` de proposito, igual ao useReducedMotionSafe: no servidor
+  // nao existe matchMedia, e responder so depois de montar mantem o primeiro
+  // render do cliente identico ao HTML do servidor. A Particles le o vx de
+  // uma ref, entao a virada pos-mount chega no loop que ja esta rodando.
+  const [driftLeft, setDriftLeft] = useState(false);
+  React.useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setDriftLeft(mql.matches);
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, []);
+
   return (
     <section
       id="top"
@@ -145,6 +162,12 @@ export default function Hero() {
           color="#ffffff"
           quantity={90}
           ease={30}
+          // Deriva constante pra esquerda (px por quadro, ~18px/s a 60fps):
+          // devagar o bastante pra ler como ambiente, nao como animacao
+          // disputando atencao com o titulo. No mobile fica 0 — la a Hero e
+          // estreita, a travessia seria rapida demais e o movimento lateral
+          // competiria com o scroll.
+          vx={driftLeft ? -0.3 : 0}
           className="absolute inset-0"
         />
       )}

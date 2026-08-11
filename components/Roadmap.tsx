@@ -8,8 +8,8 @@ import {
   House,
   Car,
   ArrowRight,
-  CaretLeft,
-  CaretRight,
+  CaretUp,
+  CaretDown,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
@@ -89,6 +89,9 @@ function SectionBackdrop() {
   );
 }
 
+// Tracinhos de progresso empilhados. Sao os mesmos de antes com os eixos
+// trocados: a espessura saiu de `h-1` pra `w-1` e o comprimento (ativo x
+// inativo) saiu de `w-10/w-5` pra `h-10/h-5`.
 function Pagination({
   active,
   onSelect,
@@ -97,14 +100,14 @@ function Pagination({
   onSelect: (index: number) => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col items-center gap-2">
       {items.map((item, index) => (
         <button
           key={item.title}
           type="button"
           onClick={() => onSelect(index)}
-          className={`h-1 rounded-full transition-all duration-500 ease-in-out ${
-            index === active ? "w-10 bg-white/80" : "w-5 bg-white/20 hover:bg-white/35"
+          className={`w-1 rounded-full transition-all duration-500 ease-in-out ${
+            index === active ? "h-10 bg-white/80" : "h-5 bg-white/20 hover:bg-white/35"
           }`}
           aria-label={`Ir para "${item.title}"`}
           aria-current={index === active}
@@ -114,23 +117,47 @@ function Pagination({
   );
 }
 
+// Setas de cima/baixo (nao mais esquerda/direita): o controle inteiro agora e
+// uma coluna, entao carets horizontais apontariam pra um eixo em que nada se
+// move. Os rotulos continuam "anterior"/"proxima" — quem usa leitor de tela
+// ouve a ordem do carrossel, nao a direcao do desenho.
 function ArrowButton({
   direction,
   onClick,
 }: {
-  direction: "left" | "right";
+  direction: "up" | "down";
   onClick: () => void;
 }) {
-  const Glyph = direction === "left" ? CaretLeft : CaretRight;
+  const Glyph = direction === "up" ? CaretUp : CaretDown;
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={direction === "left" ? "Atualização anterior" : "Próxima atualização"}
+      aria-label={direction === "up" ? "Atualização anterior" : "Próxima atualização"}
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.12] text-white/60 transition-colors duration-200 hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
     >
       <Glyph size={16} weight="bold" aria-hidden />
     </button>
+  );
+}
+
+// Controle completo do carrossel numa coluna so, colado na esquerda do texto:
+// seta pra cima, tracinhos de progresso, seta pra baixo. `self-stretch` +
+// `justify-center` mantem o conjunto centralizado na altura do bloco de
+// texto, que muda de tamanho conforme o item ativo.
+function CarouselControl({
+  active,
+  onSelect,
+}: {
+  active: number;
+  onSelect: (index: number) => void;
+}) {
+  return (
+    <div className="flex shrink-0 flex-col items-center justify-center gap-4 self-stretch">
+      <ArrowButton direction="up" onClick={() => onSelect(active - 1)} />
+      <Pagination active={active} onSelect={onSelect} />
+      <ArrowButton direction="down" onClick={() => onSelect(active + 1)} />
+    </div>
   );
 }
 
@@ -201,60 +228,64 @@ export default function Roadmap() {
             assinar recebe cada uma dessas atualizações sem nenhuma cobrança
             adicional.
           </p>
-          {/* Setas + paginacao ficam aqui, logo abaixo da descricao — nao
-              coladas no titulo do item, la embaixo. */}
-          <div className="mt-8 flex items-center justify-center gap-4">
-            <ArrowButton direction="left" onClick={() => goTo(active - 1)} />
-            <Pagination active={active} onSelect={goTo} />
-            <ArrowButton direction="right" onClick={() => goTo(active + 1)} />
-          </div>
+          {/* Nada de controle aqui embaixo: setas e tracinhos foram todos
+              pra coluna vertical na esquerda do conteudo (ver mais abaixo). */}
         </motion.div>
 
         {/* items-start (nao items-center): a coluna esquerda sobe pro topo
             da linha, alinhando o rotulo "Update N.0" com o topo da imagem
             ao lado, em vez de ficar centralizada no meio da altura dela. */}
         <div className="relative mx-auto mt-14 grid grid-cols-1 items-start gap-10 md:grid-cols-[1fr_1.2fr] md:gap-8">
-          {/* Coluna esquerda: rotulo "Update N.0" (no lugar onde a
-              paginacao ficava antes) + titulo/descricao do item ativo + CTA. */}
+          {/* Coluna esquerda: controle vertical do carrossel + rotulo
+              "Update N.0" + titulo/descricao do item ativo + CTA. */}
           <div className="relative flex flex-col">
-            {/* min-h-[14rem]: chute inicial (tamanho do item 1, o ativo no
-                primeiro paint) so pra nao colapsar antes do JS medir. Assim
-                que monta, `style.height` assume a altura REAL do item
-                ativo — e quem faz o botao ficar sempre colado no
-                conteudo. */}
-            <div
-              className="relative min-h-[14rem] transition-[height] duration-500 ease-in-out"
-              style={contentHeight ? { height: contentHeight } : undefined}
-            >
-              {items.map((item, index) => (
-                <div
-                  key={item.title}
-                  ref={(el) => {
-                    itemRefs.current[index] = el;
-                  }}
-                  aria-hidden={index !== active}
-                  className={`absolute inset-x-0 top-0 border-l border-white/25 pl-5 transition-all duration-700 ease-in-out ${
-                    index === active
-                      ? "translate-y-0 opacity-100"
-                      : "pointer-events-none translate-y-6 opacity-0"
-                  }`}
-                >
-                  {/* Rotulo "Update N.0": no lugar onde a paginacao ficava
-                      antes de subir pra baixo do titulo da secao. */}
-                  <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
-                    Update {index + 1}.0
-                  </p>
-                  <h3 className="mt-3 max-w-[16ch] text-balance font-display text-4xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
-                    {item.title}
-                  </h3>
-                  <p className="mt-5 max-w-[38ch] text-base leading-relaxed text-white/55">
-                    {item.body}
-                  </p>
-                  <p className="mt-12 max-w-[38ch] text-sm italic leading-relaxed text-white/65">
-                    “{item.quote}”
-                  </p>
-                </div>
-              ))}
+            {/* O controle vertical ocupa o lugar da linha decorativa que antes
+                era um `border-l` em cada item: mesma marca vertical na
+                esquerda do texto, agora navegavel e dizendo em que ponto do
+                carrossel a pessoa esta. Por isso os itens perderam o
+                `border-l pl-5` — o respiro ate o texto virou o `gap-5` deste
+                flex. */}
+            <div className="flex gap-5">
+              <CarouselControl active={active} onSelect={goTo} />
+              {/* min-h-[14rem]: chute inicial (tamanho do item 1, o ativo no
+                  primeiro paint) so pra nao colapsar antes do JS medir. Assim
+                  que monta, `style.height` assume a altura REAL do item
+                  ativo — e quem faz o botao ficar sempre colado no
+                  conteudo. */}
+              <div
+                className="relative min-h-[14rem] flex-1 transition-[height] duration-500 ease-in-out"
+                style={contentHeight ? { height: contentHeight } : undefined}
+              >
+                {items.map((item, index) => (
+                  <div
+                    key={item.title}
+                    ref={(el) => {
+                      itemRefs.current[index] = el;
+                    }}
+                    aria-hidden={index !== active}
+                    className={`absolute inset-x-0 top-0 transition-all duration-700 ease-in-out ${
+                      index === active
+                        ? "translate-y-0 opacity-100"
+                        : "pointer-events-none translate-y-6 opacity-0"
+                    }`}
+                  >
+                    {/* Rotulo "Update N.0": no lugar onde a paginacao ficava
+                        antes de subir pra baixo do titulo da secao. */}
+                    <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                      Update {index + 1}.0
+                    </p>
+                    <h3 className="mt-3 max-w-[16ch] text-balance font-display text-4xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+                      {item.title}
+                    </h3>
+                    <p className="mt-5 max-w-[38ch] text-base leading-relaxed text-white/55">
+                      {item.body}
+                    </p>
+                    <p className="mt-12 max-w-[38ch] text-sm italic leading-relaxed text-white/65">
+                      “{item.quote}”
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="mt-16">

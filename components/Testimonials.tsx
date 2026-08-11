@@ -223,17 +223,17 @@ export default function Testimonials() {
               ou na altura da secao pede refazer essa conta. */}
           <div className="absolute inset-y-0 left-0 flex w-[46vw] items-center overflow-hidden pl-[3vw]">
             <div className="flex flex-row items-center gap-5">
-              <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+              <Marquee vertical repeat={3} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
-              <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
+              <Marquee vertical reverse repeat={3} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
-              <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+              <Marquee vertical repeat={3} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
@@ -248,17 +248,17 @@ export default function Testimonials() {
               relacao a imagem do centro. */}
           <div className="absolute inset-y-0 right-0 flex w-[46vw] items-center justify-end overflow-hidden pr-[3vw]">
             <div className="flex flex-row items-center gap-5">
-              <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+              <Marquee vertical repeat={3} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
-              <Marquee vertical pauseOnHover reverse repeat={3} className="[--duration:40s]">
+              <Marquee vertical reverse repeat={3} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
-              <Marquee vertical pauseOnHover repeat={3} className="[--duration:40s]">
+              <Marquee vertical repeat={3} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}

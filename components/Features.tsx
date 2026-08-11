@@ -2274,16 +2274,18 @@ export default function Features() {
           </div>
         </motion.div>
 
-        {/* Ponte para Organizacao (tarefas/agenda/lembretes) */}
+        {/* Ponte para a secao seguinte — hoje a da dashboard. Aponta sempre
+            pra secao IMEDIATAMENTE abaixo: uma seta que pula uma secao inteira
+            confunde mais do que ajuda. */}
         <motion.a
-          href="#organizacao"
+          href="#interface"
           initial={reduce ? false : { opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.8 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="group mt-14 flex items-center justify-center gap-2 text-sm font-medium text-white/45 transition-colors duration-300 hover:text-white/85"
         >
-          Veja como ele organiza sua rotina
+          Veja a dashboard por dentro
           <ArrowDown
             size={15}
             weight="bold"

@@ -146,11 +146,36 @@ export default function Showcase() {
   return (
     <section
       id="interface"
-      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
+      // FUNDO HERDADO: esta secao subiu de lugar (passou a vir logo depois de
+      // Recursos) e adotou o fundo que ja morava nessa posicao da pagina — o
+      // tom #0C0C0E com grade e feixe, que antes era o da secao de
+      // Organizacao. Os fundos ficaram parados; o conteudo e que trocou.
+      //
+      // bg-[#0C0C0E]: bg-ink-900 (#0E0E10) escurecido de leve — bg-ink-950
+      // (#0A0A0B) e o proximo tom da escala, mas o salto direto ate la ficava
+      // forte demais (a secao ficava identica ao fundo puro da pagina), e um
+      // ajuste de so ~25% do caminho (#0D0D0F) ficou leve demais no sentido
+      // oposto. Este tom fica a ~40% do caminho ate ink-950.
+      className="relative overflow-hidden bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
     >
-      {/* fundo: grade + halo, costurando com Integracoes */}
+      {/* fundo: grade + halo */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute left-1/2 top-1/3 h-[460px] w-[720px] -translate-x-1/2 rounded-full bg-white/[0.05] blur-[150px]" />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+            maskImage:
+              "radial-gradient(ellipse 60% 60% at 50% 45%, #000 25%, transparent 100%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 60% 60% at 50% 45%, #000 25%, transparent 100%)",
+          }}
+        />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px overflow-hidden">
+          <div className="beam-sweep h-full w-32 bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+        </div>
       </div>
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">

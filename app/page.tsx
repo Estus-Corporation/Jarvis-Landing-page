@@ -80,8 +80,12 @@ export default function Home() {
             Recursos ate o fim de Precos. */}
         <TracingBeam>
           <Features />
-          <Organization />
+          {/* Interface antes de Organizacao: as duas trocaram de lugar, mas os
+              FUNDOS ficaram onde estavam — cada secao adotou o fundo da outra
+              pra ordem visual da pagina (grade + feixe, depois halo) nao mudar
+              junto com o conteudo. */}
           <Showcase />
+          <Organization />
           <Roadmap />
           <Testimonials />
           <Pricing />

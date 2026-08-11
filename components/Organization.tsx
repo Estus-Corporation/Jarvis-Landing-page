@@ -4,7 +4,8 @@ import React from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   ListChecks,
   CalendarCheck,
@@ -25,19 +26,45 @@ import type { Icon } from "@phosphor-icons/react";
 // passa a explicar o lado organizador do Jarvis — tarefas, agenda e lembretes —
 // que ate entao a pagina inteira nao mencionava em lugar nenhum.
 //
-// Formato: bento grid de cartoes (6 colunas, cada cartao escolhendo quantas
-// ocupa), no estilo do bloco de referencia trazido pelo usuario.
+// Formato: TRES CARTOES LADO A LADO, um por recurso, todos na proporcao 3:4
+// (retrato). Antes eram tres linhas largas — texto de um lado, maquete do
+// outro, alternando —, e cada recurso comia a pagina inteira: a secao passava
+// de 1800px de altura pra dizer tres coisas. Em 3:4 os tres cabem no mesmo
+// olhar e a comparacao entre eles e imediata.
 //
-// Os tres cartoes seguem o MESMO esqueleto de quatro andares, e e dele que vem
-// a leitura da secao:
-//   1. identidade — icone em anel duplo, nome e uma frase;
-//   2. anatomia   — as pecas que o recurso guarda, em chips (e o "campo por
-//                   campo" do recurso, sem virar paragrafo);
-//   3. maquete    — o recurso desenhado como ele aparece de verdade (um
-//                   formulario de tarefa, um dia da agenda, a notificacao
-//                   chegando), nao um desenho abstrato;
-//   4. comando    — a FRASE que cria aquilo. Fecha o ciclo da pagina inteira:
-//                   tudo aqui nasce de voz.
+// A altura do cartao e travada pela proporcao, entao ela NAO acompanha o
+// conteudo. Dai a divisao em duas zonas, sempre nesta ordem:
+//
+//   PALCO (em cima, ~60% do cartao) — fundo ink-950, um degrau ABAIXO do
+//   cartao: e uma tela embutida, e por isso as maquetes agora sobem um tom
+//   (ink-800) pra continuarem lendo como objetos em cima dela, igual a um
+//   app em modo escuro de verdade. A maquete e ancorada no topo e SANGRA pra
+//   dentro do rodape, apagando num degrade. E de proposito — tela nao termina,
+//   continua —, e por isso cada maquete tem mais conteudo do que cabe: em
+//   qualquer largura ela e cortada, e o corte le como continuacao, nunca como
+//   espaco que sobrou.
+//
+//   ROTULO (embaixo, altura fixa) — icone em anel duplo, nome e uma frase de
+//   duas linhas. Fica DEPOIS do palco de proposito: assim o corte da maquete
+//   acontece no meio do cartao, contra uma borda de verdade, em vez de
+//   esfumacar na borda de baixo e deixar o cartao sem fechamento. E, sendo o
+//   rodape de altura fixa, os tres titulos caem exatamente na mesma linha.
+//
+// Fora do cartao, logo abaixo dele, vem o COMANDO: a frase falada que cria
+// aquilo. Saiu de dentro do rodape por dois motivos — devolveu ~45px de palco
+// pra maquete, e a frase e de outra natureza: o cartao mostra o RESULTADO, a
+// frase e o que voce faz. Legenda de foto, nao conteudo do cartao.
+//
+// Tarefas fica no MEIO e em destaque — e o recurso central dos tres e o unico
+// com duas maquetes. O destaque e tamanho + superficie: a coluna do meio e uma
+// fracao mais larga que as duas laterais e, como a proporcao e a mesma, o
+// cartao cresce junto na altura; por cima disso, borda clara e superficie
+// ink-700. Os tres cartoes comecam na mesma linha em cima; embaixo o do meio
+// desce mais, e a legenda dele desce junto — legenda anda com o cartao dela,
+// nao com a dos vizinhos.
+//
+// As chips de "anatomia" da versao em linhas nao voltaram: em 3:4 o vertical e
+// o recurso escasso, e a maquete ja mostra o recurso campo por campo.
 // Fundo dos cartoes: bg-ink-800, o mesmo do cartao Anual em Precos — os dois
 // sao "o cartao de conteudo solido" do site.
 
@@ -47,147 +74,123 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 // com um span de verdade pra nao depender de pseudo-elemento). ---------------
 function RingIcon({ icon: Glyph }: { icon: Icon }) {
   return (
-    <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950">
+    <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950">
       <span
         aria-hidden
-        className="absolute -inset-2 rounded-full border border-white/[0.07]"
+        className="absolute -inset-[6px] rounded-full border border-white/[0.07]"
       />
-      <Glyph size={20} weight="light" aria-hidden className="text-white/85" />
+      <Glyph size={18} weight="light" aria-hidden className="text-white/85" />
     </span>
   );
 }
 
-// ---- Casca comum dos tres cartoes ------------------------------------------
-function CardIdentity({
-  icon,
-  title,
-  desc,
-  anatomy,
-}: {
-  icon: Icon;
-  title: string;
-  desc: string;
-  anatomy: string[];
-}) {
-  return (
-    <div>
-      <div className="flex items-start gap-4">
-        <RingIcon icon={icon} />
-        <div className="min-w-0 pt-0.5">
-          <h3 className="font-display text-xl font-semibold tracking-[-0.015em] text-[#FAFAFA]">
-            {title}
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-white/50">{desc}</p>
-        </div>
-      </div>
-
-      <div className="mt-5 flex flex-wrap gap-1.5">
-        {anatomy.map((piece) => (
-          <span
-            key={piece}
-            className="rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] text-white/45"
-          >
-            {piece}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CardCommand({ command }: { command: string }) {
-  return (
-    <div className="mt-6 flex items-center gap-2.5 border-t border-white/[0.08] pt-4">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/[0.14] bg-white/[0.04]">
-        <Microphone size={12} weight="light" aria-hidden className="text-white/60" />
-      </span>
-      <p className="min-w-0 text-[13px] italic leading-snug text-white/45">
-        “{command}”
-      </p>
-    </div>
-  );
-}
-
+// ---- O cartao ---------------------------------------------------------------
+// Proporcao 3:4 travada a partir de `lg`, que e onde os tres ficam lado a lado.
+// Abaixo disso eles empilham em coluna unica e a altura volta a ser livre — mas
+// o palco ganha um teto (`max-h`) pra manter o mesmo desenho em qualquer tela:
+// maquete cortada em cima, rotulo inteiro embaixo.
+//
+// As alturas fixas do rotulo (`min-h` na frase e no comando) existem so pra uma
+// coisa: garantir que os tres cartoes tenham o rodape do mesmo tamanho, mesmo
+// quando um texto quebra em menos linhas que o outro — se um rodape encolhe, o
+// palco do lado cresce e o corte das maquetes desalinha.
 function FeatureCard({
   icon,
   title,
   desc,
-  anatomy,
   command,
-  delay,
-  split = false,
-  extra,
-  className = "",
+  highlight = false,
+  delay = 0,
+  className,
   children,
 }: {
   icon: Icon;
   title: string;
   desc: string;
-  anatomy: string[];
   command: string;
-  delay: number;
-  // conteudo opcional embaixo do texto, so no layout `split`
-  extra?: React.ReactNode;
-  // `split`: cartao largo, com o texto de um lado e a maquete do outro. E o que
-  // resolve o buraco que a tarefa tinha quando era um cartao alto e estreito —
-  // ali a maquete era mais curta que a coluna inteira, e a sobra virava um vao
-  // no meio do cartao. Lado a lado, quem manda na altura e a maquete.
-  split?: boolean;
+  highlight?: boolean;
+  delay?: number;
   className?: string;
   children: React.ReactNode;
 }) {
   const reduce = useReducedMotionSafe();
   return (
     <motion.div
-      initial={reduce ? false : { opacity: 0, y: 18 }}
+      initial={reduce ? false : { opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.6, delay, ease: EASE }}
+      viewport={{ once: true, amount: 0.25 }}
+      transition={{ duration: 0.6, ease: EASE, delay }}
       className={className}
     >
-      <Card className="glow-ring group h-full overflow-hidden bg-ink-800 transition-colors duration-300 hover:border-white/25">
-        <CardContent className="flex h-full flex-col p-6 sm:p-7">
-          {split ? (
-            <div className="grid flex-1 items-start gap-6 lg:grid-cols-2 lg:gap-8">
-              <div>
-                <CardIdentity
-                  icon={icon}
-                  title={title}
-                  desc={desc}
-                  anatomy={anatomy}
-                />
-                {/* o slot extra equilibra as duas colunas: sem ele o texto
-                    ficava bem mais curto que a maquete e sobrava um vao. */}
-                {extra && <div className="mt-6">{extra}</div>}
-              </div>
-              <div className="min-w-0">{children}</div>
-            </div>
-          ) : (
-            <>
-              <CardIdentity
-                icon={icon}
-                title={title}
-                desc={desc}
-                anatomy={anatomy}
-              />
-              {/* mt-auto: quando o cartao e esticado pelo vizinho mais alto da
-                  linha, a folga fica ANTES da maquete — as duas terminam
-                  alinhadas com o rodape em vez de boiarem no meio. */}
-              <div className="mt-auto pt-6">{children}</div>
-            </>
-          )}
+      <Card
+        className={cn(
+          "glow-ring group flex flex-col overflow-hidden transition-colors duration-300 lg:aspect-[3/4]",
+          highlight
+            ? // mesma gramatica de destaque do cartao Anual em Precos: borda
+              // clara e superficie um degrau acima, sem brilho externo — o
+              // tamanho ja faz o trabalho de tirar ele do plano dos outros.
+              "border-white/40 bg-ink-700"
+            : "bg-ink-800 hover:border-white/25"
+        )}
+      >
+        {/* palco: tela embutida, maquete ancorada no topo e cortada no degrade */}
+        <div className="relative max-h-64 min-h-0 flex-1 overflow-hidden bg-ink-950 px-5 pt-5 lg:max-h-none">
+          {/* luz entrando pela borda de cima: sem ela o palco e um retangulo
+              preto chapado, e a maquete parece colada em cima do nada */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 z-0 h-28 bg-gradient-to-b from-white/[0.045] to-transparent"
+          />
+          {/* no hover a maquete sobe um pouco e mostra mais um naco do que
+              estava cortado — o gesto de quem rola a tela */}
+          <div className="relative z-10 transition-transform duration-500 ease-out group-hover:-translate-y-1.5">
+            {children}
+          </div>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-ink-950 via-ink-950/75 to-transparent"
+          />
+        </div>
 
-          <CardCommand command={command} />
-        </CardContent>
+        {/* rotulo */}
+        <div className="shrink-0 border-t border-white/[0.08] p-5">
+          <div className="flex items-center gap-3.5">
+            <RingIcon icon={icon} />
+            <h3 className="min-w-0 flex-1 font-display text-xl font-semibold tracking-[-0.02em] text-[#FAFAFA]">
+              {title}
+            </h3>
+          </div>
+
+          <p className="mt-4 min-h-[2.6rem] text-[13px] leading-relaxed text-white/55">
+            {desc}
+          </p>
+        </div>
       </Card>
+
+      {/* legenda: a frase que cria o que o cartao acabou de mostrar */}
+      <div className="mt-4 flex items-start gap-2.5 px-1">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.14] bg-white/[0.04]">
+          <Microphone
+            size={13}
+            weight="light"
+            aria-hidden
+            className="text-white/60"
+          />
+        </span>
+        <p className="min-w-0 text-[13px] italic leading-snug text-white/45">
+          “{command}”
+        </p>
+      </div>
     </motion.div>
   );
 }
 
 // ---- Pecas compartilhadas pelas maquetes ------------------------------------
 
-// Painel recuado: as maquetes sao "telas dentro do cartao", entao vao um tom
-// ABAIXO do fundo do cartao (ink-950 sob ink-800) em vez de mais claras.
+// Painel: um tom ACIMA do palco (ink-800 sobre ink-950). Quem esta recuado
+// agora e o palco inteiro, entao o painel volta a ser o que ele e num app de
+// verdade — um cartao pousado sobre a tela escura. Mesmo valor do rodape do
+// cartao, o que amarra as duas zonas.
 function Panel({
   title,
   aside,
@@ -198,7 +201,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-chip border border-white/[0.1] bg-ink-950 p-3.5">
+    <div className="rounded-chip border border-white/[0.1] bg-ink-800 p-3.5">
       <div className="mb-3 flex items-center justify-between gap-3">
         <span className="text-[10px] uppercase tracking-[0.14em] text-white/35">
           {title}
@@ -247,10 +250,15 @@ function Toggle({ on }: { on: boolean }) {
 // Dois paineis: a LISTA (o que sobra depois) e o FORMULARIO (o que voce
 // preenche). Um explica o outro — sozinho, o formulario seria abstrato.
 
+// Cinco itens porque o cartao de Tarefas e o maior dos tres: com tres a lista
+// terminava dentro do quadro e o formulario logo abaixo nao chegava a ser
+// cortado — some o efeito de tela que continua.
 const TASK_LIST = [
   { text: "Revisar contrato do cliente", done: true },
   { text: "Enviar relatório de março", done: false },
+  { text: "Confirmar reunião de quinta", done: false },
   { text: "Pagar a fatura do cartão", done: false },
+  { text: "Responder o e-mail do fornecedor", done: false },
 ];
 
 // D S T Q Q S S — semana comecando no domingo, como em toda agenda BR. `on`
@@ -265,9 +273,9 @@ const WEEK = [
   { label: "S", on: false },
 ];
 
-// A lista fica na coluna do TEXTO e o formulario na coluna da maquete: sao os
-// dois lados da mesma historia (o que sobra depois x o que voce preenche), e
-// separados assim as duas colunas do cartao largo terminam na mesma altura.
+// A lista vem primeiro e o formulario logo abaixo, ja entrando na zona do
+// corte: o que se ve inteiro e o RESULTADO, e o formulario aparece pela metade
+// como quem diz "e assim que ele nasce".
 function TaskListPanel() {
   const done = TASK_LIST.filter((t) => t.done).length;
   return (
@@ -385,9 +393,14 @@ const MONTH_DAYS = [
   { week: "D", day: 15 },
 ];
 
+// Quatro compromissos: o dia tem que passar da borda do cartao. Um dia que
+// termina dentro do quadro pareceria um dia vazio.
 const AGENDA = [
   { time: "09:00", title: "Reunião de equipe", tag: "toda quinta", icon: Repeat },
   { time: "14:00", title: "Dentista", tag: "avisar 1h antes", icon: BellRinging },
+  { time: "18:30", title: "Academia", tag: "seg, qua e sex", icon: Repeat },
+  { time: "20:00", title: "Jantar com a Bia", tag: "avisar 30min antes", icon: BellRinging },
+  { time: "21:30", title: "Ligar pro pai", tag: "avisar 10min antes", icon: BellRinging },
 ];
 
 function AgendaMock() {
@@ -443,15 +456,6 @@ function AgendaMock() {
             </div>
           );
         })}
-
-        {/* o vao livre depois dos compromissos, pra ler como DIA e nao lista */}
-        <div className="flex items-center gap-2.5" aria-hidden>
-          <span className="w-9 shrink-0 text-right font-mono text-[10px] text-white/15">
-            16:00
-          </span>
-          <span className="w-px shrink-0 bg-white/[0.06]" />
-          <span className="h-px flex-1 bg-white/[0.06]" />
-        </div>
       </div>
     </Panel>
   );
@@ -475,6 +479,11 @@ function JarvisDot() {
 const NEXT_REMINDERS = [
   { when: "Amanhã · 07:30", text: "Tomar o remédio" },
   { when: "Sex · 19:00", text: "Comprar presente da Bia" },
+  { when: "Sáb · 10:00", text: "Levar o carro na revisão" },
+  { when: "Seg · 08:00", text: "Renovar o seguro" },
+  { when: "Ter · 15:00", text: "Retorno com a médica" },
+  { when: "Qua · 12:00", text: "Pagar o condomínio" },
+  { when: "Qui · 17:00", text: "Buscar a encomenda" },
 ];
 
 function ReminderMock() {
@@ -484,9 +493,9 @@ function ReminderMock() {
       <div className="relative">
         <div
           aria-hidden
-          className="absolute inset-x-3 -top-2 h-10 rounded-chip border border-white/[0.07] bg-ink-950/70"
+          className="absolute inset-x-3 -top-2 h-10 rounded-chip border border-white/[0.07] bg-ink-800/70"
         />
-        <div className="relative rounded-chip border border-white/[0.16] bg-ink-950 p-3.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,1)]">
+        <div className="relative rounded-chip border border-white/[0.16] bg-ink-800 p-3.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,1)]">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-full border border-white/25 bg-white/[0.08]">
               <JarvisDot />
@@ -530,34 +539,23 @@ export default function Organization() {
   return (
     <section
       id="organizacao"
-      // bg-[#0C0C0E]: bg-ink-900 (#0E0E10) escurecido de leve — bg-ink-950
-      // (#0A0A0B) e o proximo tom da escala, mas o salto direto ate la ficava
-      // forte demais (a secao ficava identica ao fundo puro da pagina), e um
-      // ajuste de so ~25% do caminho (#0D0D0F) ficou leve demais no sentido
-      // oposto. Este tom fica a ~40% do caminho ate ink-950.
-      className="relative overflow-hidden bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
+      // FUNDO HERDADO: esta secao desceu de lugar (passou a vir depois da
+      // Interface) e adotou o fundo que ja morava nessa posicao da pagina — o
+      // ink-900 com o halo central, que antes era o da secao da dashboard. Os
+      // fundos ficaram parados; o conteudo e que trocou.
+      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
     >
-      {/* fundo: grade + halo */}
+      {/* fundo: halo central */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px)",
-            backgroundSize: "56px 56px",
-            maskImage:
-              "radial-gradient(ellipse 60% 60% at 50% 45%, #000 25%, transparent 100%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 60% 60% at 50% 45%, #000 25%, transparent 100%)",
-          }}
-        />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-        <div className="absolute inset-x-0 top-0 h-px overflow-hidden">
-          <div className="beam-sweep h-full w-32 bg-gradient-to-r from-transparent via-white/80 to-transparent" />
-        </div>
+        <div className="absolute left-1/2 top-1/3 h-[460px] w-[720px] -translate-x-1/2 rounded-full bg-white/[0.05] blur-[150px]" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl wide:max-w-shell">
+      {/* 76rem (1216px) e nao o max-w-6xl (1152px) das outras secoes: os tres
+          cartoes tem proporcao travada, entao a unica forma de deixa-los
+          maiores e dar largura a grade. Sao 64px a mais, o suficiente pra
+          engordar cada cartao ~20px sem que a secao pareca desalinhada das
+          vizinhas. */}
+      <div className="relative mx-auto max-w-[76rem] wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -575,33 +573,35 @@ export default function Organization() {
           </p>
         </motion.div>
 
-        {/* Bento: Tarefas ocupa a linha inteira de cima, em cartao largo (texto
-            de um lado, maquete do outro — e o recurso com mais regras, e o que
-            tem mais o que mostrar); Agenda e Lembretes dividem a linha de
-            baixo. Abaixo de lg tudo vira uma coluna so, na mesma ordem. */}
-        <div className="mt-16 grid grid-cols-1 gap-4 lg:grid-cols-6">
+        {/* A grade para de crescer bem antes do shell (1400px): as maquetes sao
+            desenhadas em tamanho fixo, entao cartao largo demais so gera palco
+            vazio embaixo delas. O bloco fica centrado, no eixo do titulo.
+            Tarefas vem PRIMEIRO no HTML (e o principal dos tres, e no celular
+            tem que abrir a fila) e so vai pro meio quando os tres entram lado
+            a lado. A coluna do meio e 1.14fr contra 1fr das laterais: e dai
+            que sai o tamanho maior do cartao em destaque. */}
+        <div className="mx-auto mt-16 grid max-w-[76rem] gap-x-5 gap-y-10 lg:grid-cols-[1fr_1.14fr_1fr]">
           <FeatureCard
             icon={ListChecks}
             title="Tarefas"
-            desc="Uma checklist de verdade: título, descrição e, se você quiser, repetição — marcando em quais dias da semana ela aparece e em quais não. Cada tarefa ainda pode ter o próprio lembrete, no dia e na hora que você escolher."
-            anatomy={["Título", "Descrição", "Recorrência", "Dias da semana", "Lembrete"]}
-            command="Jarvis, cria uma tarefa pra revisar o contrato toda segunda, quarta e sexta, e me lembra às 8h30."
-            delay={0}
-            split
-            extra={<TaskListPanel />}
-            className="lg:col-span-6"
+            desc="Título, descrição, repetição nos dias que você escolher — e lembrete próprio."
+            command="Jarvis, cria uma tarefa pra revisar o contrato toda segunda, quarta e sexta."
+            highlight
+            className="lg:order-2"
           >
-            <TaskFormPanel />
+            <div className="space-y-3">
+              <TaskListPanel />
+              <TaskFormPanel />
+            </div>
           </FeatureCard>
 
           <FeatureCard
             icon={CalendarCheck}
             title="Agenda"
-            desc="Compromissos com dia e hora marcados. Diga se ele se repete e se quer ser avisado antes — o Jarvis segura o resto."
-            anatomy={["Dia", "Horário", "Recorrência", "Aviso"]}
+            desc="Compromissos com dia e hora. Ele repete e avisa antes, se você pedir."
             command="Jarvis, marca dentista quinta às 14h e me avisa uma hora antes."
-            delay={0.1}
-            className="lg:col-span-3"
+            delay={0.08}
+            className="lg:order-1"
           >
             <AgendaMock />
           </FeatureCard>
@@ -609,11 +609,10 @@ export default function Organization() {
           <FeatureCard
             icon={BellRinging}
             title="Lembretes"
-            desc="Aquilo que você só não quer esquecer. Fale o que é, escolha o dia e a hora, e ele te lembra na hora exata."
-            anatomy={["O que lembrar", "Dia", "Horário"]}
+            desc="Aquilo que você só não quer esquecer, avisado na hora exata."
             command="Jarvis, me lembra de ligar pra Ana hoje às 18h."
-            delay={0.2}
-            className="lg:col-span-3"
+            delay={0.16}
+            className="lg:order-3"
           >
             <ReminderMock />
           </FeatureCard>

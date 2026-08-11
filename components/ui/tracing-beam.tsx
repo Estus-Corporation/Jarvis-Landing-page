@@ -135,6 +135,10 @@ function Beam({
 //    verde/ciano/roxo originais viraram opacidades de branco.
 //  - wrapper sem "max-w-4xl mx-auto": aqui o uso e uma unica barra global
 //    cobrindo a largura cheia da pagina, nao uma coluna de blog estreita.
+// Secao em que a barra deve terminar de encher. Precisa bater com o `id` da
+// secao de Precos (components/Pricing.tsx).
+const FINISH_SECTION_ID = "precos";
+
 export const TracingBeam = ({
   children,
   className,
@@ -157,9 +161,17 @@ export const TracingBeam = ({
   // (x=1) e a deslocada (x=19) a cada corte — volta ao normal na proxima,
   // e assim por diante.
   const [boundaries, setBoundaries] = useState<number[]>([]);
+  // Topo da secao onde a barra deve estar 100% acesa (Precos). Procurado pelo
+  // id em vez de "ultimo filho" pra continuar certo se a ordem das secoes
+  // dentro do TracingBeam mudar.
+  const [finishTop, setFinishTop] = useState(0);
+  // Altura da janela: "barra completa" quer dizer trecho aceso cobrindo a
+  // tela inteira, entao o calculo precisa saber quanto isso e em pixels.
+  const [viewportHeight, setViewportHeight] = useState(0);
 
   useEffect(() => {
-    if (contentRef.current && svgRef.current) {
+    const measure = () => {
+      if (!contentRef.current || !svgRef.current) return;
       // O wrapper do svg tem "top-3" (12px) — entao o svg comeca uns pixels
       // mais abaixo do que o topo do conteudo (`contentRef`). Como
       // `section.offsetTop` e medido a partir do topo do CONTEUDO (que nao
@@ -178,7 +190,18 @@ export const TracingBeam = ({
       setBoundaries(
         sections.slice(1).map((section) => section.offsetTop - offset)
       );
-    }
+      const finish =
+        sections.find((section) => section.id === FINISH_SECTION_ID) ??
+        sections[sections.length - 1];
+      setFinishTop(finish ? finish.offsetTop - offset : 0);
+      setViewportHeight(window.innerHeight);
+    };
+
+    measure();
+    // Redimensionar muda tanto a altura da janela quanto a altura das secoes
+    // (texto refluindo), e as duas entram na conta do trecho aceso.
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
   }, []);
 
   // O chanfro diagonal acontece ANTES do vao (termina exatamente onde o vao
@@ -208,26 +231,47 @@ export const TracingBeam = ({
     return d;
   }, [boundaries, svgHeight]);
 
-  // y1 e y2 comecavam os DOIS em 50: no scroll 0 (o estado inicial, o que
-  // toda visita ve primeiro) o gradiente ficava degenerado (inicio e fim no
-  // mesmo ponto), o que o SVG trata como cor solida do ULTIMO stop — que e
-  // transparente. Resultado: nenhum trecho colorido visivel ate a pessoa
-  // rolar. Com 0 e 140 de folga, ja existe um trecho aceso perto do topo
-  // antes mesmo do primeiro scroll.
-  const y1 = useSpring(
-    useTransform(scrollYProgress, [0, 0.8], [0, svgHeight]),
-    {
-      stiffness: 500,
-      damping: 90,
-    }
-  );
-  const y2 = useSpring(
-    useTransform(scrollYProgress, [0, 1], [140, svgHeight - 200]),
-    {
-      stiffness: 500,
-      damping: 90,
-    }
-  );
+  // ---- Quanto da barra esta aceso ---------------------------------------
+  // O trecho aceso vai de y2 (rabo, transparente) ate y1 (cabeca, o ponto
+  // mais brilhante do gradiente). Como a trilha rola junto com o conteudo, o
+  // rabo fica sempre colado no topo da janela e o que a pessoa le como
+  // "quanto a barra ja encheu" e a distancia entre os dois DENTRO da tela.
+  //
+  // Antes: y1 ia de 0 ate svgHeight em 80% do scroll, ou seja, a cabeca
+  // descia 25% mais rapido que a pagina. Essa folga cresce sozinha e passa de
+  // uma tela inteira bem antes do fim — por isso a barra ja aparecia cheia
+  // por volta de "Proximas atualizacoes".
+  //
+  // Agora a cabeca e ancorada por medida, nao por chute: a folga cresce de
+  // FILL_START ate UMA TELA de altura exatamente quando o topo de Precos
+  // encosta no topo da janela, e dai pra frente acompanha o scroll (a barra
+  // segue cheia ate o fim, sem estourar antes).
+  //
+  // scrollYProgress p ↔ topo da janela em y = p * svgHeight, porque o
+  // `offset` do useScroll ("start start" → "end start") faz a faixa de scroll
+  // ter exatamente a altura do conteudo.
+  const FILL_START = 160;
+  const measured = svgHeight > 0 && finishTop > 0 && viewportHeight > 0;
+  // Trava entre 5% e 95%: um valor degenerado (0, 1 ou fora de ordem) faria o
+  // useTransform receber uma faixa de entrada invalida.
+  const finishProgress = measured
+    ? Math.min(0.95, Math.max(0.05, finishTop / svgHeight))
+    : 0.8;
+
+  const headInput = measured ? [0, finishProgress, 1] : [0, 1];
+  const headOutput = measured
+    ? [FILL_START, finishTop + viewportHeight, svgHeight + viewportHeight]
+    : [FILL_START, svgHeight + FILL_START];
+
+  const y1 = useSpring(useTransform(scrollYProgress, headInput, headOutput), {
+    stiffness: 500,
+    damping: 90,
+  });
+  // Rabo colado no topo da janela.
+  const y2 = useSpring(useTransform(scrollYProgress, [0, 1], [0, svgHeight]), {
+    stiffness: 500,
+    damping: 90,
+  });
 
   return (
     // isolate: praticamente toda secao da pagina usa position:relative no

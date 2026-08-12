@@ -217,10 +217,14 @@ export default function Hero() {
           >
             {/* Raio menor e largura maior que o padrao pill do site de
                 proposito: excecao pedida so para este botao (o resto da
-                pagina continua com botoes = full, per o token global). */}
+                pagina continua com botoes = full, per o token global).
+                Hover: levanta 2px, fundo clareia e cresce bem de leve
+                (scale 1.02, centrado nos dois eixos — nao "pro lado" como a
+                versao com seta rejeitada antes). Sem mola e sem brilho/
+                sombra extra no hover (tambem rejeitados). */}
             <a
               href="#precos"
-              className="rounded-xl bg-[#FAFAFA] px-9 py-4 text-center text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98] sm:w-fit sm:min-w-[280px]"
+              className="rounded-xl bg-[#FAFAFA] px-9 py-4 text-center text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] sm:w-fit sm:min-w-[280px]"
             >
               Começar agora
             </a>

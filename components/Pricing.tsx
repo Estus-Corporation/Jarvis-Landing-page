@@ -309,8 +309,13 @@ export default function Pricing() {
                   // estado real de hover (mensalHovered) porque o alvo do
                   // gradiente muda com o hover — group-hover em CSS puro so
                   // controlaria opacidade, nao decidiria qual gradiente animar.
+                  // hover:-translate-y-0.5 + hover:scale-[1.02]: mesmo gesto do
+                  // CTA "Comecar agora" da Hero — levanta 2px e cresce de leve,
+                  // voltando ao chao e encolhendo no clique. Vale para os dois
+                  // planos; o que continua diferente entre eles e so a
+                  // superficie (branca no Anual, aro girando no Mensal).
                   className={cn(
-                    "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-base font-semibold transition-all duration-300 active:scale-[0.98]",
+                    "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-base font-semibold transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]",
                     plan.highlighted
                       ? "border-transparent bg-[#FAFAFA] text-ink-950 hover:bg-white"
                       : "border-white/15 text-white/85 hover:border-white/40 hover:text-white"

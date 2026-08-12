@@ -1,147 +1,211 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import { useLenis } from "lenis/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import {
   CloudSun,
   MusicNotes,
-  Timer,
+  Clock,
   GameController,
-  ListChecks,
-  ChatCircleText,
+  X,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
 
-// SECAO RECONSTRUIDA DO ZERO (2a vez) — antes a dashboard dividia espaco com
-// 6 cartoes de widget cheios de texto, 3 de cada lado, o que limitava o
-// tamanho dela a uma coluna estreita do meio.
+// SECAO RECONSTRUIDA (3a vez). A versao anterior punha a janela do app no
+// meio com duas fileiras de botoes redondos nas laterais (tres de cada lado),
+// autoplay trocando o widget ativo a cada 2,6s e uma legenda datilografada
+// SOBREPOSTA no rodape da imagem. Tres problemas, todos de estrutura:
 //
-// Ideia nova: a imagem e a PROTAGONISTA de verdade (bem maior — sem cartoes
-// de texto competindo por largura). Os widgets viram botoes de icone so,
-// numa selecao automatica (mesmo mecanismo do hub de Integracoes: um ativo
-// por vez, autoplay, para no hover/foco) e a legenda viva embaixo da imagem
-// conta o que aquele widget faz. Menos elementos, mais imagem, mesma
-// informacao — so que contada uma de cada vez em vez de todas de uma vez.
+//   1. Os botoes eram so icone, sem nome. Descobrir o que cada um era
+//      exigia clicar um por um — informacao escondida atras de interacao,
+//      numa secao cujo trabalho e justamente mostrar o que a tela tem.
+//   2. A legenda ficava EM CIMA da imagem, tampando exatamente o rodape da
+//      dashboard — o elemento que a secao inteira existe pra exibir.
+//   3. Autoplay + efeito de digitacao = texto se reescrevendo sem parar. A
+//      secao nunca ficava quieta o suficiente pra ser lida.
+//
+// Agora: a janela fica SOZINHA e inteira, sem nada por cima nem disputando
+// largura, e os widgets viram uma grade de itens com icone, nome e uma linha
+// de explicacao — todos legiveis de uma vez, sem clique e sem espera.
+// Sairam o estado `active`, o autoplay, o efeito de digitacao e os botoes.
+// A secao virou conteudo parado: chega, mostra e deixa ler.
 
 type Widget = { icon: Icon; title: string; note: string };
 
-// 3 a esquerda, 3 a direita: a ordem aqui e a ordem visual de cima pra baixo
-// em cada lado (e a ordem do autoplay, esquerda primeiro).
-const leftWidgets: Widget[] = [
-  { icon: CloudSun, title: "Clima e relógio", note: "Previsão e hora local sempre à vista." },
-  { icon: MusicNotes, title: "Spotify", note: "Faixa atual com a capa do álbum." },
-  { icon: Timer, title: "Timer e pomodoro", note: "Ciclos de foco controlados por voz." },
+// Ordem de leitura da grade (esquerda pra direita, de cima pra baixo).
+const WIDGETS: Widget[] = [
+  {
+    icon: CloudSun,
+    title: "Clima",
+    note: "Previsão do tempo sempre à vista.",
+  },
+  {
+    icon: MusicNotes,
+    title: "Spotify",
+    note: "Faixa atual com a capa do álbum.",
+  },
+  {
+    icon: Clock,
+    title: "Relógio",
+    note: "A hora local, sempre visível.",
+  },
+  {
+    icon: GameController,
+    title: "Jogo em execução",
+    note: "Ele reconhece o que você está jogando.",
+  },
 ];
 
-const rightWidgets: Widget[] = [
-  { icon: GameController, title: "Jogo em execução", note: "Ele reconhece o que você está jogando." },
-  { icon: ListChecks, title: "Tarefas e agenda", note: "Lembretes e compromissos do dia." },
-  { icon: ChatCircleText, title: "Chat com imagens", note: "Conversa por texto quando falar não dá." },
-];
+const EASE = [0.16, 1, 0.3, 1] as const;
 
-const allWidgets = [...leftWidgets, ...rightWidgets];
+// A captura, num lugar so: ela e desenhada duas vezes (na janela e no
+// lightbox) e src/alt/proporcao tem que casar entre as duas.
+const SHOT = {
+  src: "/images/dashjarvis.webp",
+  alt: "Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor.",
+  width: 1536,
+  height: 864,
+} as const;
 
-const AUTOPLAY_MS = 2600;
-
-// Botao de icone so, sem texto. Ativo = fundo branco solido + icone preto
-// (mesmo tratamento do botao selecionado em "Ele age no computador, nao so
-// no chat.", Features.tsx, e da faixa de garantia em Testimonials.tsx) — o
-// resto do site converge pro mesmo "selo branco" pra indicar selecao/ativo.
-// onMouseEnter/onFocus escolhem o widget tanto no hover (mouse) quanto no
-// toque/tab (foco).
-function WidgetIcon({
-  widget,
-  active,
-  onActivate,
-}: {
-  widget: Widget;
-  active: boolean;
-  onActivate: (w: Widget) => void;
-}) {
-  const Glyph = widget.icon;
+// Icone em anel duplo — mesma familia visual do RingIcon de Organization.tsx
+// (o "icone de recurso" do site), so que um pouco menor: aqui ele acompanha
+// um titulo de 15px numa grade de seis, nao o cabecalho de um cartao.
+function RingIcon({ icon: Glyph }: { icon: Icon }) {
   return (
-    <button
-      type="button"
-      // onClick, nao onMouseEnter/onFocus: precisa de uma acao explicita
-      // (clique ou Enter/Espaco com o botao focado — onClick cobre os dois)
-      // pra trocar o widget selecionado, em vez de mudar so por passar o
-      // mouse por cima. O container ao redor ainda pausa o autoplay no
-      // hover (onMouseEnter/onMouseLeave la fora), so a SELECAO em si que
-      // agora exige clique.
-      onClick={() => onActivate(widget)}
-      aria-label={`${widget.title}: ${widget.note}`}
-      aria-pressed={active}
-      className={`glow-ring flex h-14 w-14 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 sm:h-16 sm:w-16 ${
-        active
-          ? "glow-ring--active border-white bg-[#FAFAFA]"
-          : "border-white/[0.12] bg-ink-800 hover:border-white/25"
-      }`}
-    >
-      <Glyph
-        size={22}
-        weight="light"
+    <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950">
+      <span
         aria-hidden
-        className={`transition-colors duration-300 ${
-          active ? "text-ink-950" : "text-white/60"
-        }`}
+        className="absolute -inset-[5px] rounded-full border border-white/[0.07]"
       />
-    </button>
+      <Glyph size={18} weight="light" aria-hidden className="text-white/85" />
+    </span>
+  );
+}
+
+// ---- Lightbox ----------------------------------------------------------------
+// Vai pro <body> por portal em vez de ficar onde foi declarado: a janela do
+// app e desenhada dentro de um motion.div animado, e um ancestral com
+// `transform` vira bloco de contencao de `position: fixed` — o overlay
+// deixaria de cobrir a tela e passaria a se posicionar dentro do cartao.
+function Lightbox({
+  onClose,
+  manageFocus,
+}: {
+  onClose: () => void;
+  manageFocus: boolean;
+}) {
+  const reduce = useReducedMotionSafe();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const lenis = useLenis();
+
+  // Trava a pagina atras do overlay. Duas travas porque sao dois mecanismos:
+  // o Lenis roda seu proprio loop de rolagem (overflow hidden nao o alcanca) e
+  // o overflow cobre o que sobra — teclado, toque, barra de rolagem nativa.
+  // `useLenis` fora do provider (movimento reduzido: o ReactLenis nem monta)
+  // cai num contexto de fallback e devolve undefined, entao o `?.` basta.
+  useEffect(() => {
+    lenis?.stop();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      lenis?.start();
+      document.body.style.overflow = previous;
+    };
+  }, [lenis]);
+
+  // Esc fecha sempre — o ouvinte e no document, entao nao depende de nada
+  // estar focado.
+  //
+  // Ja o FOCO so e mexido quando a abertura veio do teclado (`manageFocus`).
+  // Quem abriu com o mouse nao ganha foco nenhum: era isso que deixava a
+  // "barra branca" pra tras. Mandar o foco pro X e, ao fechar, devolve-lo pro
+  // botao da imagem acendia o anel de foco do navegador nos dois — e no botao
+  // da imagem ele aparecia cortado, so a aresta de cima, porque a janela tem
+  // overflow-hidden e o botao encosta nas outras tres bordas dela (overflow
+  // recorta o outline de um descendente). Dai a barra no topo da captura.
+  // Pelo teclado o comportamento continua o correto: o foco entra no dialogo
+  // ao abrir e volta pro mesmo ponto ao fechar.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+
+    const previouslyFocused = manageFocus
+      ? (document.activeElement as HTMLElement | null)
+      : null;
+    if (manageFocus) closeRef.current?.focus();
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [onClose, manageFocus]);
+
+  return createPortal(
+    <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Imagem ampliada da interface do Jarvis"
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={reduce ? undefined : { opacity: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      // Clicar no fundo fecha. z acima do header (z-50).
+      onClick={onClose}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-950/95 p-4 backdrop-blur-sm sm:p-8"
+    >
+      <button
+        ref={closeRef}
+        type="button"
+        onClick={onClose}
+        aria-label="Fechar imagem ampliada"
+        // focus-visible (nao focus): anel so pra quem chegou pelo teclado.
+        className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.16] bg-ink-900/80 text-white/70 outline-none transition-colors duration-200 hover:border-white/40 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70 sm:right-6 sm:top-6"
+      >
+        <X size={18} weight="bold" aria-hidden />
+      </button>
+
+      <motion.div
+        initial={reduce ? false : { opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={reduce ? undefined : { opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.3, ease: EASE }}
+        // O clique na propria imagem NAO fecha — so o do fundo.
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-full"
+      >
+        {/* w-auto + max-h/max-w: a proporcao vem dos atributos width/height,
+            entao a imagem encolhe pelo lado que estourar primeiro — altura em
+            tela baixa e larga, largura em tela alta e estreita. */}
+        <Image
+          src={SHOT.src}
+          alt={SHOT.alt}
+          width={SHOT.width}
+          height={SHOT.height}
+          unoptimized
+          draggable={false}
+          className="h-auto max-h-[86vh] w-auto max-w-full rounded-card border border-white/[0.12] shadow-[0_50px_140px_-40px_rgba(0,0,0,0.9)]"
+        />
+      </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
 export default function Showcase() {
   const reduce = useReducedMotionSafe();
-  const [active, setActive] = useState<Widget>(allWidgets[0]);
-  const [paused, setPaused] = useState(false);
-
-  // Autoplay: destaca um widget por vez, girando pela lista toda. Para no
-  // hover/foco. Mesmo mecanismo do hub de Integracoes.
-  useEffect(() => {
-    if (reduce || paused) return;
-    const id = setInterval(() => {
-      setActive((cur) => {
-        const idx = allWidgets.findIndex((w) => w.title === cur.title);
-        return allWidgets[(idx + 1) % allWidgets.length];
-      });
-    }, AUTOPLAY_MS);
-    return () => clearInterval(id);
-  }, [reduce, paused]);
-
-  const handleActivate = React.useCallback((w: Widget) => setActive(w), []);
-
-  // Legenda com efeito de escrita, igual ao SpokenCaption de baixo da esfera
-  // na Hero (ver components/ui/spoken-caption.tsx) — so que aqui o "texto"
-  // muda por causa de um widget diferente ficar ativo (hover ou autoplay dos
-  // icones), nao por um ciclo de frases proprio. Titulo + nota viram UMA
-  // string so pra digitar (`combined`); na hora de desenhar, `chars` corta
-  // essa string e o pedaco e repartido de volta em titulo (negrito) e nota
-  // (normal) pelo comprimento do titulo.
-  const combined = `${active.title} ${active.note}`;
-  const [chars, setChars] = useState(reduce ? combined.length : 0);
-
-  useEffect(() => {
-    if (reduce) {
-      setChars(combined.length);
-      return;
-    }
-    setChars(0);
-    let i = 0;
-    const id = setInterval(() => {
-      i += 1;
-      setChars(i);
-      if (i >= combined.length) clearInterval(id);
-    }, 26);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active.title, reduce]);
-
-  const typed = combined.slice(0, chars);
-  const typedTitle = typed.slice(0, active.title.length);
-  const typedNote = typed.slice(active.title.length);
-  const typing = chars < combined.length;
+  const [expanded, setExpanded] = useState(false);
+  // Se a ampliacao foi aberta pelo teclado. So nesse caso o lightbox mexe no
+  // foco (ver comentario la dentro) — no clique de mouse, mexer no foco so
+  // acende aneis que o visitante nao pediu.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const close = useCallback(() => setExpanded(false), []);
 
   return (
     <section
@@ -156,10 +220,6 @@ export default function Showcase() {
       // forte demais (a secao ficava identica ao fundo puro da pagina), e um
       // ajuste de so ~25% do caminho (#0D0D0F) ficou leve demais no sentido
       // oposto. Este tom fica a ~40% do caminho ate ink-950.
-      // laptop:* (ver tailwind.config.ts): tela de desktop, mas baixa. Aqui a
-      // altura vem quase toda da janela do app, que e 16/9 — ou seja, a
-      // altura dela e refem da largura. Por isso o ajuste de notebook e um
-      // teto de largura na janela (mais abaixo), e nao uma altura fixa.
       className="relative overflow-hidden bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 laptop:pb-16 laptop:pt-16 wide:px-16"
     >
       {/* fundo: grade + halo */}
@@ -187,7 +247,7 @@ export default function Showcase() {
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6, ease: EASE }}
           // max-w-3xl (nao mais 2xl): a 48px (sm:text-5xl) o titulo precisa
           // de ~686px pra caber numa linha so — 672px ficava 14px curto.
           className="mx-auto max-w-3xl text-center"
@@ -204,45 +264,42 @@ export default function Showcase() {
           </p>
         </motion.div>
 
-        {/* Palco: 3 colunas em lg (icones | janela | icones), mas agora as
-            colunas de icone sao "auto" (largura do proprio botao, ~64px) em
-            vez de fracoes — a janela (1fr) fica com QUASE toda a largura
-            disponivel. E a mudanca central deste redesenho: antes eram
-            0.8fr/1.75fr/0.8fr (a janela levava ~52% do espaco), agora e
-            auto/1fr/auto (a janela leva tudo que sobra, ~85-90%). */}
-        <div
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          className="mt-8 grid grid-cols-1 items-center gap-6 lg:grid-cols-[auto_1fr_auto] lg:gap-8 laptop:mt-8"
-        >
-          {/* icones esquerda (lg) */}
-          <div className="hidden flex-col gap-5 lg:flex">
-            {leftWidgets.map((w) => (
-              <WidgetIcon
-                key={w.title}
-                widget={w}
-                active={active.title === w.title}
-                onActivate={handleActivate}
-              />
-            ))}
-          </div>
-
+        {/* A janela e a grade dividem a MESMA largura maxima e o mesmo centro:
+            a grade de widgets nasce exatamente sob as bordas da imagem, o que
+            e o que faz as duas lerem como um bloco so em vez de dois blocos
+            empilhados por acaso. O teto de 1080px existe porque a janela e
+            16/9 — em telas `wide` o container vai a 1400px, e ali a imagem
+            passaria de 780px de altura, alta demais pra caber num olhar. */}
+        <div className="mx-auto mt-12 max-w-[1080px] laptop:mt-9 laptop:max-w-[860px]">
           {/* janela do app */}
           <motion.div
             initial={reduce ? false : { opacity: 0, y: 24, scale: 0.97 }}
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            // glow-ring SEM --active: ver comentario equivalente em
-            // Features.tsx — o anel girando repinta a cada frame pra
-            // sempre (nao e compositor-only), caro demais pra deixar ligado
-            // sem interacao numa janela grande e sempre visivel.
-            // laptop:max-w-*: a janela e 16/9, entao limitar a LARGURA e o
-            // unico jeito de baixar a altura sem cortar a imagem. Os 780px
-            // dao ~439px de imagem no lugar dos ~540px que a largura cheia
-            // gerava; `mx-auto` mantem ela centrada entre as duas fileiras
-            // de icones, que continuam onde estavam.
-            className="glow-ring relative mx-auto w-full max-w-[640px] overflow-hidden rounded-card border border-white/[0.12] bg-ink-950 shadow-[0_50px_140px_-40px_rgba(0,0,0,0.9)] lg:max-w-none laptop:max-w-[840px]"
+            transition={{ duration: 0.8, ease: EASE }}
+            // Sem `glow-ring`: a classe acende um anel de luz GIRANDO na borda
+            // no hover (ver .glow-ring:hover em globals.css). No lugar dela, um
+            // halo PARADO e PERMANENTE por fora da janela — a segunda sombra do
+            // box-shadow, somada a de profundidade que ja existia. Nao depende
+            // mais de hover, entao nao ha transicao nenhuma aqui: a janela
+            // simplesmente e uma tela acesa.
+            // Spread negativo encolhe a forma antes de borrar, entao a luz
+            // nasce um pouco pra dentro da borda e se espalha macia em vez de
+            // desenhar um contorno. O alcance util e ~(blur/2 - spread): com 56
+            // e -14 ela morre a ~14px da borda.
+            // overflow-hidden nao a corta: overflow recorta filhos, nunca a
+            // sombra do proprio elemento.
+            //
+            // ORDEM IMPORTA, e era ela que fazia o brilho parecer mais forte em
+            // cima do que embaixo: box-shadow pinta a PRIMEIRA sombra por cima
+            // das seguintes, e a de profundidade e deslocada 50px pra BAIXO —
+            // ou seja, ela cobria de preto justamente a metade de baixo do
+            // halo, e deixava a de cima intacta. Com o halo declarado primeiro
+            // ele passa a ser pintado por cima, e a luz fica igual nos quatro
+            // lados. A sombra escura tambem desceu de 50/140/-40 pra
+            // 36/110/-48: mais curta e mais recolhida, pra ancorar a janela
+            // sem voltar a comer o brilho embaixo.
+            className="relative overflow-hidden rounded-card border border-white/[0.12] bg-ink-950 shadow-[0_0_56px_-14px_rgba(255,255,255,0.35),0_36px_110px_-48px_rgba(0,0,0,0.85)]"
           >
             {/* barra de titulo */}
             <div className="flex items-center gap-3 border-b border-white/[0.08] bg-ink-900/80 px-4 py-3">
@@ -276,10 +333,28 @@ export default function Showcase() {
                 sem reprocessar nada — a imagem fica identica ao arquivo
                 fonte. Custo: sem srcset responsivo, mas o arquivo ja e leve
                 (165KB) e nao vale a pena trocar fidelidade por isso aqui. */}
-            <div className="relative aspect-[16/9] w-full">
+            {/* A captura inteira e o botao de ampliar. Sem nenhuma reacao
+                visual ao hover — nem selo, nem zoom, nem anel na borda: a
+                unica pista e o cursor virar lupa. */}
+            <button
+              type="button"
+              // detail === 0 identifica ativacao por TECLADO: Enter/Espaco num
+              // botao disparam um clique sintetico sem contagem de cliques,
+              // enquanto o mouse manda 1 ou mais.
+              onClick={(e) => {
+                setKeyboardOpen(e.detail === 0);
+                setExpanded(true);
+              }}
+              aria-label="Ampliar a imagem da interface do Jarvis"
+              // ring-inset, e nao o outline padrao: o outline seria recortado
+              // pelo overflow-hidden da janela em tres lados, sobrando so a
+              // aresta de cima (a "barra branca"). O ring por dentro fica todo
+              // dentro da area visivel. focus-visible: so no teclado.
+              className="relative block aspect-[16/9] w-full cursor-zoom-in overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
+            >
               <Image
-                src="/images/dashjarvis.webp"
-                alt="Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor."
+                src={SHOT.src}
+                alt={SHOT.alt}
                 fill
                 unoptimized
                 className="object-cover"
@@ -305,59 +380,60 @@ export default function Showcase() {
                   />
                 );
               })}
-
-              {/* legenda viva, agora SOBREPOSTA na parte inferior da imagem
-                  (antes era uma caixa solta abaixo das fileiras de icones).
-                  Mesmo efeito de escrita do SpokenCaption da Hero; fica
-                  ancorada no rodape da janela, centralizada. bg mais opaco
-                  (ink-950/80) + blur pra o texto ler por cima da imagem. */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-3 sm:p-4">
-                <div className="pointer-events-auto flex max-w-[calc(100%-2rem)] items-center justify-center rounded-card border border-white/[0.12] bg-ink-950/80 px-5 py-3 text-center backdrop-blur-md">
-                  <p className="text-balance text-sm leading-relaxed sm:text-base" aria-live="polite">
-                    <span className="font-display font-semibold text-[#FAFAFA]">
-                      {typedTitle}
-                    </span>
-                    <span className="font-light text-white/60">{typedNote}</span>
-                    {typing && !reduce && (
-                      <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
+            </button>
           </motion.div>
 
-          {/* icones direita (lg) */}
-          <div className="hidden flex-col gap-5 lg:flex">
-            {rightWidgets.map((w) => (
-              <WidgetIcon
+          {/* Divisor rotulado: separa a imagem da legenda dela sem precisar de
+              uma caixa. Sem ele os itens encostariam direto no rodape da
+              janela e leriam como parte da propria captura de tela. */}
+          <motion.div
+            initial={reduce ? false : { opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="mt-14 flex items-center gap-5 laptop:mt-10"
+          >
+            <span className="h-px flex-1 bg-white/[0.18]" aria-hidden />
+            <span className="text-xs font-medium uppercase tracking-[0.18em] text-white/65">
+              Widgets
+            </span>
+            <span className="h-px flex-1 bg-white/[0.18]" aria-hidden />
+          </motion.div>
+
+          {/* Os quatro widgets. Duas colunas em sm, quatro em lg — sempre um
+              numero que divide quatro exato, pra nao sobrar item orfao numa
+              ultima linha pela metade. Em lg eles formam UMA fileira so, o que
+              fecha o bloco embaixo da imagem sem esticar a secao. */}
+          <div className="mt-10 grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-4 laptop:mt-8 laptop:gap-y-7">
+            {WIDGETS.map((w, i) => (
+              <motion.div
                 key={w.title}
-                widget={w}
-                active={active.title === w.title}
-                onActivate={handleActivate}
-              />
+                initial={reduce ? false : { opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                // Escalonado por indice: a 0.06s de intervalo os itens entram
+                // como uma onda, nao como uma fila.
+                transition={{ duration: 0.5, ease: EASE, delay: i * 0.06 }}
+                className="flex items-start gap-4"
+              >
+                <RingIcon icon={w.icon} />
+                <div className="min-w-0">
+                  <h3 className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#FAFAFA]">
+                    {w.title}
+                  </h3>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
+                    {w.note}
+                  </p>
+                </div>
+              </motion.div>
             ))}
           </div>
         </div>
-
-        {/* icones em linha (abaixo de lg): mesma selecao, so que todos os 6
-            numa fileira so em vez de duas colunas de 3. */}
-        <div
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:hidden"
-        >
-          {allWidgets.map((w) => (
-            <WidgetIcon
-              key={w.title}
-              widget={w}
-              active={active.title === w.title}
-              onActivate={handleActivate}
-            />
-          ))}
-        </div>
-
       </div>
+
+      <AnimatePresence>
+        {expanded && <Lightbox onClose={close} manageFocus={keyboardOpen} />}
+      </AnimatePresence>
     </section>
   );
 }

@@ -13,93 +13,80 @@ import {
   Repeat,
   Clock,
   Check,
-  NotePencil,
-  TextAlignLeft,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
-// SECAO RECONSTRUIDA DO ZERO (3a vez) — este arquivo ja foi o hub orbital de
-// integracoes e depois uma grade de apps conectados. Os dois viraram redundantes
-// quando a secao "Recursos" (Features.tsx) virou a vitrine real das integracoes,
-// com as sete demos rodando de verdade. Entao aqui a secao mudou de ASSUNTO:
-// passa a explicar o lado organizador do Jarvis — tarefas, agenda e lembretes —
-// que ate entao a pagina inteira nao mencionava em lugar nenhum.
+// TRES CARTOES LADO A LADO — um por recurso (Tarefas, Agenda, Lembretes).
 //
-// Formato: TRES CARTOES LADO A LADO, um por recurso, todos na proporcao 3:4
-// (retrato). Antes eram tres linhas largas — texto de um lado, maquete do
-// outro, alternando —, e cada recurso comia a pagina inteira: a secao passava
-// de 1800px de altura pra dizer tres coisas. Em 3:4 os tres cabem no mesmo
-// olhar e a comparacao entre eles e imediata.
+// O cartao foi VIRADO DE CABECA PRA BAIXO em relacao a versao anterior, por
+// causa de um teste com uma pessoa de fora: ela achou que era informacao
+// demais e que os titulos ("Tarefas", "Agenda"...) estavam mal posicionados e
+// pouco aparentes. Estavam mesmo — moravam no RODAPE, pequenos, embaixo de
+// uma maquete densa que comia toda a atencao. Agora:
 //
-// A altura do cartao e travada pela proporcao, entao ela NAO acompanha o
-// conteudo. Dai a divisao em duas zonas, sempre nesta ordem:
+//   CABECALHO (em cima, altura fixa) — icone em anel duplo, nome e uma frase
+//   de duas linhas. E a primeira coisa que se le no cartao, nao a ultima.
+//   Sendo de altura fixa, os tres titulos e as tres frases caem exatamente na
+//   mesma linha, e o palco dos tres comeca junto.
 //
-//   PALCO (em cima, ~60% do cartao) — fundo ink-950, um degrau ABAIXO do
-//   cartao: e uma tela embutida, e por isso as maquetes agora sobem um tom
-//   (ink-800) pra continuarem lendo como objetos em cima dela, igual a um
-//   app em modo escuro de verdade. A maquete e ancorada no topo e SANGRA pra
-//   dentro do rodape, apagando num degrade. E de proposito — tela nao termina,
-//   continua —, e por isso cada maquete tem mais conteudo do que cabe: em
-//   qualquer largura ela e cortada, e o corte le como continuacao, nunca como
-//   espaco que sobrou.
+//   PALCO (embaixo, altura fixa) — fundo ink-950, um degrau ABAIXO do cartao:
+//   e uma tela embutida, e por isso as maquetes sobem um tom (ink-800) pra
+//   continuarem lendo como objetos em cima dela. A maquete e ancorada no topo
+//   e SANGRA pra fora, apagando num degrade na borda de baixo. E de proposito
+//   — tela nao termina, continua —, e por isso cada maquete tem mais conteudo
+//   do que cabe: em qualquer largura ela e cortada, e o corte le como
+//   continuacao, nunca como espaco que sobrou.
 //
-//   ROTULO (embaixo, altura fixa) — icone em anel duplo, nome e uma frase de
-//   duas linhas. Fica DEPOIS do palco de proposito: assim o corte da maquete
-//   acontece no meio do cartao, contra uma borda de verdade, em vez de
-//   esfumacar na borda de baixo e deixar o cartao sem fechamento. E, sendo o
-//   rodape de altura fixa, os tres titulos caem exatamente na mesma linha.
+// As maquetes tambem EMAGRECERAM, que era a outra metade da queixa: Tarefas
+// perdeu o formulario inteiro (titulo, descricao, toggle, hora) e ficou com a
+// lista mais a faixa de repeticao; Agenda caiu de cinco compromissos pra
+// quatro; Lembretes perdeu tres itens da fila. O que ficou mais LONGO foram
+// as listas (sete tarefas, quatro lembretes) — mas linha de lista nao pesa
+// como campo de formulario: ela le como "a lista continua", que e justamente
+// o que o corte no rodape precisa. Sem conteudo suficiente sobrando, o
+// degrade apagaria em cima de palco vazio.
+//
+// TAREFAS fica no MEIO e um pouco maior que os dois vizinhos — e o recurso
+// central dos tres. O destaque agora e SO tamanho (coluna mais larga + palco
+// mais alto); a superficie mais clara e a borda destacada que a versao antiga
+// usava junto nao voltaram, porque somavam mais um elemento disputando
+// atencao numa secao cuja queixa era exatamente essa. Os tres cabecalhos
+// comecam na mesma linha em cima; embaixo o do meio desce mais, e a legenda
+// dele desce junto — legenda anda com o cartao dela, nao com a dos vizinhos.
 //
 // Fora do cartao, logo abaixo dele, vem o COMANDO: a frase falada que cria
-// aquilo. Saiu de dentro do rodape por dois motivos — devolveu ~45px de palco
-// pra maquete, e a frase e de outra natureza: o cartao mostra o RESULTADO, a
-// frase e o que voce faz. Legenda de foto, nao conteudo do cartao.
-//
-// Tarefas fica no MEIO e em destaque — e o recurso central dos tres e o unico
-// com duas maquetes. O destaque e tamanho + superficie: a coluna do meio e uma
-// fracao mais larga que as duas laterais e, como a proporcao e a mesma, o
-// cartao cresce junto na altura; por cima disso, borda clara e superficie
-// ink-700. Os tres cartoes comecam na mesma linha em cima; embaixo o do meio
-// desce mais, e a legenda dele desce junto — legenda anda com o cartao dela,
-// nao com a dos vizinhos.
-//
-// As chips de "anatomia" da versao em linhas nao voltaram: em 3:4 o vertical e
-// o recurso escasso, e a maquete ja mostra o recurso campo por campo.
-// Fundo dos cartoes: bg-ink-800, o mesmo do cartao Anual em Precos — os dois
-// sao "o cartao de conteudo solido" do site.
+// aquilo. Fica de fora porque e de outra natureza — o cartao mostra o
+// RESULTADO, a frase e o que voce faz. Legenda de foto, nao conteudo do
+// cartao.
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-// ---- Icone em anel duplo (o "before:-inset-2" do bloco de referencia, aqui
-// com um span de verdade pra nao depender de pseudo-elemento). ---------------
+// ---- Icone em anel duplo -----------------------------------------------------
 function RingIcon({ icon: Glyph }: { icon: Icon }) {
   return (
-    <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950">
+    <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950">
       <span
         aria-hidden
         className="absolute -inset-[6px] rounded-full border border-white/[0.07]"
       />
-      <Glyph size={18} weight="light" aria-hidden className="text-white/85" />
+      <Glyph size={20} weight="light" aria-hidden className="text-white/85" />
     </span>
   );
 }
 
-// ---- O cartao ---------------------------------------------------------------
-// Proporcao 3:4 travada a partir de `lg`, que e onde os tres ficam lado a lado.
-// Abaixo disso eles empilham em coluna unica e a altura volta a ser livre — mas
-// o palco ganha um teto (`max-h`) pra manter o mesmo desenho em qualquer tela:
-// maquete cortada em cima, rotulo inteiro embaixo.
-//
-// As alturas fixas do rotulo (`min-h` na frase e no comando) existem so pra uma
-// coisa: garantir que os tres cartoes tenham o rodape do mesmo tamanho, mesmo
-// quando um texto quebra em menos linhas que o outro — se um rodape encolhe, o
-// palco do lado cresce e o corte das maquetes desalinha.
+// ---- O cartao ----------------------------------------------------------------
+// As duas alturas fixas (min-h na frase do cabecalho, h no palco) existem so
+// pra uma coisa: garantir que os cartoes fiquem alinhados mesmo quando um
+// texto quebra em menos linhas que o outro — se um cabecalho encolhe, o palco
+// do lado desalinha do vizinho. O cabecalho tem a mesma altura nos tres
+// (inclusive no do meio); quem muda no `bigger` e so o palco.
 function FeatureCard({
   icon,
   title,
   desc,
   command,
-  highlight = false,
   delay = 0,
+  bigger = false,
   className,
   children,
 }: {
@@ -107,8 +94,8 @@ function FeatureCard({
   title: string;
   desc: string;
   command: string;
-  highlight?: boolean;
   delay?: number;
+  bigger?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -121,65 +108,91 @@ function FeatureCard({
       transition={{ duration: 0.6, ease: EASE, delay }}
       className={className}
     >
+      {/* bg-[#111114]: um passo escuro FORA da escala, a meio caminho entre
+          ink-800 (#141417, o tom original do cartao) e ink-900 (#0E0E10, o
+          fundo da secao). Mesma manobra que Showcase.tsx faz com #0C0C0E: os
+          degraus da escala sao largos demais pra um ajuste fino como este —
+          descer o degrau inteiro ate ink-900 sumiria com o cartao dentro da
+          secao.
+          Os paineis das maquetes continuam em ink-800: eles vivem sobre o
+          palco ink-950, sao outra superficie, e mexer neles ia junto tirar o
+          contraste que faz a maquete ler como app. */}
       <Card
         className={cn(
-          // laptop:aspect-*: a altura do cartao sai da LARGURA pela proporcao,
-          // entao encurtar a proporcao e o unico jeito de baixar a altura sem
-          // estreitar o cartao (estreitar espremeria as maquetes, que sao
-          // desenhadas na largura cheia). O palco ja e cortado por um degrade
-          // embaixo — num notebook ele so mostra um naco menor da maquete.
-          "glow-ring group flex flex-col overflow-hidden transition-colors duration-300 lg:aspect-[3/4] laptop:aspect-[3/3.3]",
-          highlight
-            ? // mesma gramatica de destaque do cartao Anual em Precos: borda
-              // clara e superficie um degrau acima, sem brilho externo — o
-              // tamanho ja faz o trabalho de tirar ele do plano dos outros.
-              "border-white/40 bg-ink-700"
-            : "bg-ink-800 hover:border-white/25"
+          "glow-ring group overflow-hidden bg-[#111114] transition-colors duration-300",
+          // O cartao em destaque tem a borda clara SEMPRE, sem depender de
+          // hover — mesma gramatica de destaque do cartao Anual em Precos —, e
+          // com 2px no lugar de 1: `border-2` sobrescreve o `border` que vem do
+          // proprio componente Card (o twMerge do cn resolve, porque as duas
+          // classes sao do mesmo grupo de largura de borda).
+          // Os outros dois seguem apagados e so acendem sob o mouse, o que
+          // mantem a diferenca visivel mesmo com o cursor em cima de um deles.
+          bigger ? "border-2 border-white/40" : "hover:border-white/25"
         )}
       >
-        {/* palco: tela embutida, maquete ancorada no topo e cortada no degrade */}
-        <div className="relative max-h-64 min-h-0 flex-1 overflow-hidden bg-ink-950 px-5 pt-5 lg:max-h-none">
+        {/* cabecalho */}
+        <div className="border-b border-white/[0.08] p-6">
+          <div className="flex items-center gap-3.5">
+            <RingIcon icon={icon} />
+            <h3 className="min-w-0 flex-1 font-display text-[1.375rem] font-semibold tracking-[-0.02em] text-[#FAFAFA]">
+              {title}
+            </h3>
+          </div>
+
+          {/* min-h = duas linhas a text-sm/leading-relaxed (~2.85rem). As tres
+              frases quebram em duas linhas na largura atual; a reserva existe
+              pra que, se alguma passar a caber em uma so, o palco dos tres
+              continue comecando na mesma altura. */}
+          <p className="mt-4 min-h-[2.85rem] text-sm leading-relaxed text-white/55">
+            {desc}
+          </p>
+        </div>
+
+        {/* palco: tela embutida, maquete ancorada no topo. Nos dois cartoes
+            laterais a maquete SANGRA pra fora e e cortada pelo degrade de
+            baixo — "a tela continua".
+            No do meio a maquete tambem e cortada, mas o corte foi POSICIONADO:
+            a altura garante que a lista e a faixa de repeticao caibam inteiras
+            acima da zona do degrade, e quem entra nela e o painel "Lembrar as",
+            que existe justamente pra ser o pedaco comido. A conta que amarra
+            lista, altura e corte esta no comentario do TASK_LIST.
+            Os 385px deixam este palco ~90px mais alto que o dos vizinhos: e
+            dai, somado a coluna mais larga, que sai o tamanho maior do cartao
+            em destaque. No notebook cai pra 340, e a lista perde uma linha
+            junto (TASKS_ON_LAPTOP) pra a faixa de dias continuar fora do
+            degrade. */}
+        <div
+          className={cn(
+            "relative overflow-hidden bg-ink-950 px-6 pt-6",
+            bigger
+              ? "h-[385px] laptop:h-[340px]"
+              : "h-[275px] sm:h-[295px] laptop:h-[230px]"
+          )}
+        >
           {/* luz entrando pela borda de cima: sem ela o palco e um retangulo
               preto chapado, e a maquete parece colada em cima do nada */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 z-0 h-28 bg-gradient-to-b from-white/[0.045] to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 z-0 h-24 bg-gradient-to-b from-white/[0.045] to-transparent"
           />
           {/* no hover a maquete sobe um pouco e mostra mais um naco do que
               estava cortado — o gesto de quem rola a tela */}
           <div className="relative z-10 transition-transform duration-500 ease-out group-hover:-translate-y-1.5">
             {children}
           </div>
+          {/* Degrade de baixo: o MESMO nos tres cartoes agora. Ele chegou a
+              ficar curto so no do meio, porque a lista era longa e a faixa de
+              dias encostava no rodape; com a lista encurtada sobra folga
+              suficiente pra ele voltar ao tamanho padrao sem tocar nos
+              circulos dos dias. */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-ink-950 via-ink-950/75 to-transparent"
           />
         </div>
-
-        {/* rotulo */}
-        <div className="shrink-0 border-t border-white/[0.08] p-5">
-          <div className="flex items-center gap-3.5">
-            <RingIcon icon={icon} />
-            <h3 className="min-w-0 flex-1 font-display text-xl font-semibold tracking-[-0.02em] text-[#FAFAFA]">
-              {title}
-            </h3>
-          </div>
-
-          <p className="mt-4 min-h-[2.6rem] text-[13px] leading-relaxed text-white/55">
-            {desc}
-          </p>
-        </div>
       </Card>
 
-      {/* legenda: a frase que cria o que o cartao acabou de mostrar.
-          Centralizada e sem o chip de microfone que ficava a esquerda — as
-          aspas ja dizem que e fala, e tirar o chip devolveu ~38px de linha
-          (28 do chip + 10 do vao), que e justamente o que faz a frase caber
-          em UMA linha no notebook.
-          Medido a 1366px, a 11px: a mais longa (Tarefas, no cartao do meio)
-          pede 379px contra 427px de coluna, e a de Agenda 325px contra
-          374px — ~48px de folga nas duas. Sem segunda linha, nenhuma legenda
-          sobra pra baixo do bloco. */}
+      {/* legenda: a frase que cria o que o cartao acabou de mostrar */}
       <p className="mt-4 px-1 text-center text-[13px] italic leading-snug text-white/45 laptop:mt-3 laptop:px-0 laptop:text-[11px]">
         “{command}”
       </p>
@@ -187,12 +200,11 @@ function FeatureCard({
   );
 }
 
-// ---- Pecas compartilhadas pelas maquetes ------------------------------------
+// ---- Pecas compartilhadas pelas maquetes -------------------------------------
 
-// Painel: um tom ACIMA do palco (ink-800 sobre ink-950). Quem esta recuado
-// agora e o palco inteiro, entao o painel volta a ser o que ele e num app de
-// verdade — um cartao pousado sobre a tela escura. Mesmo valor do rodape do
-// cartao, o que amarra as duas zonas.
+// Painel: um tom ACIMA do palco (ink-800 sobre ink-950). Quem esta recuado e o
+// palco inteiro, entao o painel volta a ser o que ele e num app de verdade —
+// um cartao pousado sobre a tela escura.
 function Panel({
   title,
   aside,
@@ -215,46 +227,25 @@ function Panel({
   );
 }
 
-function FieldLabel({
-  icon: Glyph,
-  children,
-}: {
-  icon: Icon;
-  children: React.ReactNode;
-}) {
-  return (
-    <p className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.12em] text-white/30">
-      <Glyph size={10} aria-hidden />
-      {children}
-    </p>
-  );
-}
-
-// Chavinha ligada/desligada das maquetes.
-function Toggle({ on }: { on: boolean }) {
-  return (
-    <span
-      className={`flex h-4 w-7 shrink-0 items-center rounded-full px-[3px] ${
-        on ? "bg-white/75" : "bg-white/[0.12]"
-      }`}
-      aria-hidden
-    >
-      <span
-        className={`block h-2.5 w-2.5 rounded-full ${
-          on ? "ml-auto bg-ink-950" : "bg-white/50"
-        }`}
-      />
-    </span>
-  );
-}
-
 // ---- Maquete 1: a tarefa -----------------------------------------------------
-// Dois paineis: a LISTA (o que sobra depois) e o FORMULARIO (o que voce
-// preenche). Um explica o outro — sozinho, o formulario seria abstrato.
-
-// Cinco itens porque o cartao de Tarefas e o maior dos tres: com tres a lista
-// terminava dentro do quadro e o formulario logo abaixo nao chegava a ser
-// cortado — some o efeito de tela que continua.
+// A LISTA (o que sobra depois) e, logo abaixo, a faixa de repeticao — o unico
+// pedaco do antigo formulario que sobreviveu, porque e o que diferencia uma
+// tarefa do Jarvis de um bloco de notas.
+//
+// O NUMERO de itens importa mais aqui do que nas outras duas maquetes, porque
+// este cartao tem que atender duas coisas ao mesmo tempo: a faixa de dias
+// aparece INTEIRA, e ainda assim algo e cortado no rodape pro degrade ter o
+// que apagar. Cada linha custa 24px (16 de altura + 8 de vao), e a conta e:
+//
+//   padding do topo (24) + lista + vao (12) + faixa de dias (79)
+//     = onde a faixa de dias termina, que precisa ficar ACIMA da zona do
+//       degrade (os ultimos 64px do palco)
+//
+// O painel "Lembrar as" vem depois e cai justamente dentro dessa zona: ele e
+// o que o degrade come. Somar linhas na lista empurra a faixa de dias pra
+// dentro do degrade e apaga os circulos dos dias — que e o que a mudanca
+// anterior corrigiu. Sao 5 no desktop e 4 no notebook (a ultima some em
+// `laptop:`, ver TaskMock), onde o palco e mais curto.
 const TASK_LIST = [
   { text: "Revisar contrato do cliente", done: true },
   { text: "Enviar relatório de março", done: false },
@@ -262,6 +253,9 @@ const TASK_LIST = [
   { text: "Pagar a fatura do cartão", done: false },
   { text: "Responder o e-mail do fornecedor", done: false },
 ];
+
+// Quantas linhas sobrevivem no breakpoint de notebook (tela larga, mas baixa).
+const TASKS_ON_LAPTOP = 4;
 
 // D S T Q Q S S — semana comecando no domingo, como em toda agenda BR. `on`
 // marca os dias em que a tarefa se repete: e o "quais dias sim e quais nao".
@@ -275,113 +269,96 @@ const WEEK = [
   { label: "S", on: false },
 ];
 
-// A lista vem primeiro e o formulario logo abaixo, ja entrando na zona do
-// corte: o que se ve inteiro e o RESULTADO, e o formulario aparece pela metade
-// como quem diz "e assim que ele nasce".
-function TaskListPanel() {
+function TaskMock() {
   const done = TASK_LIST.filter((t) => t.done).length;
   return (
-    <Panel
-      title="Minhas tarefas"
-      aside={
-        <span className="font-mono text-[10px] text-white/40">
-          {done}/{TASK_LIST.length}
-        </span>
-      }
-    >
-      <div className="space-y-2">
-        {TASK_LIST.map((t) => (
-          <div key={t.text} className="flex items-center gap-2.5">
-            <span
-              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border ${
-                t.done
-                  ? "border-white/70 bg-white/85 text-ink-950"
-                  : "border-white/25"
-              }`}
-              aria-hidden
+    <div className="space-y-3">
+      <Panel
+        title="Minhas tarefas"
+        aside={
+          <span className="font-mono text-[10px] text-white/40">
+            {done}/{TASK_LIST.length}
+          </span>
+        }
+      >
+        <div className="space-y-2">
+          {TASK_LIST.map((t, i) => (
+            <div
+              key={t.text}
+              className={cn(
+                "flex items-center gap-2.5",
+                // as linhas alem do limite somem no notebook, onde o palco e
+                // mais curto — sem isso elas empurrariam a faixa de dias pra
+                // fora do quadro justo nas telas mais baixas
+                i >= TASKS_ON_LAPTOP && "laptop:hidden"
+              )}
             >
-              {t.done && <Check size={10} weight="bold" />}
-            </span>
-            <span
-              className={`min-w-0 flex-1 truncate text-xs ${
-                t.done ? "text-white/30 line-through" : "text-white/75"
-              }`}
-            >
-              {t.text}
-            </span>
-          </div>
-        ))}
-      </div>
-    </Panel>
-  );
-}
-
-function TaskFormPanel() {
-  return (
-    <Panel
-      title="Nova tarefa"
-      aside={
-        <span className="rounded-full border border-white/25 bg-white/[0.08] px-2.5 py-[3px] text-[10px] text-white/75">
-          Salvar
-        </span>
-      }
-    >
-      <div className="space-y-3">
-        <div>
-          <FieldLabel icon={NotePencil}>Título</FieldLabel>
-          <p className="mt-1 truncate text-xs text-white/85">
-            Revisar contrato do cliente
-          </p>
-        </div>
-
-        <div>
-          <FieldLabel icon={TextAlignLeft}>Descrição</FieldLabel>
-          <p className="mt-1 text-xs leading-relaxed text-white/45">
-            Conferir as cláusulas 4 e 7 antes de assinar.
-          </p>
-        </div>
-
-        <div className="space-y-2.5 border-t border-white/[0.07] pt-3">
-          <div className="flex items-center gap-2">
-            <Repeat size={12} aria-hidden className="shrink-0 text-white/40" />
-            <span className="flex-1 text-xs text-white/70">Recorrente</span>
-            <Toggle on />
-          </div>
-
-          <div>
-            <p className="mb-1.5 text-[9px] uppercase tracking-[0.12em] text-white/30">
-              Repete em
-            </p>
-            <div className="flex gap-1.5">
-              {WEEK.map((d, i) => (
-                <span
-                  key={i}
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${
-                    d.on
-                      ? "bg-[#FAFAFA] font-medium text-ink-950"
-                      : "border border-white/[0.12] text-white/25"
-                  }`}
-                >
-                  {d.label}
-                </span>
-              ))}
+              <span
+                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border ${
+                  t.done
+                    ? "border-white/70 bg-white/85 text-ink-950"
+                    : "border-white/25"
+                }`}
+                aria-hidden
+              >
+                {t.done && <Check size={10} weight="bold" />}
+              </span>
+              <span
+                className={`min-w-0 flex-1 truncate text-xs ${
+                  t.done ? "text-white/30 line-through" : "text-white/75"
+                }`}
+              >
+                {t.text}
+              </span>
             </div>
-          </div>
+          ))}
         </div>
+      </Panel>
 
-        <div className="flex items-center gap-2 border-t border-white/[0.07] pt-3">
-          <BellRinging size={12} aria-hidden className="shrink-0 text-white/40" />
-          <span className="flex-1 text-xs text-white/70">Lembrar às</span>
+      <Panel
+        title="Repete em"
+        aside={<Repeat size={13} aria-hidden className="text-white/30" />}
+      >
+        <div className="flex gap-1.5">
+          {WEEK.map((d, i) => (
+            <span
+              key={i}
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] ${
+                d.on
+                  ? "bg-[#FAFAFA] font-medium text-ink-950"
+                  : "border border-white/[0.12] text-white/25"
+              }`}
+            >
+              {d.label}
+            </span>
+          ))}
+        </div>
+      </Panel>
+
+      {/* Terceiro painel, de proposito SO PELA METADE: e ele que da ao degrade
+          de baixo alguma coisa pra apagar. Sem nada aqui o sombreado caia
+          sobre palco vazio, onde ele e invisivel (o degrade vai de ink-950 a
+          transparente sobre um fundo que ja e ink-950). Com ele, o corte volta
+          a ler como "a tela continua", que e a linguagem dos outros dois
+          cartoes — so que aqui sem sacrificar a faixa de dias, que continua
+          inteira acima da zona do degrade. */}
+      <Panel
+        title="Lembrar às"
+        aside={<BellRinging size={13} aria-hidden className="text-white/30" />}
+      >
+        <div className="flex items-center gap-2">
+          <Clock size={12} aria-hidden className="shrink-0 text-white/40" />
+          <span className="flex-1 text-xs text-white/70">Todo dia, de manhã</span>
           <span className="rounded-chip border border-white/[0.14] bg-white/[0.05] px-2 py-1 font-mono text-[11px] text-white/85">
             08:30
           </span>
         </div>
+      </Panel>
     </div>
-    </Panel>
   );
 }
 
-// ---- Maquete 2: o dia na agenda ---------------------------------------------
+// ---- Maquete 2: o dia na agenda ----------------------------------------------
 // Faixa da semana em cima (e ali que se ve "escolher o dia") e o dia aberto
 // embaixo (e ali que se ve "escolher a hora").
 
@@ -402,7 +379,6 @@ const AGENDA = [
   { time: "14:00", title: "Dentista", tag: "avisar 1h antes", icon: BellRinging },
   { time: "18:30", title: "Academia", tag: "seg, qua e sex", icon: Repeat },
   { time: "20:00", title: "Jantar com a Bia", tag: "avisar 30min antes", icon: BellRinging },
-  { time: "21:30", title: "Ligar pro pai", tag: "avisar 10min antes", icon: BellRinging },
 ];
 
 function AgendaMock() {
@@ -428,9 +404,7 @@ function AgendaMock() {
               {d.week}
             </span>
             <span
-              className={`text-[11px] ${
-                d.on ? "font-semibold" : "text-white/55"
-              }`}
+              className={`text-[11px] ${d.on ? "font-semibold" : "text-white/55"}`}
             >
               {d.day}
             </span>
@@ -485,7 +459,6 @@ const NEXT_REMINDERS = [
   { when: "Seg · 08:00", text: "Renovar o seguro" },
   { when: "Ter · 15:00", text: "Retorno com a médica" },
   { when: "Qua · 12:00", text: "Pagar o condomínio" },
-  { when: "Qui · 17:00", text: "Buscar a encomenda" },
 ];
 
 function ReminderMock() {
@@ -545,10 +518,6 @@ export default function Organization() {
       // Interface) e adotou o fundo que ja morava nessa posicao da pagina — o
       // ink-900 com o halo central, que antes era o da secao da dashboard. Os
       // fundos ficaram parados; o conteudo e que trocou.
-      // laptop:* (ver tailwind.config.ts): mesmo tratamento da secao de
-      // Recursos — tela de desktop, mas baixa. Aqui os 1167px de altura vem
-      // quase todos de dois lugares: o bloco do titulo e a proporcao 3/4 dos
-      // cartoes, que num notebook deixa so a metade de cima deles visivel.
       className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 laptop:pb-16 laptop:pt-16 wide:px-16"
     >
       {/* fundo: halo central */}
@@ -556,11 +525,10 @@ export default function Organization() {
         <div className="absolute left-1/2 top-1/3 h-[460px] w-[720px] -translate-x-1/2 rounded-full bg-white/[0.05] blur-[150px]" />
       </div>
 
-      {/* 84rem (1344px), nao mais 76rem (1216px) nem o max-w-6xl (1152px) das
-          outras secoes: os tres cartoes tem proporcao travada, entao a unica
-          forma de deixa-los maiores e dar largura a grade. Fica a 56px do
-          teto do shell (1400px) — perto do maximo que da pra esticar sem
-          que a secao passe a destoar das vizinhas em telas nao-wide. */}
+      {/* 84rem (1344px) em vez do max-w-6xl (1152px) das outras secoes: os
+          cartoes precisam de largura pra maquete respirar. Fica a 56px do teto
+          do shell (1400px) — perto do maximo que da pra esticar sem que a
+          secao passe a destoar das vizinhas em telas nao-wide. */}
       <div className="relative mx-auto max-w-[84rem] wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
@@ -586,26 +554,27 @@ export default function Organization() {
           </p>
         </motion.div>
 
-        {/* A grade para de crescer bem antes do shell (1400px): as maquetes sao
-            desenhadas em tamanho fixo, entao cartao largo demais so gera palco
-            vazio embaixo delas. O bloco fica centrado, no eixo do titulo.
-            Tarefas vem PRIMEIRO no HTML (e o principal dos tres, e no celular
-            tem que abrir a fila) e so vai pro meio quando os tres entram lado
-            a lado. A coluna do meio e 1.14fr contra 1fr das laterais: e dai
-            que sai o tamanho maior do cartao em destaque. */}
-        <div className="mx-auto mt-16 grid max-w-[84rem] gap-x-5 gap-y-10 lg:grid-cols-[1fr_1.14fr_1fr] laptop:mt-12">
+        {/* A coluna do meio e 1.14fr contra 1fr das laterais: e dai que sai a
+            largura maior do cartao em destaque. Tarefas vem PRIMEIRO no HTML
+            (e o principal dos tres, e no celular, onde a grade vira coluna
+            unica, tem que abrir a fila) e so vai pro meio quando os tres
+            entram lado a lado, em lg.
+            items-center (nao items-start): os dois laterais sao mais baixos
+            que o do meio, entao centraliza-los no eixo os desce um pouco e
+            faz os tres compartilharem a MESMA LINHA DO MEIO em vez do mesmo
+            topo. Com topo alinhado a diferenca de altura virava um degrau so
+            embaixo, que lia como desalinho; centrado, ela se divide nas duas
+            pontas e vira escalonamento de proposito. */}
+        <div className="mt-16 grid gap-x-6 gap-y-10 lg:grid-cols-[1fr_1.14fr_1fr] lg:items-center laptop:mt-12">
           <FeatureCard
             icon={ListChecks}
             title="Tarefas"
-            desc="Título, descrição, repetição nos dias que você escolher — e lembrete próprio."
+            desc="Ele cria, marca como feita e repete nos dias que você escolher."
             command="Jarvis, cria uma tarefa pra revisar o contrato toda segunda, quarta e sexta."
-            highlight
+            bigger
             className="lg:order-2"
           >
-            <div className="space-y-3">
-              <TaskListPanel />
-              <TaskFormPanel />
-            </div>
+            <TaskMock />
           </FeatureCard>
 
           <FeatureCard
@@ -623,12 +592,6 @@ export default function Organization() {
             icon={BellRinging}
             title="Lembretes"
             desc="Aquilo que você só não quer esquecer, avisado na hora exata."
-            // Alongado pra ficar do tamanho das outras duas legendas (67
-            // caracteres contra 63 da Agenda e 76 de Tarefas) — antes eram
-            // 46 e a linha ficava visivelmente mais curta que as vizinhas.
-            // O segundo lembrete e o mesmo que aparece na maquete do cartao
-            // ("Tomar o remédio · Amanhã · 07:30"), entao a frase continua
-            // descrevendo o que esta ali em cima.
             command="Jarvis, me lembra de ligar pra Ana hoje às 18h e de tomar o remédio."
             delay={0.16}
             className="lg:order-3"

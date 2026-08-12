@@ -39,6 +39,15 @@ const footerLinks = [
   },
 ];
 
+// Folga no espacamento do wordmark de fundo. 1 = as pontas do "JARVIS" caem
+// exatamente sobre as pontas da linha do rodape, que era o comportamento
+// original; acima disso a palavra fica um pouco mais larga que a linha e
+// sangra alguns pixels pra cada lado (ela e centrada, entao a sobra se divide
+// nas duas pontas). Proporcional de proposito, e nao um valor fixo em px: a
+// linha muda muito de largura entre celular e monitor, e uma folga fixa seria
+// enorme numa ponta e imperceptivel na outra.
+const SPREAD = 1.015;
+
 const socialLinks: { icon: Icon; href: string; label: string }[] = [
   { icon: GithubLogo, href: "#", label: "GitHub" },
   { icon: XLogo, href: "#", label: "X" },
@@ -58,7 +67,9 @@ export default function Footer() {
   // real garante o encontro exato nas pontas em qualquer largura de tela.
   // Formula: letter-spacing soma espaco depois de CADA letra (as 6 de
   // "Jarvis", a ultima inclusive) — entao pra a palavra inteira crescer ate
-  // `targetWidth`, cada letra recebe (alvo - largura natural) / 6.
+  // `targetWidth`, cada letra recebe (alvo - largura natural) / 6. O alvo nao
+  // e mais a largura crua da linha: passa pelo SPREAD (ver la em cima), que
+  // abre um respiro a mais entre as letras.
   const wordmarkRef = useRef<HTMLSpanElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
   const [tracking, setTracking] = useState<number | null>(null);
@@ -89,7 +100,7 @@ export default function Footer() {
       const naturalWidth = clone.getBoundingClientRect().width;
       document.body.removeChild(clone);
 
-      const targetWidth = line.getBoundingClientRect().width;
+      const targetWidth = line.getBoundingClientRect().width * SPREAD;
       setTracking((targetWidth - naturalWidth) / text.length);
     };
 
@@ -173,17 +184,20 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* Hierarquia espelhada na da coluna da marca, ao lado: o titulo do
+              grupo usa o mesmo branco cheio do "JARVIS", e os links usam o
+              mesmo white/40 da frase "Seu assistente de voz para Windows".
+              Antes era o contrario — titulo mais apagado (white/40) que os
+              proprios links (white/60). */}
           {footerLinks.map((group) => (
             <div key={group.title}>
-              <h3 className="text-sm font-medium text-white/40">
-                {group.title}
-              </h3>
+              <h3 className="text-sm font-medium text-white">{group.title}</h3>
               <ul className="mt-5 flex flex-col gap-3">
                 {group.links.map((link) => (
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-sm text-white/60 transition-colors duration-200 hover:text-white"
+                      className="text-sm text-white/40 transition-colors duration-200 hover:text-white"
                     >
                       {link.label}
                     </a>

@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { cn } from "@/lib/utils";
 
 // Navegacao. Uma ancora por secao real da pagina, na mesma ordem em que elas
 // aparecem ao rolar: Recursos, Interface (o showcase da dashboard),
@@ -17,21 +19,47 @@ const navLinksData = [
   { label: "Preços", href: "#precos" },
 ];
 
+// Indicador da secao ativa: uma linha fina embaixo do link, nao mais o
+// fundo em pilula. Continua o mesmo truque do AnimatedTabs (layoutId
+// compartilhado + spring) pra deslizar de um link pro outro, com initial/
+// exit de opacidade pra suavizar as duas pontas sem instancia anterior
+// (saindo da Hero, onde nenhum link esta ativo, e voltando pra ela).
+// Sem hover de crescer aqui — isso ficou so pro "Comecar agora"; aqui e so
+// a cor do texto clareando.
 const AnimatedNavLink = ({
   href,
+  isActive,
   children,
 }: {
   href: string;
+  isActive: boolean;
   children: React.ReactNode;
 }) => (
   <a
     href={href}
-    className="group relative inline-block h-5 overflow-hidden text-sm"
+    className={cn(
+      "relative inline-flex items-center px-3 py-1.5 text-sm transition-colors duration-200 ease-out",
+      isActive ? "text-white" : "text-white/60 hover:text-white"
+    )}
   >
-    <div className="flex flex-col transition-transform duration-300 ease-out group-hover:-translate-y-1/2">
-      <span className="text-white/60">{children}</span>
-      <span className="text-white">{children}</span>
-    </div>
+    <span className="relative z-10 inline-block">
+      {children}
+      <AnimatePresence>
+        {isActive && (
+          <motion.span
+            layoutId="nav-active-underline"
+            className="absolute inset-x-0 -bottom-2 h-[2px] rounded-full bg-white"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              layout: { type: "spring", bounce: 0.2, duration: 0.6 },
+              opacity: { duration: 0.25, ease: "easeOut" },
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </span>
   </a>
 );
 
@@ -51,11 +79,45 @@ const Logo = () => (
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  // Nenhum link comeca ativo: a Hero (#top) e a primeira coisa na tela, e
+  // ela nao tem link correspondente no menu, entao nada deve acender ate a
+  // pessoa rolar ate a primeira secao de verdade.
+  const [activeHref, setActiveHref] = useState<string | null>(null);
 
+  // Observa a Hero (#top) + as seis secoes (mesmos ids dos hrefs) e troca o
+  // link ativo conforme cada uma cruza uma faixa perto do topo da tela — nao
+  // quando ocupa mais area visivel, o que faria o destaque trocar tarde
+  // demais em secoes bem altas. Enquanto #top e quem esta cruzando a faixa,
+  // activeHref volta a null: nenhum botao do menu selecionado na Hero.
+  useEffect(() => {
+    const hero = document.getElementById("top");
+    const sections = navLinksData
+      .map((link) => document.querySelector(link.href))
+      .filter((el): el is Element => el !== null);
+
+    const watched = hero ? [hero, ...sections] : sections;
+    if (watched.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          setActiveHref(entry.target.id === "top" ? null : `#${entry.target.id}`);
+        });
+      },
+      { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
+    );
+
+    watched.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  // Hover minimo, igual ao CTA da Hero: so levanta 2px e o fundo clareia.
+  // Sem mola e sem brilho/sombra no hover (ambos rejeitados).
   const signupButton = (
     <a
       href="#precos"
-      className="block w-full rounded-full bg-[#FAFAFA] px-6 py-2.5 text-center text-sm font-semibold text-ink-950 transition-colors duration-200 hover:bg-white sm:w-auto"
+      className="block w-full rounded-full bg-[#FAFAFA] px-6 py-2.5 text-center text-sm font-semibold text-ink-950 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white active:translate-y-0 active:scale-[0.97] sm:w-auto"
     >
       Começar agora
     </a>
@@ -152,9 +214,13 @@ export default function Header() {
       <div className="relative z-10 flex w-full items-center justify-between gap-x-8 sm:gap-x-12">
         <Logo />
 
-        <nav className="hidden items-center gap-x-7 lg:flex">
+        <nav className="hidden items-center gap-x-1 lg:flex">
           {navLinksData.map((link) => (
-            <AnimatedNavLink key={link.href} href={link.href}>
+            <AnimatedNavLink
+              key={link.href}
+              href={link.href}
+              isActive={activeHref === link.href}
+            >
               {link.label}
             </AnimatedNavLink>
           ))}

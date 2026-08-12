@@ -104,10 +104,17 @@ type Cap = {
 
 // ---- Aparelhos onde a musica pode tocar ----------------------------------
 // Esta lista e o unico lugar que sabe como cada aparelho se chama: ela monta a
-// FRASE do pedido ("...na Alexa e abaixa o volume") e a resposta do Jarvis. O
-// visitante troca o aparelho no seletor dentro da demo do Spotify, e o cartao
-// "Usuário" muda junto — a demo vira, na pratica, um exemplo de COMO FALAR com
-// o Jarvis pra mandar o som pra cada lugar.
+// FRASE do pedido ("...na Alexa") e a resposta do Jarvis. O visitante troca o
+// aparelho no seletor dentro da demo do Spotify, e o cartao "Usuário" muda
+// junto — a demo vira, na pratica, um exemplo de COMO FALAR com o Jarvis pra
+// mandar o som pra cada lugar.
+//
+// O pedido ja falou tambem em abaixar o volume ("...e abaixa o volume"), mas
+// no aparelho padrao a frase inteira nao cabia numa linha do cartao e quebrava
+// pra baixo. Cortar essa segunda ordem economizou 18 caracteres e deixou o
+// exemplo com UMA acao so, que e mais claro de qualquer forma. As respostas
+// abaixo e a `hint` do cartao pararam de mencionar volume junto — o Jarvis nao
+// pode responder que baixou algo que ninguem pediu.
 type DeviceId = "computador" | "celular" | "alexa";
 
 const SPOTIFY_DEVICES: {
@@ -124,7 +131,7 @@ const SPOTIFY_DEVICES: {
     detail: "Este dispositivo",
     icon: Desktop,
     say: "aqui no computador",
-    reply: "Tocando aqui no computador, com o volume baixo.",
+    reply: "Pronto, tocando aqui no computador.",
   },
   {
     id: "celular",
@@ -132,7 +139,7 @@ const SPOTIFY_DEVICES: {
     detail: "Galaxy S24",
     icon: DeviceMobile,
     say: "no meu celular",
-    reply: "Tocando no seu celular, com o volume baixo.",
+    reply: "Pronto, tocando no seu celular.",
   },
   {
     id: "alexa",
@@ -140,7 +147,7 @@ const SPOTIFY_DEVICES: {
     detail: "Sala",
     icon: SpeakerHifi,
     say: "na Alexa",
-    reply: "Tocando na Alexa da sala, com o volume baixo.",
+    reply: "Pronto, tocando na Alexa da sala.",
   },
 ];
 
@@ -150,13 +157,13 @@ const findDevice = (id: DeviceId) =>
   SPOTIFY_DEVICES.find((d) => d.id === id) ?? SPOTIFY_DEVICES[0];
 
 const spotifyCommand = (id: DeviceId) =>
-  `Jarvis, toca minha playlist de foco ${findDevice(id).say} e abaixa o volume.`;
+  `Jarvis, toca minha playlist de foco ${findDevice(id).say}.`;
 
 const CAPS: Cap[] = [
   {
     id: "spotify",
     tab: "Spotify",
-    hint: "Toca no aparelho que você escolher e ajusta o volume",
+    hint: "Toca a música no aparelho que você escolher",
     brand: "/brands/spotify.svg",
     // texto do aparelho padrao; quando o visitante troca o seletor, a secao
     // recalcula os dois a partir de SPOTIFY_DEVICES.

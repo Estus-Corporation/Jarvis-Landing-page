@@ -318,8 +318,12 @@ export default function Testimonials() {
               largura da tela). */}
           <div className="pointer-events-none absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center">
             {/* translate-y: pequeno deslocamento vertical (negativo = sobe
-                um pouco), sem mexer no fluxo (e so visual). */}
-            <div className="relative h-[105%] w-[78vw] max-w-[980px] -translate-y-1 sm:h-[115%] sm:w-[62vw] sm:max-w-[1200px] sm:-translate-y-2">
+                um pouco), sem mexer no fluxo (e so visual).
+                translate-x aqui, e nao no pai: o pai usa -translate-x-1/2 pra
+                CENTRALIZAR (par com left-1/2), entao somar o ajuste fino la
+                sobrescreveria a centralizacao. Neste filho os 3px de correcao
+                ficam isolados do que centraliza. */}
+            <div className="relative h-[105%] w-[78vw] max-w-[980px] -translate-x-[3px] -translate-y-1 sm:h-[115%] sm:w-[62vw] sm:max-w-[1200px] sm:-translate-y-2">
               <Image
                 src="/images/agente.webp"
                 alt=""
@@ -410,8 +414,19 @@ export default function Testimonials() {
           transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="grid grid-cols-1 gap-3 rounded-card border border-white bg-[#FAFAFA] p-3 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] sm:grid-cols-3"
         >
+          {/* justify-center: as tres colunas da grade tem largura igual, entao
+              a do MEIO ja e exatamente o centro do cartao — o que estava fora
+              do centro era o conteudo dentro dela, encostado a esquerda
+              (justify-start, o padrao do flex). Centrando o conteudo de cada
+              celula, o item do meio cai no eixo do cartao por construcao, em
+              qualquer largura, sem numero magico. Os outros dois andam pra
+              direita junto, quase o mesmo tanto (~60-75px), entao o trio
+              inteiro se desloca como um bloco. */}
           {trust.map(({ icon: Glyph, title, note }) => (
-            <div key={title} className="flex items-center gap-3.5 rounded-chip px-4 py-3">
+            <div
+              key={title}
+              className="flex items-center justify-center gap-3.5 rounded-chip px-4 py-3"
+            >
               <span
                 aria-hidden
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-chip border border-ink-950 bg-ink-950 text-white"

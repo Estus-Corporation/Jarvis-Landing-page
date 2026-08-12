@@ -221,6 +221,27 @@ body {
   animation: scan-y 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+/* Preenchimento do tracinho ativo na paginacao de "Proximas atualizacoes"
+   (Roadmap.tsx): sobe de 0% a 100% de altura junto com a contagem do
+   autoplay, tipo os stories do Instagram, so que vertical. `forwards` +
+   sem `infinite`: toca uma vez so e fica em 100% no final (o componente
+   remonta o elemento pra tocar de novo). Duracao real vem do componente via
+   style.animationDuration, casada com AUTOPLAY_MS. */
+@keyframes roadmap-fill {
+  from {
+    height: 0%;
+  }
+  to {
+    height: 100%;
+  }
+}
+
+.roadmap-fill {
+  animation-name: roadmap-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
 /* Barra de forma de onda: usada na demonstracao de voz clonada. Cada barra
    recebe um animation-delay proprio (inline, por indice) pra formar a onda
    correndo em vez de todas pulsarem juntas. */

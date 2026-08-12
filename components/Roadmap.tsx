@@ -12,6 +12,7 @@ import {
   CaretDown,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
+import SectionEyebrow from "@/components/ui/section-eyebrow";
 
 // Secao "Proximas atualizacoes": carrossel autocontido (setas + autoplay),
 // NAO mais um "scrollytelling" preso ao scroll da pagina — trocar de item
@@ -37,7 +38,7 @@ const items: RoadmapItem[] = [
     icon: DeviceMobile,
     step: "01",
     title: "Jarvis no seu bolso",
-    body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador.",
+    body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Pergunte algo, peça uma tarefa ou só acompanhe o que ele está fazendo — tudo pelo mesmo Jarvis, agora no seu bolso. Notificações chegam na hora certa, e o histórico da conversa segue com você entre o computador e o celular, sem perder o fio.",
     quote: "Jarvis, quanto falta pro meu build terminar?",
     image:
       "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=900&auto=format&fit=crop",
@@ -46,7 +47,7 @@ const items: RoadmapItem[] = [
     icon: House,
     step: "02",
     title: "Sua casa, por voz",
-    body: "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa.",
+    body: "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Chegou e já quer tudo do jeito certo? Basta pedir, e ele ajusta a casa inteira antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra quando sair — um comando só, e cada cômodo responde do jeito que você combinou.",
     quote: "Jarvis, apaga as luzes e liga o ar-condicionado.",
     image:
       "https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=900&auto=format&fit=crop",
@@ -55,7 +56,7 @@ const items: RoadmapItem[] = [
     icon: Car,
     step: "03",
     title: "Jarvis no painel do seu carro",
-    body: "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante.",
+    body: "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. No trânsito ou na estrada, é só falar: ele entende o pedido e cuida do resto enquanto você guia. Ele também avisa sobre trânsito na rota, sugere um caminho melhor e lê as mensagens em voz alta, sem você precisar olhar pra tela.",
     quote: "Jarvis, rota para casa. E quem me mandou mensagem no WhatsApp?",
     image:
       "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=900&auto=format&fit=crop",
@@ -89,14 +90,22 @@ function SectionBackdrop() {
   );
 }
 
-// Tracinhos de progresso empilhados. Sao os mesmos de antes com os eixos
-// trocados: a espessura saiu de `h-1` pra `w-1` e o comprimento (ativo x
-// inativo) saiu de `w-10/w-5` pra `h-10/h-5`.
+// Tracinhos de progresso empilhados — agora do MESMO comprimento (estilo
+// Instagram Stories, so que vertical), cada um representando um item: quem
+// ja passou fica cheio, quem ainda vai vir fica vazio, e o ATIVO enche em
+// tempo real, no mesmo ritmo do proprio relogio do autoplay (AUTOPLAY_MS) —
+// da pra literalmente ver quanto falta pra trocar sozinho, em vez de so
+// saber QUAL esta ativo. Some a animacao (mas mantem um realce estatico) no
+// hover/foco: e quando o autoplay pausa, e o relogio dele reinicia do zero
+// quando volta (ver comentario no useEffect, mais abaixo) — a barra reflete
+// exatamente isso, em vez de fingir que retoma de onde parou.
 function Pagination({
   active,
+  paused,
   onSelect,
 }: {
   active: number;
+  paused: boolean;
   onSelect: (index: number) => void;
 }) {
   return (
@@ -106,12 +115,34 @@ function Pagination({
           key={item.title}
           type="button"
           onClick={() => onSelect(index)}
-          className={`w-1 rounded-full transition-all duration-500 ease-in-out ${
-            index === active ? "h-10 bg-white/80" : "h-5 bg-white/20 hover:bg-white/35"
-          }`}
           aria-label={`Ir para "${item.title}"`}
           aria-current={index === active}
-        />
+          className={`group relative h-10 w-1 shrink-0 overflow-hidden rounded-full transition-colors duration-300 ${
+            index === active && paused
+              ? "bg-white/35"
+              : "bg-white/[0.15] hover:bg-white/25"
+          }`}
+        >
+          {/* ja mostrado neste ciclo: cheio */}
+          {index < active && (
+            <span
+              aria-hidden
+              className="absolute inset-0 rounded-full bg-white/80"
+            />
+          )}
+          {/* o ativo, enchendo ao vivo. `key={active}` remonta o span toda
+              vez que ESTE item vira o ativo (inclusive de novo, quando o
+              carrossel da a volta) — e o que reinicia a animacao do 0%
+              sempre, em vez de continuar de onde uma rodada anterior parou. */}
+          {index === active && !paused && (
+            <span
+              key={active}
+              aria-hidden
+              className="roadmap-fill absolute inset-x-0 top-0 rounded-full bg-white/80"
+              style={{ animationDuration: `${AUTOPLAY_MS}ms` }}
+            />
+          )}
+        </button>
       ))}
     </div>
   );
@@ -141,21 +172,23 @@ function ArrowButton({
   );
 }
 
-// Controle completo do carrossel numa coluna so, colado na esquerda do texto:
-// seta pra cima, tracinhos de progresso, seta pra baixo. `self-stretch` +
-// `justify-center` mantem o conjunto centralizado na altura do bloco de
-// texto, que muda de tamanho conforme o item ativo.
+// Controle completo do carrossel numa coluna so: seta pra cima, tracinhos de
+// progresso, seta pra baixo. Nao se posiciona mais sozinho (era
+// `self-stretch` numa linha flex) — quem centraliza ele agora e o pai, em
+// cima da trilha vertical (ver comentario grande mais abaixo).
 function CarouselControl({
   active,
+  paused,
   onSelect,
 }: {
   active: number;
+  paused: boolean;
   onSelect: (index: number) => void;
 }) {
   return (
-    <div className="flex shrink-0 flex-col items-center justify-center gap-4 self-stretch">
+    <div className="flex w-9 shrink-0 flex-col items-center gap-4">
       <ArrowButton direction="up" onClick={() => onSelect(active - 1)} />
-      <Pagination active={active} onSelect={onSelect} />
+      <Pagination active={active} paused={paused} onSelect={onSelect} />
       <ArrowButton direction="down" onClick={() => onSelect(active + 1)} />
     </div>
   );
@@ -181,6 +214,54 @@ export default function Roadmap() {
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [active]);
+
+  // Altura real da imagem (coluna direita): medida do mesmo jeito que
+  // contentHeight, pra o botao "Quero ser notificado!" poder se ancorar no
+  // fim dela (ver `stageHeight` mais abaixo). offsetHeight volta 0 quando a
+  // imagem esta `hidden` (abaixo de md), o que desativa essa ancoragem
+  // sozinho no celular — Math.max cai de volta pra contentHeight.
+  const imageRef = useRef<HTMLDivElement | null>(null);
+  const [imageHeight, setImageHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (imageRef.current) setImageHeight(imageRef.current.offsetHeight);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [active]);
+
+  // Altura do proprio botao: precisa dela pra mirar o CENTRO dele na linha
+  // da imagem, nao o topo — so alinhar o topo deixava o botao inteiro
+  // pendurado ABAIXO da linha (o que a altura dele ocupa, ~54px, sobrava
+  // toda pra baixo). So muda com o breakpoint (o texto do botao nao muda),
+  // entao mede uma vez e so re-mede em resize, sem depender de `active`.
+  const buttonRef = useRef<HTMLDivElement | null>(null);
+  const [buttonHeight, setButtonHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (buttonRef.current) setButtonHeight(buttonRef.current.offsetHeight);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // buttonTop: posicao (a partir do topo do wrapper) de onde o botao COMECA.
+  // Direto — nao mais "infla o texto pra empurrar o botao por tabela" —
+  // pra nao depender de como flex/margin interagem: e so max() entre "logo
+  // depois do texto, com respiro minimo" e "o BOTAO INTEIRO acima da linha
+  // da imagem, com o fundo dele encostando nela" (imageHeight - a altura
+  // toda do botao). Testado centralizado (so metade do botao) antes, mas
+  // ainda deixava metade do botao pendurada abaixo da linha — isso aqui
+  // encosta o rodape do botao na base da imagem, sem passar dela.
+  const MIN_GAP = 24;
+  const buttonTop = Math.max(
+    contentHeight + MIN_GAP,
+    imageHeight - buttonHeight
+  );
 
   // Autoplay: avanca sozinho a cada AUTOPLAY_MS. Reiniciar o efeito toda vez
   // que `active` muda (inclusive quando muda por causa do proprio autoplay)
@@ -224,10 +305,11 @@ export default function Roadmap() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
+          <SectionEyebrow>Updates</SectionEyebrow>
           {/* Fonte fluida: titulo curto, entao a formula trava em 48px bem
               antes mesmo do fim do celular — aqui e mais pra ficar
               consistente com as outras secoes do que por necessidade real. */}
-          <h2 className="whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             Próximas atualizações
           </h2>
           <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
@@ -244,21 +326,53 @@ export default function Roadmap() {
             ao lado, em vez de ficar centralizada no meio da altura dela. */}
         <div className="relative mx-auto mt-14 grid grid-cols-1 items-start gap-10 md:grid-cols-[1fr_1.2fr] md:gap-8 laptop:mt-12">
           {/* Coluna esquerda: controle vertical do carrossel + rotulo
-              "Update N.0" + titulo/descricao do item ativo + CTA. */}
-          <div className="relative flex flex-col">
-            {/* O controle vertical ocupa o lugar da linha decorativa que antes
-                era um `border-l` em cada item: mesma marca vertical na
-                esquerda do texto, agora navegavel e dizendo em que ponto do
-                carrossel a pessoa esta. Por isso os itens perderam o
-                `border-l pl-5` — o respiro ate o texto virou o `gap-5` deste
-                flex. */}
-            <div className="flex gap-5">
-              <CarouselControl active={active} onSelect={goTo} />
+              "Update N.0" + titulo/descricao do item ativo + CTA.
+              height explicita = buttonTop + buttonHeight: o unico filho em
+              fluxo normal aqui e a linha do texto (rail, controle e botao
+              sao todos absolute) — sem essa altura explicita o wrapper
+              encolheria pro tamanho do texto sozinho, e a trilha vertical
+              (bottom-0, mais abaixo) pararia ANTES do botao em vez de
+              alcancar ele. */}
+          <div
+            className="relative flex flex-col"
+            style={
+              buttonTop && buttonHeight
+                ? { height: buttonTop + buttonHeight }
+                : undefined
+            }
+          >
+            {/* Trilha vertical: do topo do titulo (pula o rotulo "Update N.0"
+                acima dele, top-7) ate o fim do botao "Quero ser notificado!"
+                (bottom-0 deste wrapper, que e o ultimo elemento). Fica no VAO
+                entre o controle e o texto (left-[46px]: depois dos 36px do
+                controle, antes dos 76px onde o texto comeca) — nao mais em
+                cima do controle, que ficava com os tracinhos por dentro da
+                linha. O controle continua centralizado na altura INTEIRA do
+                wrapper (topo do titulo ao fundo do botao), so que agora
+                claramente a ESQUERDA da trilha, sem sobrepor. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-[46px] top-7 bottom-0 w-px bg-white/[0.1]"
+            />
+            <div className="absolute -left-4 top-1/2 -translate-y-1/2">
+              <CarouselControl active={active} paused={paused} onSelect={goTo} />
+            </div>
+
+            {/* O respiro ate o texto (spacer w-9/36px + gap-10/40px = 76px,
+                ver `left-[76px]` no botao mais abaixo) e o que antes era
+                ocupado pelo controle, que virou absoluto (ver acima) — gap
+                crescente (era gap-5, depois gap-8, agora gap-10) da mais
+                distancia da trilha "|" a esquerda, que continua parada em
+                left-[46px]. Este `w-9` vazio so reserva o espaco horizontal
+                do controle, pra o texto nao se mexer quando ele vira
+                absoluto. */}
+            <div className="flex gap-10">
+              <div className="w-9 shrink-0" aria-hidden />
               {/* min-h-[14rem]: chute inicial (tamanho do item 1, o ativo no
                   primeiro paint) so pra nao colapsar antes do JS medir. Assim
                   que monta, `style.height` assume a altura REAL do item
-                  ativo — e quem faz o botao ficar sempre colado no
-                  conteudo. */}
+                  ativo — quem posiciona o botao agora e `buttonTop` (ver
+                  acima), direto, nao mais esta caixa "inflada". */}
               <div
                 className="relative min-h-[14rem] flex-1 transition-[height] duration-500 ease-in-out"
                 style={contentHeight ? { height: contentHeight } : undefined}
@@ -295,7 +409,15 @@ export default function Roadmap() {
               </div>
             </div>
 
-            <div className="mt-16 laptop:mt-12">
+            {/* absolute + left-[76px] (spacer w-9 + gap-10): mesmo calculo
+                horizontal que alinha o texto, so que agora vertical tambem e
+                explicito via `top: buttonTop` — nao mais inferido por
+                margin-top empilhado em cima de uma altura "inflada". */}
+            <div
+              ref={buttonRef}
+              className="absolute left-[76px] transition-[top] duration-500 ease-in-out"
+              style={{ top: buttonTop || undefined }}
+            >
               <a
                 href="#precos"
                 className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
@@ -325,7 +447,10 @@ export default function Roadmap() {
                 achatar a proporcao e o que baixa a imagem sem estreitar a
                 grade. As tres fotos sao paisagem, entao cortar um pouco da
                 altura nao come nada do assunto delas. */}
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] laptop:aspect-[16/11]">
+            <div
+              ref={imageRef}
+              className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] laptop:aspect-[16/11]"
+            >
               <div
                 className="absolute inset-0 transition-transform duration-700 ease-in-out"
                 style={{ transform: `translateY(-${active * 100}%)` }}

@@ -556,12 +556,12 @@ export default function Organization() {
         <div className="absolute left-1/2 top-1/3 h-[460px] w-[720px] -translate-x-1/2 rounded-full bg-white/[0.05] blur-[150px]" />
       </div>
 
-      {/* 76rem (1216px) e nao o max-w-6xl (1152px) das outras secoes: os tres
-          cartoes tem proporcao travada, entao a unica forma de deixa-los
-          maiores e dar largura a grade. Sao 64px a mais, o suficiente pra
-          engordar cada cartao ~20px sem que a secao pareca desalinhada das
-          vizinhas. */}
-      <div className="relative mx-auto max-w-[76rem] wide:max-w-shell">
+      {/* 84rem (1344px), nao mais 76rem (1216px) nem o max-w-6xl (1152px) das
+          outras secoes: os tres cartoes tem proporcao travada, entao a unica
+          forma de deixa-los maiores e dar largura a grade. Fica a 56px do
+          teto do shell (1400px) — perto do maximo que da pra esticar sem
+          que a secao passe a destoar das vizinhas em telas nao-wide. */}
+      <div className="relative mx-auto max-w-[84rem] wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -593,7 +593,7 @@ export default function Organization() {
             tem que abrir a fila) e so vai pro meio quando os tres entram lado
             a lado. A coluna do meio e 1.14fr contra 1fr das laterais: e dai
             que sai o tamanho maior do cartao em destaque. */}
-        <div className="mx-auto mt-16 grid max-w-[76rem] gap-x-5 gap-y-10 lg:grid-cols-[1fr_1.14fr_1fr] laptop:mt-12">
+        <div className="mx-auto mt-16 grid max-w-[84rem] gap-x-5 gap-y-10 lg:grid-cols-[1fr_1.14fr_1fr] laptop:mt-12">
           <FeatureCard
             icon={ListChecks}
             title="Tarefas"

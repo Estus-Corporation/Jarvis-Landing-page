@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
+import SectionEyebrow from "@/components/ui/section-eyebrow";
 
 // Import dinamico (ssr:false): PrismaticBurst carrega a lib `ogl` (WebGL)
 // inteira so pra desenhar um fundo decorativo no fim da pagina. Import
@@ -157,10 +158,11 @@ export default function Pricing() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
+          <SectionEyebrow>Preços</SectionEyebrow>
           {/* Fonte fluida: trava em 48px pouco antes dos 640px, entao o
               resultado bate com o antigo sm:text-5xl sem precisar do degrau
               (que e o que causava estouro logo apos o breakpoint). */}
-          <h2 className="whitespace-nowrap leading-tight text-[length:clamp(0.9rem,calc(8.97vw_-_4.84px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+          <h2 className="mt-5 whitespace-nowrap leading-tight text-[length:clamp(0.9rem,calc(8.97vw_-_4.84px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             Escolha como quer usar.
           </h2>
           <p className="mx-auto mt-5 max-w-[56ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">

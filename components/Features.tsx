@@ -2128,10 +2128,27 @@ export default function Features() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto max-w-2xl text-center"
+          // max-w-6xl (nao mais 2xl): a 60px (lg:text-6xl) o titulo precisa
+          // de ~1025px pra caber numa linha so — 672px (max-w-2xl) nao dava
+          // conta. O paragrafo abaixo mantem sua propria largura de leitura
+          // (max-w-[54ch]), entao alargar aqui nao alarga ele.
+          className="mx-auto max-w-6xl text-center"
         >
           <SectionEyebrow>Capacidades</SectionEyebrow>
-          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl laptop:text-5xl">
+          {/* Fonte FLUIDA (calc com vw), nao degraus fixos (sm:/lg:) — o
+              motivo e o padding da secao: ate 1023px ele e px-6 (48px), de
+              1024px pra cima vira lg:px-10 (80px). Um degrau fixo bem no
+              1024 assume que ainda sobra o mesmo espaco que sobrava em
+              1023px, so que sobra MENOS (o padding cresceu) — e foi
+              exatamente esse buraco que fazia o titulo estourar a linha ali.
+              Uma formula continua reage ao espaco real a cada pixel de
+              largura, entao nunca chega nesse descasamento. Sem cap ate
+              1023px (so trava synthé no proprio 60px alvo, resolvido
+              sozinho pela matematica); de 1024px pra cima entra uma SEGUNDA
+              formula (`lg:`) que ja desconta o padding maior. `laptop:`
+              (telas largas e baixas) continua sobrepondo as duas com um
+              valor fixo, como sempre foi. */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(5.85vw_-_3.16px),3.75rem)] lg:text-[length:clamp(0.9rem,calc(5.85vw_-_5.03px),3.75rem)] font-semibold tracking-[-0.025em] text-[#FAFAFA] laptop:text-5xl">
             Ele age no computador, não só no chat.
           </h2>
           <p className="mx-auto mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-5">

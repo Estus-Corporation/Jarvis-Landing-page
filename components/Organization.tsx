@@ -567,10 +567,17 @@ export default function Organization() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: EASE }}
-          className="mx-auto max-w-2xl text-center"
+          // max-w-5xl (nao mais 2xl): a 48px (sm:text-5xl) o titulo precisa
+          // de ~838px pra caber numa linha so — 672px nao dava conta. O
+          // paragrafo abaixo mantem sua propria largura (max-w-[52ch]).
+          className="mx-auto max-w-5xl text-center"
         >
           <SectionEyebrow>Organização</SectionEyebrow>
-          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
+          {/* Fonte fluida (calc com vw), sem degrau fixo em sm: — a formula
+              cresce direto ate travar sozinha em 48px (por volta de 890px de
+              largura, bem antes do padding da secao mudar em 1024px), entao
+              nao existe salto que possa descasar do espaco real. */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(5.73vw_-_3.09px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             Tudo que você precisa. Em um só lugar.
           </h2>
           <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">

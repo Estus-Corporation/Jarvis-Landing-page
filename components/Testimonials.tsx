@@ -181,7 +181,10 @@ export default function Testimonials() {
           <div className="flex justify-center">
             <SectionEyebrow>Depoimentos</SectionEyebrow>
           </div>
-          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
+          {/* Fonte fluida: trava em 48px pouco antes dos 640px, entao o
+              resultado bate com o antigo sm:text-5xl sem precisar do degrau
+              (que e o que causava estouro logo apos o breakpoint). */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(8.22vw_-_4.44px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             O que dizem sobre o Jarvis.
           </h2>
         </motion.div>

@@ -224,7 +224,10 @@ export default function Roadmap() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
-          <h2 className="text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
+          {/* Fonte fluida: titulo curto, entao a formula trava em 48px bem
+              antes mesmo do fim do celular — aqui e mais pra ficar
+              consistente com as outras secoes do que por necessidade real. */}
+          <h2 className="whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             Próximas atualizações
           </h2>
           <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">

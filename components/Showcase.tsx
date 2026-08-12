@@ -188,10 +188,14 @@ export default function Showcase() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto max-w-2xl text-center"
+          // max-w-3xl (nao mais 2xl): a 48px (sm:text-5xl) o titulo precisa
+          // de ~686px pra caber numa linha so — 672px ficava 14px curto.
+          className="mx-auto max-w-3xl text-center"
         >
           <SectionEyebrow>Interface</SectionEyebrow>
-          <h2 className="mt-5 whitespace-nowrap font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
+          {/* Fonte fluida: trava em 48px por volta de 740px de largura,
+              bem antes do padding da secao mudar em 1024px. */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(7vw_-_3.78px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             Uma dashboard viva na sua tela.
           </h2>
           <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">

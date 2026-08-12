@@ -220,7 +220,7 @@ export default function Showcase() {
       // forte demais (a secao ficava identica ao fundo puro da pagina), e um
       // ajuste de so ~25% do caminho (#0D0D0F) ficou leve demais no sentido
       // oposto. Este tom fica a ~40% do caminho ate ink-950.
-      className="relative overflow-hidden bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 laptop:pb-16 laptop:pt-16 wide:px-16"
+      className="relative overflow-hidden bg-[#0C0C0E] px-6 pb-32 pt-20 sm:pb-40 sm:pt-28 lg:px-10 laptop:pb-20 laptop:pt-16 wide:px-16"
     >
       {/* fundo: grade + halo */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>

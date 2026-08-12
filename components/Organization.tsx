@@ -529,7 +529,7 @@ export default function Organization() {
           cartoes precisam de largura pra maquete respirar. Fica a 56px do teto
           do shell (1400px) — perto do maximo que da pra esticar sem que a
           secao passe a destoar das vizinhas em telas nao-wide. */}
-      <div className="relative mx-auto max-w-[84rem] wide:max-w-shell">
+      <div className="relative mx-auto max-w-[84rem] laptop:max-w-[76rem] wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}

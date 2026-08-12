@@ -208,7 +208,11 @@ export default function Roadmap() {
       onBlurCapture={() => setPaused(false)}
       // bg-[#0C0C0E]: mesmo ajuste sutil de Organization.tsx — ver comentario
       // la pra detalhes (ink-900 escurecido ~40% do caminho ate ink-950).
-      className="relative overflow-hidden border-t border-white/[0.07] bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
+      // laptop:* (ver tailwind.config.ts): tela de desktop, mas baixa. O que
+      // pesa aqui e o bloco do titulo e a imagem 4/3 da direita — a coluna da
+      // esquerda se mede sozinha (contentHeight), entao encolher o titulo do
+      // item ja reacomoda o resto sem ajuste manual.
+      className="relative overflow-hidden border-t border-white/[0.07] bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 laptop:pb-16 laptop:pt-16 wide:px-16"
     >
       <SectionBackdrop />
 
@@ -220,10 +224,10 @@ export default function Roadmap() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
-          <h2 className="text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <h2 className="text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
             Próximas atualizações
           </h2>
-          <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55">
+          <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
             O computador é só o começo. Confira o que está por vir! Quem
             assinar recebe cada uma dessas atualizações sem nenhuma cobrança
             adicional.
@@ -235,7 +239,7 @@ export default function Roadmap() {
         {/* items-start (nao items-center): a coluna esquerda sobe pro topo
             da linha, alinhando o rotulo "Update N.0" com o topo da imagem
             ao lado, em vez de ficar centralizada no meio da altura dela. */}
-        <div className="relative mx-auto mt-14 grid grid-cols-1 items-start gap-10 md:grid-cols-[1fr_1.2fr] md:gap-8">
+        <div className="relative mx-auto mt-14 grid grid-cols-1 items-start gap-10 md:grid-cols-[1fr_1.2fr] md:gap-8 laptop:mt-12">
           {/* Coluna esquerda: controle vertical do carrossel + rotulo
               "Update N.0" + titulo/descricao do item ativo + CTA. */}
           <div className="relative flex flex-col">
@@ -274,13 +278,13 @@ export default function Roadmap() {
                     <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
                       Update {index + 1}.0
                     </p>
-                    <h3 className="mt-3 max-w-[16ch] text-balance font-display text-4xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+                    <h3 className="mt-3 max-w-[16ch] text-balance font-display text-4xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-4xl">
                       {item.title}
                     </h3>
-                    <p className="mt-5 max-w-[38ch] text-base leading-relaxed text-white/55">
+                    <p className="mt-5 max-w-[38ch] text-base leading-relaxed text-white/55 laptop:mt-4">
                       {item.body}
                     </p>
-                    <p className="mt-12 max-w-[38ch] text-sm italic leading-relaxed text-white/65">
+                    <p className="mt-12 max-w-[38ch] text-sm italic leading-relaxed text-white/65 laptop:mt-10">
                       “{item.quote}”
                     </p>
                   </div>
@@ -288,7 +292,7 @@ export default function Roadmap() {
               </div>
             </div>
 
-            <div className="mt-16">
+            <div className="mt-16 laptop:mt-12">
               <a
                 href="#precos"
                 className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
@@ -314,7 +318,11 @@ export default function Roadmap() {
                 combinacao NAO respeitava a proporcao dentro de um item flex
                 (a largura era espremida pelo flex-shrink sem recalcular a
                 altura, virando uma caixa fora de 4:3). */}
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+            {/* laptop:aspect-[16/11]: a altura sai da largura da coluna, entao
+                achatar a proporcao e o que baixa a imagem sem estreitar a
+                grade. As tres fotos sao paisagem, entao cortar um pouco da
+                altura nao come nada do assunto delas. */}
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] laptop:aspect-[16/11]">
               <div
                 className="absolute inset-0 transition-transform duration-700 ease-in-out"
                 style={{ transform: `translateY(-${active * 100}%)` }}

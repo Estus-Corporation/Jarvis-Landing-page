@@ -304,7 +304,7 @@ function JarvisReply({ text, delay }: { text: string; delay: number }) {
       initial={reduce ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="text-lg leading-snug text-white/90 sm:text-xl"
+      className="text-lg leading-snug text-white/90 sm:text-xl laptop:text-base"
     >
       {text}
     </motion.p>
@@ -2069,7 +2069,15 @@ export default function Features() {
       // pb curto de proposito: o link "Veja tudo que ele ja conecta" e uma
       // ponte pra secao seguinte, entao ele precisa ficar perto dela — com o
       // pb-28/36 antigo o link ficava boiando no meio de um vao enorme.
-      className="relative overflow-hidden bg-ink-900 px-6 pb-12 pt-14 sm:pb-16 sm:pt-20 lg:px-10 wide:px-16"
+      // laptop:* (ver tailwind.config.ts): tela de desktop mas baixa. Nesta
+      // secao o problema nao e largura — de 1216px pra cima o layout e o
+      // mesmo — e sim que os 1242px de altura viram 1,6 tela num notebook.
+      // Cada `laptop:` daqui pra baixo tira altura de um pedaco: respiros da
+      // secao, bloco do titulo, botoes da esquerda e a janela do console.
+      // A regulagem e de UM degrau, nao de encolher tudo: as fontes ficam no
+      // tamanho de tras (text-5xl no lugar do 6xl do PC, e o texto corrido
+      // intacto), e quem cede de verdade sao alturas fixas e respiros.
+      className="relative overflow-hidden bg-ink-900 px-6 pb-12 pt-14 sm:pb-16 sm:pt-20 lg:px-10 laptop:pb-12 laptop:pt-14 wide:px-16"
     >
       {/* halo suave atras do console */}
       <div
@@ -2086,10 +2094,10 @@ export default function Features() {
           className="mx-auto max-w-2xl text-center"
         >
           <SectionEyebrow>Capacidades</SectionEyebrow>
-          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl">
+          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.025em] text-[#FAFAFA] sm:text-5xl lg:text-6xl laptop:text-5xl">
             Ele age no computador, não só no chat.
           </h2>
-          <p className="mx-auto mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55">
+          <p className="mx-auto mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-5">
             Não é mais um chat que responde e para por aí. Escolha uma
             capacidade e veja o Jarvis executando de verdade.
           </p>
@@ -2104,9 +2112,12 @@ export default function Features() {
           onMouseLeave={() => setPaused(false)}
           onFocusCapture={() => setPaused(true)}
           onBlurCapture={() => setPaused(false)}
-          className="mt-14 grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.35fr] lg:gap-5"
+          className="mt-14 grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.35fr] lg:gap-5 laptop:mt-9"
         >
-          {/* Coluna esquerda: seletor de capacidades */}
+          {/* Coluna esquerda: seletor de capacidades. Sao 7 botoes, e e a
+              altura DELES que define a linha do grid — no notebook, 7x74px
+              mais os 6 vaos de 10px dao 578px, e o console do lado se ajusta
+              a essa medida (ver comentario na demo, mais abaixo). */}
           <div className="flex flex-col gap-2.5">
             {CAPS.map((cap, i) => {
               const isActive = i === activeIdx;
@@ -2116,7 +2127,7 @@ export default function Features() {
                   type="button"
                   onClick={() => setActiveIdx(i)}
                   aria-pressed={isActive}
-                  className={`glow-ring group relative flex items-center gap-4 overflow-hidden rounded-card border px-5 py-4 text-left transition-colors duration-300 ${
+                  className={`glow-ring group relative flex items-center gap-4 overflow-hidden rounded-card border px-5 py-4 text-left transition-colors duration-300 laptop:py-3 ${
                     isActive
                       ? "glow-ring--active border-white bg-[#FAFAFA]"
                       : "border-white/[0.08] bg-ink-900/60 hover:border-white/20 hover:bg-ink-800/60"
@@ -2124,7 +2135,7 @@ export default function Features() {
                 >
                   <span
                     aria-hidden
-                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-chip border transition-colors duration-300 ${
+                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-chip border transition-colors duration-300 laptop:h-12 laptop:w-12 ${
                       isActive
                         ? "border-ink-950 bg-ink-950 text-white"
                         : "border-white/[0.1] text-white/55 group-hover:text-white/80"
@@ -2167,7 +2178,7 @@ export default function Features() {
               visivel. Vira hover/focus (:is(:hover,:focus-within), ja
               definido em globals.css), igual o resto dos usos de
               glow-ring no site. */}
-          <div className="glow-ring relative flex min-h-[620px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)]">
+          <div className="glow-ring relative flex min-h-[620px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] laptop:min-h-[540px]">
             {/* barra de titulo */}
             <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
               <span className="flex gap-1.5" aria-hidden>
@@ -2192,9 +2203,9 @@ export default function Features() {
                 ficariam desalinhados um do outro. Dentro dessa caixa o texto
                 e centralizado, entao cada rotulo fica no meio do vao entre o
                 avatar e o divisor, independente do tamanho da palavra. */}
-            <div className="flex flex-1 flex-col gap-4 p-5">
+            <div className="flex flex-1 flex-col gap-4 p-5 laptop:gap-3.5">
               {/* 1o ato — o pedido, sem truncar, pra ler numa boa */}
-              <div className="flex items-center gap-3 rounded-chip border border-white/[0.08] bg-ink-950/60 px-5 py-3.5">
+              <div className="flex items-center gap-3 rounded-chip border border-white/[0.08] bg-ink-950/60 px-5 py-3.5 laptop:py-3">
                 <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.04]">
                   <span
                     aria-hidden
@@ -2211,7 +2222,7 @@ export default function Features() {
                 {/* font-mono (Geist Mono) em vez da Exo 2 dos titulos: aqui o
                     rotulo faz papel de etiqueta de terminal, e a monoespacada
                     e o que casa com o resto da linguagem do console. */}
-                <span className="w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/40">
+                <span className="w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] laptop:w-16 laptop:text-[11px] text-white/40">
                   Usuário
                 </span>
                 <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-white/15" />
@@ -2226,7 +2237,7 @@ export default function Features() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={reduce ? undefined : { opacity: 0, y: -6 }}
                       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                      className="text-lg italic leading-snug text-white/90 sm:text-xl"
+                      className="text-lg italic leading-snug text-white/90 sm:text-xl laptop:text-base"
                     >
                       “{command}”
                     </motion.p>
@@ -2234,8 +2245,19 @@ export default function Features() {
                 </div>
               </div>
 
-              {/* 2o ato — a tela da acao */}
-              <div className="relative min-h-[450px] flex-1">
+              {/* 2o ato — a tela da acao.
+                  laptop:min-h baixo de proposito (320px): e ele que faz o
+                  console EMPATAR em altura com a coluna de botoes do lado.
+                  As duas colunas sao filhas do mesmo grid, entao ja esticam
+                  pra mesma altura; o que quebrava o empate visual era o
+                  console ter conteudo MAIOR que a pilha de botoes (619 x
+                  578px medidos), o que empurrava a linha inteira pra 621 e
+                  deixava um vao de 43px sobrando embaixo do ultimo botao.
+                  Com o piso da demo abaixo disso, quem manda na altura da
+                  linha volta a ser a pilha de botoes, e a demo (flex-1)
+                  estica pra ocupar a sobra — o empate se mantem sozinho
+                  mesmo se o pedido ou a resposta quebrarem em duas linhas. */}
+              <div className="relative min-h-[450px] flex-1 laptop:min-h-[320px]">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={sceneKey}
@@ -2252,11 +2274,11 @@ export default function Features() {
 
               {/* 3o ato — a resposta. Mais clara que o cartao do usuario de
                   proposito: e a "voz" do produto, o fim da historia. */}
-              <div className="flex items-center gap-3 rounded-chip border border-white/[0.16] bg-white/[0.05] px-5 py-3.5">
+              <div className="flex items-center gap-3 rounded-chip border border-white/[0.16] bg-white/[0.05] px-5 py-3.5 laptop:py-3">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
                   <JarvisMark />
                 </span>
-                <span className="w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60">
+                <span className="w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] laptop:w-16 laptop:text-[11px] text-white/60">
                   Jarvis
                 </span>
                 <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-white/20" />
@@ -2283,7 +2305,7 @@ export default function Features() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.8 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="group mt-14 flex items-center justify-center gap-2 text-sm font-medium text-white/45 transition-colors duration-300 hover:text-white/85"
+          className="group mt-14 flex items-center justify-center gap-2 text-sm font-medium text-white/45 transition-colors duration-300 hover:text-white/85 laptop:mt-9"
         >
           Veja a dashboard por dentro
           <ArrowDown

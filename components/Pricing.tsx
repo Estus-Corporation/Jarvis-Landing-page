@@ -103,7 +103,13 @@ export default function Pricing() {
   const [mobilePlan, setMobilePlan] = React.useState<string>("mensal");
 
   return (
-    <section id="precos" className="relative overflow-hidden bg-ink-950 px-6 pb-9 pt-20 sm:pb-10 sm:pt-28 lg:px-10 wide:px-16">
+    <section
+      id="precos"
+      // laptop:* (ver tailwind.config.ts): tela de desktop, mas baixa. O
+      // rodape ja e curto (pb-9/10), entao o que cede aqui e o topo, o bloco
+      // do titulo e a altura minima dos dois cartoes.
+      className="relative overflow-hidden bg-ink-950 px-6 pb-9 pt-20 sm:pb-10 sm:pt-28 lg:px-10 laptop:pt-16 wide:px-16"
+    >
       {/* Fundo animado no lugar da imagem de curvas de nivel: mesma funcao
           (textura no topo da secao, esmaecendo pro fundo solido). A mascara
           em gradiente e a mesma logica de antes: nasce transparente, pico no
@@ -151,10 +157,10 @@ export default function Pricing() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
-          <h2 className="text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <h2 className="text-balance text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
             Escolha como quer usar.
           </h2>
-          <p className="mx-auto mt-5 max-w-[56ch] text-lg font-light leading-relaxed text-white/55">
+          <p className="mx-auto mt-5 max-w-[56ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
             O Jarvis completo nos dois planos, com os mesmos 8 recursos, sem
             diferença entre Mensal e Anual. A única coisa que muda é de
             quanto em quanto tempo você paga.
@@ -190,7 +196,7 @@ export default function Pricing() {
             de fundo animado dentro deles. O selo do plano em destaque virou
             uma pilula sobreposta na borda de cima, centralizada, em vez do
             chip no canto de antes. */}
-        <div className="mx-auto mt-5 grid max-w-[970px] grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2">
+        <div className="mx-auto mt-5 grid max-w-[970px] grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 laptop:mt-8">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.id}
@@ -219,7 +225,7 @@ export default function Pricing() {
               // border-white/10 sempre — nenhum dos dois reage mais ao
               // mouse passando por cima.
               className={cn(
-                "relative min-h-[530px] flex-col justify-between rounded-2xl border p-6 sm:p-7",
+                "relative min-h-[530px] flex-col justify-between rounded-2xl border p-6 sm:p-7 laptop:min-h-[430px] laptop:p-6",
                 plan.highlighted
                   ? "border-white/40 bg-ink-800"
                   : "border-white/10 bg-ink-900",
@@ -249,7 +255,7 @@ export default function Pricing() {
                 <div className="mt-5 flex items-baseline gap-1.5">
                   <Price
                     value={plan.price}
-                    className="font-mono text-4xl font-semibold tracking-tight text-[#FAFAFA] sm:text-5xl"
+                    className="font-mono text-4xl font-semibold tracking-tight text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]"
                   />
                   <span className="text-sm text-white/45">{plan.period}</span>
                 </div>
@@ -264,7 +270,7 @@ export default function Pricing() {
                     diferenca so parecia existir, sem existir de verdade.
                     Trocado por 3 pontos sobre a forma de cobranca de cada
                     plano, que e a UNICA diferenca real entre eles. */}
-                <ul className="mt-6 flex flex-col gap-2.5">
+                <ul className="mt-6 flex flex-col gap-2.5 laptop:mt-5">
                   {plan.highlights.map((label) => (
                     <li
                       key={label}

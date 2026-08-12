@@ -25,6 +25,22 @@ const config: Config = {
         // compacto (max-w-6xl) ate aqui. So telas de verdade largas passam
         // a ver a largura mestra de 1400px.
         wide: "1800px",
+
+        // "Notebook" = tela de desktop, mas BAIXA. E altura, nao largura: de
+        // 1216px ate 1800px de largura o layout destas secoes e identico
+        // (medido), entao a diferenca entre um monitor de PC e a tela de um
+        // notebook e so quanto cabe na vertical.
+        //
+        // Os 900px sao em altura de VIEWPORT, ja descontada a moldura do
+        // navegador (~100-140px entre abas, barra de endereco e barra de
+        // tarefas). Na pratica: monitor 1080p -> viewport ~940px, fica de
+        // fora e nao muda nada; notebook 1366x768 -> ~630px, 1536x864 ->
+        // ~730px, 1440x900 -> ~770px, todos entram.
+        //
+        // Declarado DEPOIS de `wide` de proposito: Tailwind emite os screens
+        // na ordem do config, entao as regras `laptop:` saem por ultimo no
+        // CSS e ganham de `lg:`/`sm:` no desempate de mesma especificidade.
+        laptop: { raw: "(min-width: 1024px) and (max-height: 900px)" },
       },
       colors: {
         ink: {

@@ -156,7 +156,11 @@ export default function Showcase() {
       // forte demais (a secao ficava identica ao fundo puro da pagina), e um
       // ajuste de so ~25% do caminho (#0D0D0F) ficou leve demais no sentido
       // oposto. Este tom fica a ~40% do caminho ate ink-950.
-      className="relative overflow-hidden bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
+      // laptop:* (ver tailwind.config.ts): tela de desktop, mas baixa. Aqui a
+      // altura vem quase toda da janela do app, que e 16/9 — ou seja, a
+      // altura dela e refem da largura. Por isso o ajuste de notebook e um
+      // teto de largura na janela (mais abaixo), e nao uma altura fixa.
+      className="relative overflow-hidden bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 laptop:pb-16 laptop:pt-16 wide:px-16"
     >
       {/* fundo: grade + halo */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
@@ -187,10 +191,10 @@ export default function Showcase() {
           className="mx-auto max-w-2xl text-center"
         >
           <SectionEyebrow>Interface</SectionEyebrow>
-          <h2 className="mt-5 whitespace-nowrap font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <h2 className="mt-5 whitespace-nowrap font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
             Uma dashboard viva na sua tela.
           </h2>
-          <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55">
+          <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
             A esfera reage à conversa no centro. Em volta, widgets que você
             arrasta, reorganiza e tinge com o seu tema de cor.
           </p>
@@ -205,7 +209,7 @@ export default function Showcase() {
         <div
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
-          className="mt-8 grid grid-cols-1 items-center gap-6 lg:grid-cols-[auto_1fr_auto] lg:gap-8"
+          className="mt-8 grid grid-cols-1 items-center gap-6 lg:grid-cols-[auto_1fr_auto] lg:gap-8 laptop:mt-8"
         >
           {/* icones esquerda (lg) */}
           <div className="hidden flex-col gap-5 lg:flex">
@@ -229,7 +233,12 @@ export default function Showcase() {
             // Features.tsx — o anel girando repinta a cada frame pra
             // sempre (nao e compositor-only), caro demais pra deixar ligado
             // sem interacao numa janela grande e sempre visivel.
-            className="glow-ring relative mx-auto w-full max-w-[640px] overflow-hidden rounded-card border border-white/[0.12] bg-ink-950 shadow-[0_50px_140px_-40px_rgba(0,0,0,0.9)] lg:max-w-none"
+            // laptop:max-w-*: a janela e 16/9, entao limitar a LARGURA e o
+            // unico jeito de baixar a altura sem cortar a imagem. Os 780px
+            // dao ~439px de imagem no lugar dos ~540px que a largura cheia
+            // gerava; `mx-auto` mantem ela centrada entre as duas fileiras
+            // de icones, que continuam onde estavam.
+            className="glow-ring relative mx-auto w-full max-w-[640px] overflow-hidden rounded-card border border-white/[0.12] bg-ink-950 shadow-[0_50px_140px_-40px_rgba(0,0,0,0.9)] lg:max-w-none laptop:max-w-[840px]"
           >
             {/* barra de titulo */}
             <div className="flex items-center gap-3 border-b border-white/[0.08] bg-ink-900/80 px-4 py-3">

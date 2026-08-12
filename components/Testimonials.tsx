@@ -165,7 +165,10 @@ export default function Testimonials() {
   return (
     <section
       id="depoimentos"
-      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 pb-20 pt-20 sm:pb-28 sm:pt-28"
+      // laptop:* (ver tailwind.config.ts): tela de desktop, mas baixa. Quem
+      // manda na altura aqui e o palco do carrossel (720px), entao e ele que
+      // encolhe — junto com os respiros e o titulo.
+      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 pb-20 pt-20 sm:pb-28 sm:pt-28 laptop:pb-16 laptop:pt-16"
     >
       <div className="relative mx-auto max-w-6xl px-6 lg:px-10 wide:max-w-shell wide:px-16">
         <motion.div
@@ -178,7 +181,7 @@ export default function Testimonials() {
           <div className="flex justify-center">
             <SectionEyebrow>Depoimentos</SectionEyebrow>
           </div>
-          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
             O que dizem sobre o Jarvis.
           </h2>
         </motion.div>
@@ -190,14 +193,18 @@ export default function Testimonials() {
           SO no desktop (lg+): no mobile ele e substituido pela versao
           simplificada logo abaixo (dois carrosseis retos + cartao
           rotativo). */}
-      <div className="relative left-1/2 mt-10 hidden w-screen -translate-x-1/2 lg:block">
+      <div className="relative left-1/2 mt-10 hidden w-screen -translate-x-1/2 lg:block laptop:mt-8">
         <motion.div
           initial={reduce ? false : { opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           aria-hidden
-          className="relative flex h-[560px] w-full items-center overflow-hidden sm:h-[720px]"
+          // laptop:h-[570px]: encolher o palco e seguro pro loop das esteiras.
+          // A regra anotada mais abaixo (bloco >= (gap + S)/(N-2) - gap) fica
+          // MAIS folgada quando S diminui: com S=520 o bloco precisaria de
+          // 520px e os 6 cartoes dao ~1200px.
+          className="relative flex h-[560px] w-full items-center overflow-hidden sm:h-[720px] laptop:h-[570px]"
         >
           {/* Metade ESQUERDA: 3 esteiras presas numa janela propria
               (w-[46vw] + overflow-hidden) que so cobre a metade esquerda da
@@ -387,7 +394,7 @@ export default function Testimonials() {
 
       {/* Faixa branca: SO no desktop. No mobile os mesmos 3 itens ja aparecem
           no cartao rotativo acima, entao repeti-los aqui seria redundante. */}
-      <div className="relative z-10 mx-auto mt-10 hidden max-w-6xl px-6 lg:-mt-36 lg:block lg:px-10 wide:max-w-shell wide:px-16">
+      <div className="relative z-10 mx-auto mt-10 hidden max-w-6xl px-6 lg:-mt-36 lg:block lg:px-10 laptop:-mt-28 wide:max-w-shell wide:px-16">
         {/* Faixa de confianca: fatos REAIS que a pagina garante. Cartao
             branco solido + icones em chip preto — mesmo tratamento do botao
             selecionado em "Ele age no computador, nao so no chat."

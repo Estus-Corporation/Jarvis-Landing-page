@@ -13,7 +13,6 @@ import {
   Repeat,
   Clock,
   Check,
-  Microphone,
   NotePencil,
   TextAlignLeft,
 } from "@phosphor-icons/react/dist/ssr";
@@ -124,7 +123,12 @@ function FeatureCard({
     >
       <Card
         className={cn(
-          "glow-ring group flex flex-col overflow-hidden transition-colors duration-300 lg:aspect-[3/4]",
+          // laptop:aspect-*: a altura do cartao sai da LARGURA pela proporcao,
+          // entao encurtar a proporcao e o unico jeito de baixar a altura sem
+          // estreitar o cartao (estreitar espremeria as maquetes, que sao
+          // desenhadas na largura cheia). O palco ja e cortado por um degrade
+          // embaixo — num notebook ele so mostra um naco menor da maquete.
+          "glow-ring group flex flex-col overflow-hidden transition-colors duration-300 lg:aspect-[3/4] laptop:aspect-[3/3.3]",
           highlight
             ? // mesma gramatica de destaque do cartao Anual em Precos: borda
               // clara e superficie um degrau acima, sem brilho externo — o
@@ -167,20 +171,18 @@ function FeatureCard({
         </div>
       </Card>
 
-      {/* legenda: a frase que cria o que o cartao acabou de mostrar */}
-      <div className="mt-4 flex items-start gap-2.5 px-1">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.14] bg-white/[0.04]">
-          <Microphone
-            size={13}
-            weight="light"
-            aria-hidden
-            className="text-white/60"
-          />
-        </span>
-        <p className="min-w-0 text-[13px] italic leading-snug text-white/45">
-          “{command}”
-        </p>
-      </div>
+      {/* legenda: a frase que cria o que o cartao acabou de mostrar.
+          Centralizada e sem o chip de microfone que ficava a esquerda — as
+          aspas ja dizem que e fala, e tirar o chip devolveu ~38px de linha
+          (28 do chip + 10 do vao), que e justamente o que faz a frase caber
+          em UMA linha no notebook.
+          Medido a 1366px, a 11px: a mais longa (Tarefas, no cartao do meio)
+          pede 379px contra 427px de coluna, e a de Agenda 325px contra
+          374px — ~48px de folga nas duas. Sem segunda linha, nenhuma legenda
+          sobra pra baixo do bloco. */}
+      <p className="mt-4 px-1 text-center text-[13px] italic leading-snug text-white/45 laptop:mt-3 laptop:px-0 laptop:text-[11px]">
+        “{command}”
+      </p>
     </motion.div>
   );
 }
@@ -543,7 +545,11 @@ export default function Organization() {
       // Interface) e adotou o fundo que ja morava nessa posicao da pagina — o
       // ink-900 com o halo central, que antes era o da secao da dashboard. Os
       // fundos ficaram parados; o conteudo e que trocou.
-      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 wide:px-16"
+      // laptop:* (ver tailwind.config.ts): mesmo tratamento da secao de
+      // Recursos — tela de desktop, mas baixa. Aqui os 1167px de altura vem
+      // quase todos de dois lugares: o bloco do titulo e a proporcao 3/4 dos
+      // cartoes, que num notebook deixa so a metade de cima deles visivel.
+      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 laptop:pb-16 laptop:pt-16 wide:px-16"
     >
       {/* fundo: halo central */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
@@ -564,10 +570,10 @@ export default function Organization() {
           className="mx-auto max-w-2xl text-center"
         >
           <SectionEyebrow>Organização</SectionEyebrow>
-          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl">
+          <h2 className="mt-5 text-balance font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]">
             Tudo que você precisa. Em um só lugar.
           </h2>
-          <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55">
+          <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
             Tarefas, agenda e lembretes vivem dentro do Jarvis — você fala, ele
             anota, e avisa na hora certa.
           </p>
@@ -580,7 +586,7 @@ export default function Organization() {
             tem que abrir a fila) e so vai pro meio quando os tres entram lado
             a lado. A coluna do meio e 1.14fr contra 1fr das laterais: e dai
             que sai o tamanho maior do cartao em destaque. */}
-        <div className="mx-auto mt-16 grid max-w-[76rem] gap-x-5 gap-y-10 lg:grid-cols-[1fr_1.14fr_1fr]">
+        <div className="mx-auto mt-16 grid max-w-[76rem] gap-x-5 gap-y-10 lg:grid-cols-[1fr_1.14fr_1fr] laptop:mt-12">
           <FeatureCard
             icon={ListChecks}
             title="Tarefas"
@@ -610,7 +616,13 @@ export default function Organization() {
             icon={BellRinging}
             title="Lembretes"
             desc="Aquilo que você só não quer esquecer, avisado na hora exata."
-            command="Jarvis, me lembra de ligar pra Ana hoje às 18h."
+            // Alongado pra ficar do tamanho das outras duas legendas (67
+            // caracteres contra 63 da Agenda e 76 de Tarefas) — antes eram
+            // 46 e a linha ficava visivelmente mais curta que as vizinhas.
+            // O segundo lembrete e o mesmo que aparece na maquete do cartao
+            // ("Tomar o remédio · Amanhã · 07:30"), entao a frase continua
+            // descrevendo o que esta ali em cima.
+            command="Jarvis, me lembra de ligar pra Ana hoje às 18h e de tomar o remédio."
             delay={0.16}
             className="lg:order-3"
           >

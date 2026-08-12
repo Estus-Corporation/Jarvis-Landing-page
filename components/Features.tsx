@@ -233,7 +233,13 @@ const CAPS: Cap[] = [
   },
 ];
 
-const AUTOPLAY_MS = 5800;
+const AUTOPLAY_MS = 7000;
+
+// Velocidade de digitacao do pedido do usuario (1o ato) — mesma familia da
+// GIT_CHAR (comandos digitados no terminal), so que mais lenta: aqui e uma
+// frase "falada", nao um comando de terminal, entao o ritmo de WhatsApp
+// digitando fica mais natural um pouco mais devagar.
+const COMMAND_CHAR_MS = 28;
 
 // ---- Arrasto lateral (so no celular) -------------------------------------
 // Gatilho por DISTANCIA ou por VELOCIDADE: um peteleco curto e rapido conta
@@ -277,45 +283,15 @@ function JarvisMark() {
   );
 }
 
-// ---- Corpo do cartao "Jarvis": pontinhos de "pensando" enquanto a demo roda
-// e a resposta quando ela termina. Remontado a cada capacidade (key no pai),
-// entao o timer sempre recomeca junto com a cena. -------------------------
-function JarvisReply({ text, delay }: { text: string; delay: number }) {
-  const reduce = useReducedMotionSafe();
-  const [answered, setAnswered] = useState(false);
-
-  useEffect(() => {
-    // Com "reduzir movimento" a resposta entra de imediato. Sem esse ramo o
-    // componente ficaria preso nos pontinhos pra sempre: useReducedMotionSafe
-    // devolve false no primeiro render e so vira true depois de montar, entao
-    // o efeito roda de novo, limpa o timer e nunca marcaria a resposta.
-    if (reduce) {
-      setAnswered(true);
-      return;
-    }
-    const t = setTimeout(() => setAnswered(true), delay * 1000);
-    return () => clearTimeout(t);
-  }, [reduce, delay]);
-
-  if (!answered) {
-    return (
-      <span className="flex items-center gap-1.5" aria-hidden>
-        <span className="h-2 w-2 animate-bounce rounded-full bg-white/35" />
-        <span className="h-2 w-2 animate-bounce rounded-full bg-white/35 [animation-delay:0.15s]" />
-        <span className="h-2 w-2 animate-bounce rounded-full bg-white/35 [animation-delay:0.3s]" />
-      </span>
-    );
-  }
-
+// ---- Corpo do cartao "Jarvis": so texto puro. A caixa inteira (avatar,
+// rotulo, texto) fica escondida ate a demo do meio terminar de tocar — quem
+// decide QUANDO revelar e o pai (showReply), nao mais um timer proprio daqui
+// com pontinhos de "pensando": ver comentario no corpo de Features(). -------
+function JarvisReply({ text }: { text: string }) {
   return (
-    <motion.p
-      initial={reduce ? false : { opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="text-[0.95rem] leading-snug text-white/90 sm:text-xl laptop:text-base"
-    >
+    <p className="line-clamp-2 text-[0.95rem] leading-snug text-white/90 sm:text-xl laptop:text-base">
       {text}
-    </motion.p>
+    </p>
   );
 }
 
@@ -2075,22 +2051,6 @@ export default function Features() {
     else if (offset.x > SWIPE_DISTANCE || velocity.x > SWIPE_VELOCITY) paginate(-1);
   };
 
-  // Auto-play: percorre as capacidades sozinho, como uma demo rodando. Para
-  // no hover/foco (o visitante assumiu o controle) e em reduced-motion.
-  //
-  // A permanencia e por cena, e nao fixa: cenas curtas seguem no ritmo de
-  // sempre (AUTOPLAY_MS), e as que demoram pra responder — o Git leva ~4,2s so
-  // digitando e subindo o push — ganham 1,8s de leitura depois da resposta em
-  // vez de serem cortadas no meio.
-  useEffect(() => {
-    if (reduce || paused || manual) return;
-    const dwell = Math.max(AUTOPLAY_MS, active.replyDelay * 1000 + 1800);
-    const t = setTimeout(
-      () => setActiveIdx((i) => (i + 1) % CAPS.length),
-      dwell
-    );
-    return () => clearTimeout(t);
-  }, [reduce, paused, manual, activeIdx, active.replyDelay]);
   // Na cena do Spotify o pedido e a resposta sao montados a partir do aparelho
   // escolhido; nas outras seis eles vem prontos do CAPS.
   const isSpotify = active.kind === "spotify";
@@ -2099,6 +2059,77 @@ export default function Features() {
   // trocar de aparelho remonta a cena inteira (a demo, o pedido e a resposta),
   // entao ela toca de novo ja com o novo destino.
   const sceneKey = isSpotify ? `${active.id}:${device}` : active.id;
+
+  // Os 3 atos agora tocam em SEQUENCIA, nao em paralelo: 1) o pedido digita
+  // letra por letra (estilo WhatsApp); 2) so DEPOIS de pronto a demo do meio
+  // entra e comeca a tocar; 3) so DEPOIS que a demo termina (replyDelay,
+  // calibrado por capacidade pra bater com o fim de cada animacao) a caixa
+  // de resposta do Jarvis aparece. Um efeito so, encadeado por setTimeout —
+  // cada fase depende da anterior ja ter acabado, e useEffects separados
+  // reagindo uns aos outros correm risco de o timer de uma cena antiga
+  // vazar pra dentro da proxima quando o visitante troca rapido.
+  const [commandChars, setCommandChars] = useState(
+    reduce ? command.length : 0
+  );
+  const [showReply, setShowReply] = useState(reduce);
+
+  useEffect(() => {
+    if (reduce) {
+      setCommandChars(command.length);
+      setShowReply(true);
+      return;
+    }
+    setCommandChars(0);
+    setShowReply(false);
+    let typingTimer: ReturnType<typeof setTimeout>;
+    let replyTimer: ReturnType<typeof setTimeout>;
+    let i = 0;
+    const typeNext = () => {
+      i += 1;
+      setCommandChars(i);
+      if (i < command.length) {
+        typingTimer = setTimeout(typeNext, COMMAND_CHAR_MS);
+      } else {
+        replyTimer = setTimeout(
+          () => setShowReply(true),
+          active.replyDelay * 1000
+        );
+      }
+    };
+    typingTimer = setTimeout(typeNext, COMMAND_CHAR_MS);
+    return () => {
+      clearTimeout(typingTimer);
+      clearTimeout(replyTimer);
+    };
+    // command e active.replyDelay sao 100% funcao de sceneKey (mesmo
+    // aparelho do Spotify entra no proprio sceneKey) — reagir so a sceneKey
+    // evita reiniciar a digitacao no meio quando nada realmente mudou.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sceneKey, reduce]);
+
+  const typed = commandChars >= command.length;
+
+  // Auto-play: percorre as capacidades sozinho, como uma demo rodando. Para
+  // no hover/foco (o visitante assumiu o controle) e em reduced-motion.
+  //
+  // A permanencia e por cena, e nao fixa: cenas curtas seguem no ritmo de
+  // sempre (AUTOPLAY_MS), e as que demoram pra responder — o Git leva ~4,2s so
+  // digitando e subindo o push — ganham 1,8s de leitura depois da resposta em
+  // vez de serem cortadas no meio. Agora tambem soma o tempo de DIGITACAO do
+  // pedido (que antes nao existia como fase separada), senao a cena trocaria
+  // com a resposta ainda mal aparecida.
+  useEffect(() => {
+    if (reduce || paused || manual) return;
+    const dwell = Math.max(
+      AUTOPLAY_MS,
+      command.length * COMMAND_CHAR_MS + active.replyDelay * 1000 + 1800
+    );
+    const t = setTimeout(
+      () => setActiveIdx((i) => (i + 1) % CAPS.length),
+      dwell
+    );
+    return () => clearTimeout(t);
+  }, [reduce, paused, manual, activeIdx, active.replyDelay, command]);
 
   return (
     <section
@@ -2250,8 +2281,19 @@ export default function Features() {
               repaint continuo pra sempre numa janela grande e sempre
               visivel. Vira hover/focus (:is(:hover,:focus-within), ja
               definido em globals.css), igual o resto dos usos de
-              glow-ring no site. */}
-          <div className="glow-ring relative order-1 flex min-h-[440px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:min-h-[560px] lg:order-none lg:min-h-[620px] laptop:min-h-[540px]">
+              glow-ring no site.
+
+              h-[Npx] fixo, NAO mais min-h: com min-h, um pedido ou resposta
+              que quebrasse em 2 linhas (algumas capacidades sao bem mais
+              longas que outras) empurrava a caixa inteira pra crescer — e,
+              como ela e item de grid ao lado da pilha de botoes, a coluna
+              INTEIRA crescia junto, o cartao mudando de forma a cada troca
+              de capacidade. Altura fixa + overflow-hidden fecham essa
+              porta: por maior que o conteudo de dentro queira ficar, a
+              caixa nunca muda de tamanho — o que nao couber e cortado, nao
+              empurrado. Os 1o/3o atos abaixo reservam 2 linhas fixas pelo
+              mesmo motivo (ver comentario la). */}
+          <div className="glow-ring relative order-1 flex h-[500px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[620px] lg:order-none lg:h-[680px] laptop:h-[600px]">
             {/* barra de titulo */}
             <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
               <span className="flex gap-1.5" aria-hidden>
@@ -2306,55 +2348,81 @@ export default function Features() {
                   aria-hidden
                   className="mx-1 hidden h-6 w-px shrink-0 bg-white/15 sm:block"
                 />
-                {/* min-h de uma linha: com AnimatePresence "wait" a frase
-                    antiga desmonta antes da nova entrar, e sem essa reserva o
-                    cartao encolheria nesse intervalo. */}
-                <div className="flex min-h-[1.75rem] min-w-0 flex-1 items-center">
-                  <AnimatePresence mode="wait">
-                    <motion.p
-                      key={sceneKey}
-                      initial={reduce ? false : { opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={reduce ? undefined : { opacity: 0, y: -6 }}
-                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                      className="text-[0.95rem] italic leading-snug text-white/90 sm:text-xl laptop:text-base"
-                    >
-                      “{command}”
-                    </motion.p>
-                  </AnimatePresence>
+                {/* h-14 FIXO (nao mais min-h de 1 linha): reserva espaco pra
+                    2 linhas sempre, pedido curto ou longo — e o que garante
+                    que o cartao inteiro nunca muda de altura ao trocar de
+                    capacidade (ver comentario grande na janela do console,
+                    mais abaixo). line-clamp-2 e so um cinto de seguranca:
+                    nenhum pedido real passa de 2 linhas nas larguras do
+                    site, mas se um dia passar, corta em vez de estourar.
+                    Mais o cursor piscando enquanto digita (estilo WhatsApp)
+                    — a aspa de fechamento so entra quando `typed` vira
+                    true, junto com o cursor sumindo. */}
+                <div className="flex h-14 min-w-0 flex-1 items-center">
+                  <p className="line-clamp-2 text-[0.95rem] italic leading-snug text-white/90 sm:text-xl laptop:text-base">
+                    “{command.slice(0, commandChars)}
+                    {typed && "”"}
+                    {!typed && !reduce && (
+                      <span className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
+                    )}
+                  </p>
                 </div>
               </div>
 
-              {/* 2o ato — a tela da acao.
-                  laptop:min-h baixo de proposito (320px): e ele que faz o
-                  console EMPATAR em altura com a coluna de botoes do lado.
-                  As duas colunas sao filhas do mesmo grid, entao ja esticam
-                  pra mesma altura; o que quebrava o empate visual era o
-                  console ter conteudo MAIOR que a pilha de botoes (619 x
-                  578px medidos), o que empurrava a linha inteira pra 621 e
-                  deixava um vao de 43px sobrando embaixo do ultimo botao.
-                  Com o piso da demo abaixo disso, quem manda na altura da
-                  linha volta a ser a pilha de botoes, e a demo (flex-1)
-                  estica pra ocupar a sobra — o empate se mantem sozinho
-                  mesmo se o pedido ou a resposta quebrarem em duas linhas. */}
-              <div className="relative min-h-[280px] flex-1 sm:min-h-[380px] lg:min-h-[450px] laptop:min-h-[320px]">
+              {/* 2o ato — a tela da acao. So MONTA depois que o pedido termina
+                  de digitar (typed): assim os timers internos de cada demo
+                  (GitViz, WhatsAppViz...) comecam a contar do zero exatamente
+                  quando a acao "comeca", em vez de correr escondidos por trás
+                  da digitacao do 1o ato.
+                  flex-1 SEM min-h proprio: a janela do console agora tem
+                  altura FIXA (h-[Npx] no container la fora, nao mais
+                  min-h), entao este bloco recebe sempre exatamente "o que
+                  sobra" depois da barra de titulo e dos 1o/3o atos (que
+                  tambem tem altura fixa agora) — nao precisa mais de um
+                  piso proprio pra empatar com a pilha de botoes do lado,
+                  isso ja vem garantido pela altura fixa do pai. */}
+              <div className="relative flex-1">
                 <AnimatePresence mode="wait">
-                  <motion.div
-                    key={sceneKey}
-                    initial={reduce ? false : { opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={reduce ? undefined : { opacity: 0, y: -12 }}
-                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute inset-0"
-                  >
-                    <ConsoleBody cap={active} device={device} onDevice={setDevice} />
-                  </motion.div>
+                  {typed && (
+                    <motion.div
+                      key={sceneKey}
+                      // "foco nitidez": entra borrada e um pouco menor,
+                      // resolvendo pra nitida no lugar — como uma camera
+                      // ajustando o foco, em vez do fade+leve-subida simples
+                      // de antes. Sai so com fade (sem desfocar de novo),
+                      // que fica mais limpo numa troca rapida de cena.
+                      initial={
+                        reduce
+                          ? false
+                          : { opacity: 0, scale: 0.96, filter: "blur(6px)" }
+                      }
+                      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                      exit={reduce ? undefined : { opacity: 0 }}
+                      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                      className="absolute inset-0"
+                    >
+                      <ConsoleBody cap={active} device={device} onDevice={setDevice} />
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </div>
 
-              {/* 3o ato — a resposta. Mais clara que o cartao do usuario de
-                  proposito: e a "voz" do produto, o fim da historia. */}
-              <div className="flex items-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
+              {/* 3o ato — a resposta. So aparece (showReply) depois que a demo
+                  do meio termina de tocar — a caixa inteira fica de opacidade
+                  0 ate la, NAO desmontada: se ela sumisse do fluxo, a demo
+                  logo acima (flex-1) esticaria pra ocupar o espaco vazio e
+                  encolheria de novo quando a resposta chegasse, um solavanco
+                  de layout. Com opacidade 0 o espaco fica reservado o tempo
+                  todo e ela so surge (fade + leve subida). Mais clara que o
+                  cartao do usuario de proposito: e a "voz" do produto, o fim
+                  da historia. */}
+              <motion.div
+                initial={false}
+                animate={{ opacity: showReply ? 1 : 0, y: showReply ? 0 : 8 }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                aria-hidden={!showReply}
+                className="flex items-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3"
+              >
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
                   <JarvisMark />
                 </span>
@@ -2365,16 +2433,12 @@ export default function Features() {
                   aria-hidden
                   className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
                 />
-                {/* mesma reserva de uma linha: aqui ela absorve a troca dos
-                    pontinhos de "pensando" pela frase. */}
-                <div className="flex min-h-[1.75rem] min-w-0 flex-1 items-center">
-                  <JarvisReply
-                    key={sceneKey}
-                    text={reply}
-                    delay={active.replyDelay}
-                  />
+                {/* mesma reserva fixa de 2 linhas do 1o ato, mesmo motivo:
+                    ver comentario grande na janela do console. */}
+                <div className="flex h-14 min-w-0 flex-1 items-center">
+                  <JarvisReply text={reply} />
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
 

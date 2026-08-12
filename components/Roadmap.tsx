@@ -3,6 +3,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
   DeviceMobile,
   House,
@@ -29,6 +30,11 @@ type RoadmapItem = {
   step: string;
   title: string;
   body: string;
+  // Versao mais curta do body, so pra caber no notebook (ver `isLaptop`,
+  // mais abaixo) sem passar da base da imagem, onde o botao "Quero ser
+  // notificado!" agora fica fixo. Opcional: quando ausente, usa `body` normal
+  // em todas as telas.
+  bodyCompact?: string;
   quote: string;
   image: string;
 };
@@ -40,26 +46,27 @@ const items: RoadmapItem[] = [
     title: "Jarvis no seu bolso",
     body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Pergunte algo, peça uma tarefa ou só acompanhe o que ele está fazendo — tudo pelo mesmo Jarvis, agora no seu bolso. Notificações chegam na hora certa, e o histórico da conversa segue com você entre o computador e o celular, sem perder o fio.",
     quote: "Jarvis, quanto falta pro meu build terminar?",
-    image:
-      "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=900&auto=format&fit=crop",
+    image: "/images/mobile.png",
   },
   {
     icon: House,
     step: "02",
     title: "Sua casa, por voz",
     body: "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Chegou e já quer tudo do jeito certo? Basta pedir, e ele ajusta a casa inteira antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra quando sair — um comando só, e cada cômodo responde do jeito que você combinou.",
+    bodyCompact:
+      "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Peça, e ele ajusta tudo antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra saída — um comando só, e cada cômodo responde do jeito certo.",
     quote: "Jarvis, apaga as luzes e liga o ar-condicionado.",
-    image:
-      "https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=900&auto=format&fit=crop",
+    image: "/images/iot.png",
   },
   {
     icon: Car,
     step: "03",
     title: "Jarvis no painel do seu carro",
     body: "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. No trânsito ou na estrada, é só falar: ele entende o pedido e cuida do resto enquanto você guia. Ele também avisa sobre trânsito na rota, sugere um caminho melhor e lê as mensagens em voz alta, sem você precisar olhar pra tela.",
-    quote: "Jarvis, rota para casa. E quem me mandou mensagem no WhatsApp?",
-    image:
-      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=900&auto=format&fit=crop",
+    bodyCompact:
+      "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. Ele avisa sobre trânsito na rota, sugere um caminho melhor e lê as mensagens em voz alta, sem você precisar olhar pra tela.",
+    quote: "Jarvis, traçar trajeto para casa.",
+    image: "/images/car.png",
   },
 ];
 
@@ -205,15 +212,28 @@ export default function Roadmap() {
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [contentHeight, setContentHeight] = useState(0);
 
+  // No notebook (mesma faixa do `laptop:` do tailwind.config.ts — tela larga
+  // mas baixa), o botao "Quero ser notificado!" precisa ficar PARADO, nunca
+  // descer quando o item ativo trocar. Por isso, so nessa faixa, contentHeight
+  // usa a altura do MAIOR item (nao so do ativo) — o botao passa a se ancorar
+  // sempre no mesmo lugar (o pior caso), em vez de subir/descer junto com o
+  // texto de cada atualizacao.
+  const isLaptop = useMediaQuery("(min-width: 1024px) and (max-height: 900px)");
+
   useLayoutEffect(() => {
     const measure = () => {
+      if (isLaptop) {
+        const heights = itemRefs.current.map((el) => el?.offsetHeight ?? 0);
+        setContentHeight(Math.max(0, ...heights));
+        return;
+      }
       const el = itemRefs.current[active];
       if (el) setContentHeight(el.offsetHeight);
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [active]);
+  }, [active, isLaptop]);
 
   // Altura real da imagem (coluna direita): medida do mesmo jeito que
   // contentHeight, pra o botao "Quero ser notificado!" poder se ancorar no
@@ -257,11 +277,21 @@ export default function Roadmap() {
   // toda do botao). Testado centralizado (so metade do botao) antes, mas
   // ainda deixava metade do botao pendurada abaixo da linha — isso aqui
   // encosta o rodape do botao na base da imagem, sem passar dela.
+  //
+  // No notebook, porem, o botao precisa ficar PARADO — nunca descer com o
+  // texto do item ativo (ver comentario em `isLaptop`, acima). Por isso, so
+  // nessa faixa, buttonTop ignora contentHeight de vez e usa direto
+  // imageHeight - buttonHeight: como a altura da imagem nao muda entre os
+  // itens, essa conta da sempre o mesmo numero, e o rodape do botao fica
+  // sempre encostado na base da imagem.
   const MIN_GAP = 24;
-  const buttonTop = Math.max(
-    contentHeight + MIN_GAP,
-    imageHeight - buttonHeight
-  );
+  const buttonTop = isLaptop
+    ? Math.max(0, imageHeight - buttonHeight)
+    : Math.max(contentHeight + MIN_GAP, imageHeight - buttonHeight);
+
+  // Respiro entre a citacao (ancorada no fundo do item, so no notebook — ver
+  // `mt-auto` mais abaixo) e o botao, pra ela nao ficar colada nele.
+  const QUOTE_GAP = 24;
 
   // Autoplay: avanca sozinho a cada AUTOPLAY_MS. Reiniciar o efeito toda vez
   // que `active` muda (inclusive quando muda por causa do proprio autoplay)
@@ -293,7 +323,7 @@ export default function Roadmap() {
       // pesa aqui e o bloco do titulo e a imagem 4/3 da direita — a coluna da
       // esquerda se mede sozinha (contentHeight), entao encolher o titulo do
       // item ja reacomoda o resto sem ajuste manual.
-      className="relative overflow-hidden border-t border-white/[0.07] bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 laptop:pb-16 laptop:pt-16 wide:px-16"
+      className="relative overflow-hidden border-t border-white/[0.07] bg-[#0C0C0E] px-6 pb-28 pt-20 sm:pb-36 sm:pt-28 lg:px-10 laptop:pb-24 laptop:pt-16 wide:px-16"
     >
       <SectionBackdrop />
 
@@ -384,11 +414,24 @@ export default function Roadmap() {
                       itemRefs.current[index] = el;
                     }}
                     aria-hidden={index !== active}
-                    className={`absolute inset-x-0 top-0 transition-all duration-700 ease-in-out ${
+                    // flex flex-col + height fixa (so no notebook): da pra
+                    // caixa a MESMA altura sempre (ate logo acima do botao),
+                    // e o `mt-auto` da citacao (mais abaixo) empurra ela pro
+                    // fundo dessa caixa — ou seja, a citacao fica sempre na
+                    // mesma linha, colada acima do botao "Quero ser
+                    // notificado!", nao importa o tamanho do body do item.
+                    // No mobile/tablet, style fica undefined (altura
+                    // continua automatica) e o layout nao muda.
+                    className={`absolute inset-x-0 top-0 flex flex-col transition-all duration-700 ease-in-out ${
                       index === active
                         ? "translate-y-0 opacity-100"
                         : "pointer-events-none translate-y-6 opacity-0"
                     }`}
+                    style={
+                      isLaptop && buttonTop
+                        ? { height: Math.max(buttonTop - QUOTE_GAP, 0) }
+                        : undefined
+                    }
                   >
                     {/* Rotulo "Update N.0": no lugar onde a paginacao ficava
                         antes de subir pra baixo do titulo da secao. */}
@@ -399,9 +442,15 @@ export default function Roadmap() {
                       {item.title}
                     </h3>
                     <p className="mt-5 max-w-[38ch] text-base leading-relaxed text-white/55 laptop:mt-4">
-                      {item.body}
+                      {isLaptop && item.bodyCompact ? item.bodyCompact : item.body}
                     </p>
-                    <p className="mt-12 max-w-[38ch] text-sm italic leading-relaxed text-white/65 laptop:mt-10">
+                    <p
+                      className={
+                        isLaptop
+                          ? "mt-auto max-w-[38ch] text-sm italic leading-relaxed text-white/65"
+                          : "mt-12 max-w-[38ch] text-sm italic leading-relaxed text-white/65 laptop:mt-10"
+                      }
+                    >
                       “{item.quote}”
                     </p>
                   </div>

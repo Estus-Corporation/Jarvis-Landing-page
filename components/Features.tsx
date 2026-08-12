@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, type PanInfo } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
   Keyboard,
   TextAa,
@@ -234,6 +235,13 @@ const CAPS: Cap[] = [
 
 const AUTOPLAY_MS = 5800;
 
+// ---- Arrasto lateral (so no celular) -------------------------------------
+// Gatilho por DISTANCIA ou por VELOCIDADE: um peteleco curto e rapido conta
+// tanto quanto um arrasto lento e longo. Com so um dos dois, metade dos
+// gestos naturais nao trocaria de cartao.
+const SWIPE_DISTANCE = 56; // px percorridos
+const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
+
 // ---- Icone do botao: logo do app (svg de marca, sempre em branco sobre o
 // chip escuro) ou icone Phosphor da capacidade (herda a cor do chip via
 // currentColor). ---------------------------------------------------------
@@ -304,7 +312,7 @@ function JarvisReply({ text, delay }: { text: string; delay: number }) {
       initial={reduce ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="text-lg leading-snug text-white/90 sm:text-xl laptop:text-base"
+      className="text-[0.95rem] leading-snug text-white/90 sm:text-xl laptop:text-base"
     >
       {text}
     </motion.p>
@@ -2031,12 +2039,41 @@ export default function Features() {
   const reduce = useReducedMotionSafe();
   const [activeIdx, setActiveIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  // No celular nao existe hover, entao o "assumi o controle" que pausa o
+  // auto-play precisa vir do gesto: depois do primeiro arrasto (ou toque num
+  // ponto) a secao para de andar sozinha e nao volta mais — o visitante
+  // acabou de dizer que quer escolher, e um cartao trocando debaixo do dedo
+  // seria briga de controle.
+  const [manual, setManual] = useState(false);
   // aparelho escolhido no seletor da demo do Spotify. Mora aqui, e nao dentro
   // da demo, porque e ele que reescreve o pedido e a resposta — os dois
   // cartoes que ficam FORA da janela.
   const [device, setDevice] = useState<DeviceId>(DEFAULT_DEVICE);
 
+  // Abaixo de lg a secao vira carrossel de um cartao so, arrastavel de lado.
+  // O `drag` do motion e uma PROP — nao da pra ligar/desligar por media query
+  // no CSS —, entao aqui precisa de JS. O 1023px espelha exatamente o `lg` do
+  // Tailwind pra o comportamento nunca desencontrar do layout.
+  const isMobile = useMediaQuery("(max-width: 1023px)");
+
   const active = CAPS[activeIdx];
+
+  // avanca/volta uma capacidade, dando a volta nas pontas
+  const paginate = (dir: number) => {
+    setManual(true);
+    setActiveIdx((i) => (i + dir + CAPS.length) % CAPS.length);
+  };
+
+  // Arrastar pra ESQUERDA puxa o proximo cartao (o dedo empurra o atual pra
+  // fora), arrastar pra direita volta — a mesma convencao de qualquer
+  // carrossel de app. Gestos verticais nem chegam aqui: com drag="x" o motion
+  // deixa `touch-action: pan-y` no elemento, entao rolar a pagina continua
+  // sendo rolagem nativa.
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
+    const { offset, velocity } = info;
+    if (offset.x < -SWIPE_DISTANCE || velocity.x < -SWIPE_VELOCITY) paginate(1);
+    else if (offset.x > SWIPE_DISTANCE || velocity.x > SWIPE_VELOCITY) paginate(-1);
+  };
 
   // Auto-play: percorre as capacidades sozinho, como uma demo rodando. Para
   // no hover/foco (o visitante assumiu o controle) e em reduced-motion.
@@ -2046,14 +2083,14 @@ export default function Features() {
   // digitando e subindo o push — ganham 1,8s de leitura depois da resposta em
   // vez de serem cortadas no meio.
   useEffect(() => {
-    if (reduce || paused) return;
+    if (reduce || paused || manual) return;
     const dwell = Math.max(AUTOPLAY_MS, active.replyDelay * 1000 + 1800);
     const t = setTimeout(
       () => setActiveIdx((i) => (i + 1) % CAPS.length),
       dwell
     );
     return () => clearTimeout(t);
-  }, [reduce, paused, activeIdx, active.replyDelay]);
+  }, [reduce, paused, manual, activeIdx, active.replyDelay]);
   // Na cena do Spotify o pedido e a resposta sao montados a partir do aparelho
   // escolhido; nas outras seis eles vem prontos do CAPS.
   const isSpotify = active.kind === "spotify";
@@ -2112,13 +2149,27 @@ export default function Features() {
           onMouseLeave={() => setPaused(false)}
           onFocusCapture={() => setPaused(true)}
           onBlurCapture={() => setPaused(false)}
-          className="mt-14 grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.35fr] lg:gap-5 laptop:mt-9"
+          // O bloco INTEIRO e a area de arrasto (cartao + botao + pontos),
+          // nao so o cartao: no celular o dedo cai em qualquer lugar dessa
+          // pilha, e ter uma parte que "nao pega" o gesto parece defeito.
+          // Constraint 0/0 + elastic = ele acompanha o dedo com resistencia e
+          // volta sozinho; quem troca de cena e o onDragEnd, nao a posicao.
+          drag={isMobile ? "x" : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.25}
+          dragMomentum={false}
+          onDragStart={() => setManual(true)}
+          onDragEnd={handleDragEnd}
+          className="mt-10 grid cursor-grab grid-cols-1 gap-4 active:cursor-grabbing sm:mt-14 lg:cursor-auto lg:grid-cols-[0.9fr_1.35fr] lg:gap-5 lg:active:cursor-auto laptop:mt-9"
         >
           {/* Coluna esquerda: seletor de capacidades. Sao 7 botoes, e e a
               altura DELES que define a linha do grid — no notebook, 7x74px
               mais os 6 vaos de 10px dao 578px, e o console do lado se ajusta
-              a essa medida (ver comentario na demo, mais abaixo). */}
-          <div className="flex flex-col gap-2.5">
+              a essa medida (ver comentario na demo, mais abaixo).
+              order-2 no celular: la a pilha vira UM botao so, e ele fica
+              ABAIXO do cartao (o cartao e o assunto; o botao e a legenda de
+              onde voce esta). No desktop o order volta a ser o do DOM. */}
+          <div className="order-2 flex flex-col gap-2.5 lg:order-none">
             {CAPS.map((cap, i) => {
               const isActive = i === activeIdx;
               return (
@@ -2127,10 +2178,15 @@ export default function Features() {
                   type="button"
                   onClick={() => setActiveIdx(i)}
                   aria-pressed={isActive}
+                  // `hidden lg:flex` nos inativos: no celular sobra UM botao
+                  // — o da capacidade em cena. Nao e uma segunda lista de
+                  // botoes escondida atras de um menu; e a mesma lista, com o
+                  // celular mostrando so o item atual. Quem troca la e o
+                  // arrasto (e os pontos, logo abaixo do botao).
                   className={`glow-ring group relative flex items-center gap-4 overflow-hidden rounded-card border px-5 py-4 text-left transition-colors duration-300 laptop:py-3 ${
                     isActive
                       ? "glow-ring--active border-white bg-[#FAFAFA]"
-                      : "border-white/[0.08] bg-ink-900/60 hover:border-white/20 hover:bg-ink-800/60"
+                      : "hidden border-white/[0.08] bg-ink-900/60 hover:border-white/20 hover:bg-ink-800/60 lg:flex"
                   }`}
                 >
                   <span
@@ -2178,7 +2234,7 @@ export default function Features() {
               visivel. Vira hover/focus (:is(:hover,:focus-within), ja
               definido em globals.css), igual o resto dos usos de
               glow-ring no site. */}
-          <div className="glow-ring relative flex min-h-[620px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] laptop:min-h-[540px]">
+          <div className="glow-ring relative order-1 flex min-h-[440px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:min-h-[560px] lg:order-none lg:min-h-[620px] laptop:min-h-[540px]">
             {/* barra de titulo */}
             <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
               <span className="flex gap-1.5" aria-hidden>
@@ -2203,9 +2259,9 @@ export default function Features() {
                 ficariam desalinhados um do outro. Dentro dessa caixa o texto
                 e centralizado, entao cada rotulo fica no meio do vao entre o
                 avatar e o divisor, independente do tamanho da palavra. */}
-            <div className="flex flex-1 flex-col gap-4 p-5 laptop:gap-3.5">
+            <div className="flex flex-1 flex-col gap-3 p-3.5 sm:gap-4 sm:p-5 laptop:gap-3.5">
               {/* 1o ato — o pedido, sem truncar, pra ler numa boa */}
-              <div className="flex items-center gap-3 rounded-chip border border-white/[0.08] bg-ink-950/60 px-5 py-3.5 laptop:py-3">
+              <div className="flex items-center gap-2.5 rounded-chip border border-white/[0.08] bg-ink-950/60 px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
                 <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.04]">
                   <span
                     aria-hidden
@@ -2221,11 +2277,18 @@ export default function Features() {
                 </span>
                 {/* font-mono (Geist Mono) em vez da Exo 2 dos titulos: aqui o
                     rotulo faz papel de etiqueta de terminal, e a monoespacada
-                    e o que casa com o resto da linguagem do console. */}
-                <span className="w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] laptop:w-16 laptop:text-[11px] text-white/40">
+                    e o que casa com o resto da linguagem do console.
+                    O rotulo e o divisor somem no celular (hidden sm:block):
+                    juntos comem ~110px de uma linha que tem ~300, e o avatar
+                    ja diz quem fala (microfone = voce, marca = Jarvis). O que
+                    ganha o espaco de volta e a frase, que e o conteudo. */}
+                <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/40 sm:block laptop:w-16 laptop:text-[11px]">
                   Usuário
                 </span>
-                <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-white/15" />
+                <span
+                  aria-hidden
+                  className="mx-1 hidden h-6 w-px shrink-0 bg-white/15 sm:block"
+                />
                 {/* min-h de uma linha: com AnimatePresence "wait" a frase
                     antiga desmonta antes da nova entrar, e sem essa reserva o
                     cartao encolheria nesse intervalo. */}
@@ -2237,7 +2300,7 @@ export default function Features() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={reduce ? undefined : { opacity: 0, y: -6 }}
                       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                      className="text-lg italic leading-snug text-white/90 sm:text-xl laptop:text-base"
+                      className="text-[0.95rem] italic leading-snug text-white/90 sm:text-xl laptop:text-base"
                     >
                       “{command}”
                     </motion.p>
@@ -2257,7 +2320,7 @@ export default function Features() {
                   linha volta a ser a pilha de botoes, e a demo (flex-1)
                   estica pra ocupar a sobra — o empate se mantem sozinho
                   mesmo se o pedido ou a resposta quebrarem em duas linhas. */}
-              <div className="relative min-h-[450px] flex-1 laptop:min-h-[320px]">
+              <div className="relative min-h-[280px] flex-1 sm:min-h-[380px] lg:min-h-[450px] laptop:min-h-[320px]">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={sceneKey}
@@ -2274,14 +2337,17 @@ export default function Features() {
 
               {/* 3o ato — a resposta. Mais clara que o cartao do usuario de
                   proposito: e a "voz" do produto, o fim da historia. */}
-              <div className="flex items-center gap-3 rounded-chip border border-white/[0.16] bg-white/[0.05] px-5 py-3.5 laptop:py-3">
+              <div className="flex items-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
                   <JarvisMark />
                 </span>
-                <span className="w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] laptop:w-16 laptop:text-[11px] text-white/60">
+                <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
                   Jarvis
                 </span>
-                <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-white/20" />
+                <span
+                  aria-hidden
+                  className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
+                />
                 {/* mesma reserva de uma linha: aqui ela absorve a troca dos
                     pontinhos de "pensando" pela frase. */}
                 <div className="flex min-h-[1.75rem] min-w-0 flex-1 items-center">
@@ -2293,6 +2359,41 @@ export default function Features() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Pontos — so no celular, onde ve-se UM botao de cada vez. Eles
+              respondem as duas perguntas que o botao sozinho nao responde:
+              quantas capacidades existem e em qual delas voce esta. E sao
+              tambem o caminho de quem nao arrasta — teclado e leitor de tela
+              nao dao swipe, e um carrossel so-gesto seria intocavel pra eles.
+              p-2 pra o alvo de toque passar de 40px mesmo com o ponto tendo
+              6px de altura. */}
+          <div
+            className="order-3 -mt-1 flex items-center justify-center lg:hidden"
+            role="tablist"
+            aria-label="Capacidades"
+          >
+            {CAPS.map((cap, i) => (
+              <button
+                key={cap.id}
+                type="button"
+                role="tab"
+                aria-selected={i === activeIdx}
+                aria-label={cap.tab}
+                onClick={() => {
+                  setManual(true);
+                  setActiveIdx(i);
+                }}
+                className="cursor-pointer p-2"
+              >
+                <span
+                  aria-hidden
+                  className={`block h-1.5 rounded-full transition-all duration-300 ${
+                    i === activeIdx ? "w-6 bg-white" : "w-1.5 bg-white/25"
+                  }`}
+                />
+              </button>
+            ))}
           </div>
         </motion.div>
 

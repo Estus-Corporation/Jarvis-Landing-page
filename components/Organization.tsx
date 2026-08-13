@@ -85,12 +85,14 @@ const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
 // depende de tempo, nao passa.
 //
 // PEEK e a fatia visivel do vizinho + o vao entre os dois; GAP e so o vao (o
-// `gap-3` da tira). Os dois vivem tambem no CSS da largura do slide
-// (`w-[calc(100%-3.5rem)]`, = 56px = PEEK + GAP) pra tira ja nascer com a
+// `gap-4` da tira). Os dois vivem tambem no CSS da largura do slide
+// (`w-[calc(100%-3.75rem)]`, = 60px = PEEK + GAP) pra tira ja nascer com a
 // proporcao certa antes de qualquer medicao — o JS aqui embaixo so calcula
 // ONDE cada parada fica, nunca o tamanho.
+// Mexer no GAP obriga a mexer nesse calc junto (GAP entra nos dois): so
+// assim o vao cresce sem comer a espiada, que continua nos mesmos 44px.
 const PEEK = 44; // px do vizinho aparecendo (inclui o vao)
-const GAP = 12; // px de vao entre cartoes (= gap-3)
+const GAP = 16; // px de vao entre cartoes (= gap-4)
 
 // Largura do trilho da barra de progresso, em px (o polegar e 1/CARDS.length
 // dela). Fica em JS, e nao so no CSS, porque o deslocamento do polegar e
@@ -1001,7 +1003,7 @@ export default function Organization() {
               dragMomentum={false}
               onDragEnd={handleDragEnd}
               style={{ x }}
-              className="flex cursor-grab items-start gap-3 active:cursor-grabbing"
+              className="flex cursor-grab items-start gap-4 active:cursor-grabbing"
             >
               {CARDS.map((card, i) => (
                 <div
@@ -1010,10 +1012,10 @@ export default function Organization() {
                     cardRefs.current[i] = el;
                   }}
                   aria-hidden={i !== activeIdx}
-                  // 3.5rem = 56px = PEEK + GAP: e o CSS que garante a espiada
+                  // 3.75rem = 60px = PEEK + GAP: e o CSS que garante a espiada
                   // (o JS so posiciona). Sem shrink-0 o flex espremeria os
                   // tres pra caber na tira, e nao sobraria vizinho pra espiar.
-                  className="w-[calc(100%-3.5rem)] shrink-0"
+                  className="w-[calc(100%-3.75rem)] shrink-0"
                 >
                   {/* SEM `bigger`, ao contrario da grade de desktop: os tres
                       viram slides de um carrossel de 1 por vez, entao nao ha

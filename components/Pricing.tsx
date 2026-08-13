@@ -4,6 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import {
   Check,
   ShieldCheck,
@@ -97,6 +98,9 @@ function Price({ value, className }: { value: string; className?: string }) {
 
 export default function Pricing() {
   const reduce = useReducedMotionSafe();
+  // Ver o comentario do fundo, mais abaixo: decide entre o shader WebGL e o
+  // degrade estatico que faz as vezes dele.
+  const lowPower = useLowPowerDevice();
   const [mensalHovered, setMensalHovered] = React.useState(false);
   // So no mobile: qual dos dois cartoes esta visivel. No desktop os dois
   // aparecem lado a lado e este estado e ignorado (o alternador tem sm:hidden
@@ -122,8 +126,13 @@ export default function Pricing() {
           cinzas/branco (nada de rosa/azul do exemplo original) pra caber no
           sistema monocromatico do site. `paused` respeita reduced motion.
           E BEM mais pesado que o fundo em CSS de antes (shader rodando no
-          canvas inteiro, todo frame) — se voltar a pesar em maquina fraca,
-          o primeiro ajuste e baixar rayCount/intensity aqui. */}
+          canvas inteiro, todo frame). Ele ja vem espremido ate onde dava sem
+          estragar o visual (dpr 0.5, 24 passos de raymarch, teto de 30fps,
+          pausa fora da tela — ver prismatic-burst.tsx), mas raymarching e
+          custo POR PIXEL: numa GPU integrada nao existe ajuste de parametro
+          que torne isso barato. Por isso, em maquina fraca, o shader nao
+          monta e entra o degrade estatico abaixo — mesma leitura visual
+          (clarao emergindo do topo), uma pintura so, zero por frame. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[760px] opacity-[0.5]"
@@ -134,16 +143,26 @@ export default function Pricing() {
             "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
         }}
       >
-        <PrismaticBurst
-          animationType="rotate3d"
-          intensity={1.4}
-          speed={0.35}
-          distort={0.6}
-          paused={reduce}
-          rayCount={16}
-          mixBlendMode="lighten"
-          colors={["#ffffff", "#9a9a9a", "#4a4a4a"]}
-        />
+        {lowPower ? (
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse 70% 55% at 50% 6%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.13) 32%, rgba(255,255,255,0.04) 58%, transparent 78%)",
+            }}
+          />
+        ) : (
+          <PrismaticBurst
+            animationType="rotate3d"
+            intensity={1.4}
+            speed={0.35}
+            distort={0.6}
+            paused={reduce}
+            rayCount={16}
+            mixBlendMode="lighten"
+            colors={["#ffffff", "#9a9a9a", "#4a4a4a"]}
+          />
+        )}
       </div>
       <div
         aria-hidden

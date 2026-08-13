@@ -14,6 +14,7 @@
 //    com um recuo pra nao ficar escondida atras do header fixo.
 import React, { useEffect, useState } from "react";
 import { ReactLenis, useLenis } from "lenis/react";
+import { useLowPowerDevice } from "@/components/ui/use-low-power";
 // CSS que o Lenis precisa (height:auto no html/body, desliga scroll-behavior
 // nativo enquanto ele roda, trata [data-lenis-prevent] etc.).
 import "lenis/dist/lenis.css";
@@ -70,7 +71,16 @@ export default function SmoothScroll({
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  if (!enabled) return <>{children}</>;
+  // Em maquina fraca o Lenis vira o VILAO do que ele existe pra resolver: ele
+  // troca a rolagem nativa (que o navegador toca fora da main thread, e por
+  // isso continua lisa mesmo com a pagina ocupada) por uma interpolacao feita
+  // em JS a cada frame. Se a main thread ja esta engasgada, cada engasgo passa
+  // a aparecer TAMBEM na rolagem — e a pagina inteira da a sensacao de estar
+  // presa. Devolver o scroll nativo e a maior tacada de fluidez que existe
+  // aqui, e o preco (perder a inercia) e barato perto disso.
+  const lowPower = useLowPowerDevice();
+
+  if (!enabled || lowPower) return <>{children}</>;
 
   return (
     <ReactLenis root options={{ lerp: 0.1, smoothWheel: true }}>

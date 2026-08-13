@@ -5,9 +5,17 @@
 /* scroll-behavior fica em `auto`: quem cuida da rolagem suave agora e o Lenis
    (ver components/ui/smooth-scroll.tsx). Deixar `smooth` aqui brigaria com o
    Lenis nos saltos de ancora (dois motores de scroll ao mesmo tempo). Quando
-   o Lenis nao entra (reduzir movimento), o scroll volta a ser o nativo. */
+   o Lenis nao entra (reduzir movimento ou maquina fraca), o scroll volta a ser
+   o nativo.
+
+   scroll-padding-top e a versao NATIVA do recuo de ancora que o Lenis aplica
+   via ANCHOR_OFFSET: sem ela, nos casos em que o Lenis nao monta, "#precos"
+   pararia com o titulo escondido atras do header flutuante. Nao conflita com
+   o Lenis porque ele nao usa o salto de ancora do navegador — chama scrollTo
+   com o proprio offset. */
 html {
   scroll-behavior: auto;
+  scroll-padding-top: 96px;
 }
 
 /* Quem pediu menos movimento nao deve receber scroll animado. */
@@ -22,6 +30,26 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Maquina fraca (classe posta no <html> por components/ui/use-low-power.tsx).
+   Aqui mora so o que NAO da pra desligar de dentro de um componente.
+
+   backdrop-filter e o caso classico: esta espalhado em classe do Tailwind por
+   meia duzia de arquivos (header, cartoes, legendas...), e e caro de um jeito
+   que nao aparece num perfil de JS — quem paga e o compositor. Como o que
+   esta ATRAS do elemento muda a cada frame enquanto a pagina rola, o
+   navegador precisa recortar o fundo e re-borrar tudo de novo, sempre; em
+   video integrado isso sozinho ja segura o frame.
+
+   O `background` de cada um desses elementos continua de pe (sao todos
+   translucidos sobre um fundo quase preto), entao o que se perde e o vidro
+   fosco — nao o contraste do texto. */
+html.low-power *,
+html.low-power *::before,
+html.low-power *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 body {

@@ -5,9 +5,11 @@ import {
   useTransform,
   useScroll,
   useSpring,
+  useMotionValue,
   type MotionValue,
 } from "motion/react";
 import { cn } from "@/lib/utils";
+import { useLowPowerDevice } from "@/components/ui/use-low-power";
 
 // Ponto + trilha SVG de um lado (esquerdo ou direito). Extraido pra nao
 // duplicar o JSX inteiro quando a barra aparece dos dois lados espelhada —
@@ -23,6 +25,7 @@ function Beam({
   gradientId,
   mirror = false,
   svgRef,
+  animated = true,
 }: {
   scrollYProgress: MotionValue<number>;
   pathD: string;
@@ -33,6 +36,7 @@ function Beam({
   gradientId: string;
   mirror?: boolean;
   svgRef?: React.Ref<SVGSVGElement>;
+  animated?: boolean;
 }) {
   return (
     <div className={cn("absolute top-3 z-10", positionClassName)}>
@@ -93,31 +97,49 @@ function Beam({
               duration: 10,
             }}
           ></motion.path>
-          <motion.path
-            d={pathD}
-            fill="none"
-            stroke={`url(#${gradientId})`}
-            strokeWidth="2.5"
-            className="motion-reduce:hidden"
-            transition={{
-              duration: 10,
-            }}
-          ></motion.path>
-          <defs>
-            <motion.linearGradient
-              id={gradientId}
-              gradientUnits="userSpaceOnUse"
-              x1="0"
-              x2="0"
-              y1={y1}
-              y2={y2}
-            >
-              <stop stopColor="#FAFAFA" stopOpacity="0"></stop>
-              <stop stopColor="#FAFAFA"></stop>
-              <stop offset="0.5" stopColor="#FAFAFA" stopOpacity="0.7"></stop>
-              <stop offset="1" stopColor="#FAFAFA" stopOpacity="0"></stop>
-            </motion.linearGradient>
-          </defs>
+          {/* O trecho aceso e, de longe, a parte mais CARA da pagina inteira.
+              Nao pelo desenho em si, mas pelo tamanho da tela onde ele mora:
+              este svg tem a altura do CONTEUDO TODO (Recursos ate Precos, uns
+              5 secoes empilhadas), e mexer nas coordenadas do gradiente
+              invalida o raster do elemento inteiro — ou seja, a cada frame de
+              rolagem o navegador REPINTA um svg de milhares de pixels de
+              altura, vezes dois (as duas trilhas). Repintura e trabalho de
+              CPU/GPU de verdade, diferente das animacoes de transform do
+              resto do site, que o compositor resolve de graca.
+
+              Em maquina fraca isso sozinho ja come o orcamento do frame,
+              entao ali este trecho simplesmente nao existe: sobra a trilha
+              estatica acima, que mantem o desenho da pagina de pe (a linha
+              com os degraus continua toda la) e custa uma pintura so. */}
+          {animated && (
+            <>
+              <motion.path
+                d={pathD}
+                fill="none"
+                stroke={`url(#${gradientId})`}
+                strokeWidth="2.5"
+                className="motion-reduce:hidden"
+                transition={{
+                  duration: 10,
+                }}
+              ></motion.path>
+              <defs>
+                <motion.linearGradient
+                  id={gradientId}
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  x2="0"
+                  y1={y1}
+                  y2={y2}
+                >
+                  <stop stopColor="#FAFAFA" stopOpacity="0"></stop>
+                  <stop stopColor="#FAFAFA"></stop>
+                  <stop offset="0.5" stopColor="#FAFAFA" stopOpacity="0.7"></stop>
+                  <stop offset="1" stopColor="#FAFAFA" stopOpacity="0"></stop>
+                </motion.linearGradient>
+              </defs>
+            </>
+          )}
         </svg>
       </div>
     </div>
@@ -151,6 +173,10 @@ export const TracingBeam = ({
     target: ref,
     offset: ["start start", "end start"],
   });
+
+  // Ver o bloco grande dentro de Beam: em maquina fraca a barra vira so a
+  // trilha estatica, sem o trecho aceso que repinta o svg a cada frame.
+  const lowPower = useLowPowerDevice();
 
   const contentRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -263,12 +289,21 @@ export const TracingBeam = ({
     ? [FILL_START, finishTop + viewportHeight, svgHeight + viewportHeight]
     : [FILL_START, svgHeight + FILL_START];
 
-  const y1 = useSpring(useTransform(scrollYProgress, headInput, headOutput), {
+  // Em maquina fraca o trecho aceso nem e renderizado (ver `animated` em
+  // Beam), entao ninguem le y1/y2 — mas as molas continuariam acordando a
+  // cada evento de rolagem pra calcular numero que ninguem usa. Hook nao pode
+  // ser condicional, entao o jeito de nao pagar por eles e cortar a FONTE:
+  // trocar o progresso do scroll por um valor PARADO. Sem mudanca na entrada,
+  // o useTransform nao recalcula e a mola nunca liga o loop de animacao dela.
+  const still = useMotionValue(0);
+  const headSource = lowPower ? still : scrollYProgress;
+
+  const y1 = useSpring(useTransform(headSource, headInput, headOutput), {
     stiffness: 500,
     damping: 90,
   });
   // Rabo colado no topo da janela.
-  const y2 = useSpring(useTransform(scrollYProgress, [0, 1], [0, svgHeight]), {
+  const y2 = useSpring(useTransform(headSource, [0, 1], [0, svgHeight]), {
     stiffness: 500,
     damping: 90,
   });
@@ -295,6 +330,7 @@ export const TracingBeam = ({
         y1={y1}
         y2={y2}
         svgHeight={svgHeight}
+        animated={!lowPower}
         positionClassName="hidden left-3 sm:left-5 lg:left-8 lg:block"
         gradientId="tracing-beam-gradient-left"
         svgRef={svgRef}
@@ -308,6 +344,7 @@ export const TracingBeam = ({
         y1={y1}
         y2={y2}
         svgHeight={svgHeight}
+        animated={!lowPower}
         positionClassName="hidden right-3 sm:right-5 lg:right-8 lg:block"
         gradientId="tracing-beam-gradient-right"
         mirror

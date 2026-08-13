@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import { useMediaQuery } from "@/components/ui/use-media-query";
@@ -46,7 +47,7 @@ const items: RoadmapItem[] = [
     title: "Jarvis no seu bolso",
     body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Pergunte algo, peça uma tarefa ou só acompanhe o que ele está fazendo — tudo pelo mesmo Jarvis, agora no seu bolso. Notificações chegam na hora certa, e o histórico da conversa segue com você entre o computador e o celular, sem perder o fio.",
     quote: "Jarvis, quanto falta pro meu build terminar?",
-    image: "/images/mobile.png",
+    image: "/images/mobile.webp",
   },
   {
     icon: House,
@@ -56,7 +57,7 @@ const items: RoadmapItem[] = [
     bodyCompact:
       "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Peça, e ele ajusta tudo antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra saída — um comando só, e cada cômodo responde do jeito certo.",
     quote: "Jarvis, apaga as luzes e liga o ar-condicionado.",
-    image: "/images/iot.png",
+    image: "/images/iot.webp",
   },
   {
     icon: Car,
@@ -66,7 +67,7 @@ const items: RoadmapItem[] = [
     bodyCompact:
       "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. Ele avisa sobre trânsito na rota, sugere um caminho melhor e lê as mensagens em voz alta, sem você precisar olhar pra tela.",
     quote: "Jarvis, traçar trajeto para casa.",
-    image: "/images/car.png",
+    image: "/images/car.webp",
   },
 ];
 
@@ -504,28 +505,31 @@ export default function Roadmap() {
                 className="absolute inset-0 transition-transform duration-700 ease-in-out"
                 style={{ transform: `translateY(-${active * 100}%)` }}
               >
-                {items.map((item) => (
-                  <div key={item.title} className="h-full w-full">
-                    {/* loading="lazy": a secao inteira ja comeca fora da
-                        tela (carrossel abaixo da dobra), entao carregar as
-                        3 imagens (mesmo reduzidas pra w=900) so quando o
-                        navegador estiver perto de mostrar a secao evita
-                        gastar banda com imagens que boa parte de quem
-                        visita a pagina nunca chega a rolar ate ver. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                {items.map((item, index) => (
+                  <div key={item.title} className="relative h-full w-full">
+                    {/* next/image + `unoptimized`: mesmo padrao de
+                        Showcase.tsx — os arquivos ja SAO .webp comprimidos
+                        (as fontes .png tinham 1,4-1,7MB CADA; virar webp
+                        derrubou os tres juntos de 4,45MB pra 270KB), entao
+                        passar de novo pelo otimizador do Next so recomprimiria
+                        algo ja comprimido. O que se ganha aqui em relacao ao
+                        <img> cru e `sizes`, que evita o navegador baixar mais
+                        pixel do que a coluna realmente mostra.
+
+                        loading: so o primeiro item e "eager". Os outros dois
+                        so aparecem depois que o carrossel gira, entao adiar
+                        eles tira ~180KB do caminho critico de quem so passa
+                        rolando pela secao. */}
+                    <Image
                       src={item.image}
                       alt=""
                       aria-hidden
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                      onError={(event) => {
-                        const target = event.currentTarget;
-                        target.onerror = null;
-                        target.src =
-                          "https://placehold.co/800x1200/141417/FAFAFA?text=Jarvis";
-                      }}
+                      fill
+                      unoptimized
+                      sizes="(min-width: 1800px) 750px, (min-width: 768px) 45vw, 0px"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      draggable={false}
+                      className="object-cover"
                     />
                   </div>
                 ))}

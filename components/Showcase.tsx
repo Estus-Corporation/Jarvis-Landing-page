@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { useLenis } from "lenis/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { Marquee } from "@/components/ui/3d-testimonials";
 import {
   CloudSun,
   MusicNotes,
@@ -30,10 +31,25 @@ import SectionEyebrow from "@/components/ui/section-eyebrow";
 //      secao nunca ficava quieta o suficiente pra ser lida.
 //
 // Agora: a janela fica SOZINHA e inteira, sem nada por cima nem disputando
-// largura, e os widgets viram uma grade de itens com icone, nome e uma linha
-// de explicacao — todos legiveis de uma vez, sem clique e sem espera.
-// Sairam o estado `active`, o autoplay, o efeito de digitacao e os botoes.
-// A secao virou conteudo parado: chega, mostra e deixa ler.
+// largura, e os widgets viram itens com icone, nome e uma linha de
+// explicacao — tudo legivel sem clique e sem espera. Sairam o estado
+// `active`, o autoplay, o efeito de digitacao e os botoes. A secao virou
+// conteudo parado: chega, mostra e deixa ler.
+//
+// No celular os quatro widgets viram uma ESTEIRA continua (`Marquee`, de
+// ui/3d-testimonials.tsx — a mesma peca que ja anima os depoimentos desta
+// pagina, so que horizontal em vez de vertical). Diferenca deliberada dos
+// carrosseis de Organization.tsx/Features.tsx: aqueles param num cartao por
+// vez, arrastados pelo dedo, porque cada cartao la carrega uma maquete
+// INTEIRA que pede leitura parada. Os widgets sao 4 fatos curtos — icone,
+// nome, uma frase — que nao competem por atencao entre si, entao andar
+// sozinho em loop (sem parar, sem esperar gesto) le mais como "dashboard
+// viva" (o proprio nome da secao) do que como formulario de passo a passo.
+// Nao ha estado nenhum aqui: sem indice ativo, sem drag, sem barra de
+// progresso — a animacao e 100% CSS (@keyframes marquee, em globals.css),
+// e o global `prefers-reduced-motion` (tambem em globals.css) ja para
+// qualquer animacao CSS da pagina, entao nao precisa de tratamento extra
+// pra reduced-motion aqui.
 
 type Widget = { icon: Icon; title: string; note: string };
 
@@ -73,16 +89,31 @@ const SHOT = {
 } as const;
 
 // Icone em anel duplo — mesma familia visual do RingIcon de Organization.tsx
-// (o "icone de recurso" do site), so que um pouco menor: aqui ele acompanha
-// um titulo de 15px numa grade de seis, nao o cabecalho de um cartao.
-function RingIcon({ icon: Glyph }: { icon: Icon }) {
+// (o "icone de recurso" do site). `size` cobre os dois usos: "sm" (padrao) e
+// o tamanho de sempre, pro cabecalho enxuto da lista de desktop; "lg" e so
+// pro cartao do carrossel do celular, que ganhou altura de sobra e pede um
+// icone mais forte pra preencher o espaco em vez de sobrar vazio.
+function RingIcon({
+  icon: Glyph,
+  className = "",
+  size = "sm",
+}: {
+  icon: Icon;
+  className?: string;
+  size?: "sm" | "lg";
+}) {
+  const ring = size === "lg" ? "h-14 w-14" : "h-10 w-10";
+  const inset = size === "lg" ? "-inset-[6px]" : "-inset-[5px]";
+  const glyph = size === "lg" ? 24 : 18;
   return (
-    <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950">
+    <span
+      className={`relative flex ${ring} shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950 ${className}`}
+    >
       <span
         aria-hidden
-        className="absolute -inset-[5px] rounded-full border border-white/[0.07]"
+        className={`absolute ${inset} rounded-full border border-white/[0.07]`}
       />
-      <Glyph size={18} weight="light" aria-hidden className="text-white/85" />
+      <Glyph size={glyph} weight="light" aria-hidden className="text-white/85" />
     </span>
   );
 }
@@ -369,14 +400,14 @@ export default function Showcase() {
               {(
                 ["left-3 top-3", "right-3 top-3", "left-3 bottom-3", "right-3 bottom-3"] as const
               ).map((pos) => {
-                const [x, y] = pos.split(" ");
+                const [cx, cy] = pos.split(" ");
                 return (
                   <span
                     key={pos}
                     aria-hidden
-                    className={`pointer-events-none absolute h-5 w-5 ${x} ${y} ${
-                      x.startsWith("left") ? "border-l" : "border-r"
-                    } ${y.startsWith("top") ? "border-t" : "border-b"} border-white/40`}
+                    className={`pointer-events-none absolute h-5 w-5 ${cx} ${cy} ${
+                      cx.startsWith("left") ? "border-l" : "border-r"
+                    } ${cy.startsWith("top") ? "border-t" : "border-b"} border-white/40`}
                   />
                 );
               })}
@@ -400,11 +431,12 @@ export default function Showcase() {
             <span className="h-px flex-1 bg-white/[0.18]" aria-hidden />
           </motion.div>
 
-          {/* Os quatro widgets. Duas colunas em sm, quatro em lg — sempre um
-              numero que divide quatro exato, pra nao sobrar item orfao numa
-              ultima linha pela metade. Em lg eles formam UMA fileira so, o que
-              fecha o bloco embaixo da imagem sem esticar a secao. */}
-          <div className="mt-10 grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-4 laptop:mt-8 laptop:gap-y-7">
+          {/* Desktop (lg+): lista simples, como sempre foi — icone a
+              esquerda, titulo e nota empilhados a direita. Sem moldura de
+              cartao: numa fileira so de 4 num container ja com bordas
+              (a janela acima), um cartao por item seria moldura dentro de
+              moldura. */}
+          <div className="mt-10 hidden lg:grid lg:grid-cols-4 lg:gap-x-8 lg:gap-y-9 laptop:mt-8 laptop:gap-y-7">
             {WIDGETS.map((w, i) => (
               <motion.div
                 key={w.title}
@@ -428,6 +460,57 @@ export default function Showcase() {
               </motion.div>
             ))}
           </div>
+
+          {/* Celular (abaixo de lg): esteira continua, sem parada nenhuma —
+              anda sozinha pra esquerda em loop infinito. `Marquee` (mesma
+              peca das esteiras de depoimento) repete os 4 cartoes 3x
+              (repeat=3) e anima o BLOCO inteiro em `translateX(-100% -
+              gap)`; quando um bloco sai completamente, o proximo ja esta
+              exatamente onde o primeiro comecou, entao o loop nunca mostra
+              costura. -mx-6 px-6 sangra a esteira ate a borda real da tela
+              (o titulo/paragrafo acima continuam no respiro normal da
+              secao) — e os degrades nas pontas escondem o corte abrupto de
+              onde os cartoes entram/saem.
+              Altura MENOR que a versao anterior (h-40 = 160px, era h-60 =
+              240px): sem gesto pra guiar, um cartao mais compacto deixa
+              o olho ver mais de um por vez enquanto a esteira passa. */}
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="relative -mx-6 mt-10 overflow-hidden px-6 lg:hidden"
+          >
+            <Marquee repeat={3} className="[--duration:26s] [--gap:1rem] p-1">
+              {WIDGETS.map((w) => (
+                <div
+                  key={w.title}
+                  className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-ink-900/60 p-5 text-center"
+                >
+                  <RingIcon icon={w.icon} size="lg" className="mx-auto" />
+                  <div>
+                    <h3 className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#FAFAFA]">
+                      {w.title}
+                    </h3>
+                    <p className="mt-1 text-[13px] leading-relaxed text-white/50">
+                      {w.note}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </Marquee>
+            {/* degrades: escondem onde os cartoes entram/saem no corte da
+                sangria — #0C0C0E casa com o fundo desta secao (ver a classe
+                da <section>, mais abaixo). */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-[#0C0C0E] to-transparent"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#0C0C0E] to-transparent"
+            />
+          </motion.div>
         </div>
       </div>
 

@@ -1,8 +1,11 @@
 "use client";
 
-// "Esta maquina aguenta os enfeites?" — um sinal SO, compartilhado por todo
-// mundo que custa caro (Lenis, TracingBeam, PrismaticBurst...), pra a pagina
-// degradar de forma coerente em vez de cada componente adivinhar sozinho.
+// "Esta maquina aguenta os enfeites MAIS pesados?" — um sinal SO, pra Lenis,
+// TracingBeam e PrismaticBurst degradarem de forma coerente em vez de cada
+// um adivinhar sozinho. Deliberadamente um sinal FRACO agora: so desliga um
+// punhado de coisas estruturais (ver comentario grande em cada consumidor),
+// nunca a identidade visual da pagina (Hero, esfera, botoes, cartoes de
+// depoimento continuam animados sempre).
 //
 // Por que nao so `prefers-reduced-motion`: aquilo e uma PREFERENCIA que o
 // visitante liga no sistema. Ninguem com um notebook fraco liga isso — a
@@ -10,26 +13,29 @@
 // isso os dois convivem: reduced-motion continua desligando animacao por
 // escolha, isto aqui desliga por CAPACIDADE.
 //
-// A deteccao tem duas partes, porque nenhuma das duas sozinha resolve:
+// A deteccao e SO medicao real de FPS: conta frames de verdade por ~1s e, se
+// a maquina nao esta sustentando um ritmo aceitavel, promove pra "fraca". So
+// ESCALA (false -> true), nunca volta atras, pra a pagina nao ficar ligando e
+// desligando efeito no meio da rolagem.
 //
-//  1) Palpite estatico (cores de CPU / RAM), instantaneo, ja no primeiro
-//     frame. Pega os aparelhos reconhecidamente fracos sem custo nenhum, mas
-//     e cego pra GPU — e o que mais pesa aqui e justamente GPU (shader da
-//     secao de Precos, backdrop-blur, compositing). Um notebook com CPU
-//     decente e video integrado passa batido.
+// Existia tambem um palpite estatico por navigator.hardwareConcurrency/
+// deviceMemory, resolvido no primeiro frame sem esperar nada — foi REMOVIDO
+// depois de um falso positivo real: um notebook que "rodava super bem" caiu
+// em modo fraco na hora. O suspeito principal e deviceMemory: ele reporta
+// memoria DISPONIVEL pro navegador, nao a RAM nominal da maquina, e e comum
+// uma maquina de 8GB com video integrado (que reserva parte da RAM pra si)
+// reportar 4 — o mesmo valor que a heuristica tratava como "fraca". Cores
+// baixos tem o mesmo problema: muito notebook comum, nada fraco, tem so 4
+// nucleos. Sem um jeito confiavel de diferenciar "e fraca" de "so reporta
+// baixo", o palpite dava falso positivo demais pra valer a pena — medir e
+// mais lento (leva ~1s) mas e a verdade, nao uma adivinhacao.
 //
-//  2) Medicao real de FPS, que fecha exatamente esse buraco: conta frames de
-//     verdade por ~1s e, se a maquina nao esta sustentando um ritmo
-//     aceitavel, promove pra "fraca". So ESCALA (false -> true), nunca volta
-//     atras, pra a pagina nao ficar ligando e desligando efeito no meio da
-//     rolagem.
-//
-// O estado vive no MODULO, nao no hook. Sao tres componentes consultando isto
-// (e podem virar mais), e um estado por componente daria tres medicoes de FPS
-// rodando ao mesmo tempo — desperdicio no exato momento em que a pagina esta
-// mais ocupada, e ainda por cima com risco de chegarem a respostas
-// diferentes. Aqui a medicao acontece UMA vez, na primeira vez que alguem
-// pergunta, e o resultado e transmitido pra todos os interessados.
+// O estado vive no MODULO, nao no hook. Varios componentes consultam isto, e
+// um estado por componente daria varias medicoes de FPS rodando ao mesmo
+// tempo — desperdicio no exato momento em que a pagina esta mais ocupada, e
+// ainda por cima com risco de chegarem a respostas diferentes. Aqui a
+// medicao acontece UMA vez, na primeira vez que alguem pergunta, e o
+// resultado e transmitido pra todos os interessados.
 import { useEffect, useState } from "react";
 
 // Abaixo disto, a experiencia ja e ruim o suficiente pra valer a pena trocar
@@ -63,17 +69,6 @@ function markLowPower() {
   listeners.forEach((notify) => notify(true));
 }
 
-function guessFromHardware(): boolean {
-  // `?? 8`: quando o navegador nao conta (deviceMemory so existe em
-  // Chromium), o certo e assumir que esta TUDO BEM. Chutar "fraca" no escuro
-  // tiraria os efeitos de todo mundo no Firefox e no Safari.
-  const cores = navigator.hardwareConcurrency ?? 8;
-  const memory =
-    (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
-
-  return cores <= 4 || memory <= 4;
-}
-
 function startProbe() {
   if (probeStarted) return;
   probeStarted = true;
@@ -92,11 +87,6 @@ function startProbe() {
     return;
   }
   if (override === "0") return;
-
-  if (guessFromHardware()) {
-    markLowPower();
-    return; // ja decidido — nao gasta uma medicao pra confirmar o obvio
-  }
 
   let frames = 0;
   let startedAt = 0;

@@ -267,10 +267,10 @@ export default function Showcase() {
               "radial-gradient(ellipse 60% 60% at 50% 45%, #000 25%, transparent 100%)",
           }}
         />
+        {/* linha divisoria: so o brilho estatico no meio, sem o feixe
+            animado que corria por cima (beam-sweep) — tirado a pedido do
+            usuario em todas as divisorias de secao da pagina. */}
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-        <div className="absolute inset-x-0 top-0 h-px overflow-hidden">
-          <div className="beam-sweep h-full w-32 bg-gradient-to-r from-transparent via-white/80 to-transparent" />
-        </div>
       </div>
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">
@@ -287,11 +287,10 @@ export default function Showcase() {
           {/* Fonte fluida: trava em 48px por volta de 740px de largura,
               bem antes do padding da secao mudar em 1024px. */}
           <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(7vw_-_3.78px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            Uma dashboard viva na sua tela.
+            Uma dashboard viva.
           </h2>
           <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
-            A esfera reage à conversa no centro. Em volta, widgets que você
-            arrasta, reorganiza e tinge com o seu tema de cor.
+            Widgets que você arrasta, reorganiza e personaliza.
           </p>
         </motion.div>
 
@@ -485,7 +484,11 @@ export default function Showcase() {
               {WIDGETS.map((w) => (
                 <div
                   key={w.title}
-                  className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-ink-900/60 p-5 text-center"
+                  // bg-ink-900: mesma cor solida do fundo da secao de
+                  // Organizacao (ver `bg-ink-900` no <section> de
+                  // Organization.tsx), a pedido do usuario — o cartao passa a
+                  // ler como um recorte daquele fundo em vez de destoar dele.
+                  className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-ink-900 p-5 text-center"
                 >
                   <RingIcon icon={w.icon} size="lg" className="mx-auto" />
                   <div>

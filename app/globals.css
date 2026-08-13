@@ -159,13 +159,24 @@ body {
   mask-composite: exclude;
   opacity: 0;
   transition: opacity 0.4s ease;
-  animation: glow-spin 3.2s linear infinite;
   pointer-events: none;
 }
 
+/* animation so entra junto com a opacidade (nao no elemento base): o
+   conic-gradient anima uma custom property registrada via @property, o que
+   forca REPAINT a cada frame (nao e so compositor, como transform/opacity)
+   — deixado sempre ligado, cada cartao com `.glow-ring` repinta pra sempre
+   mesmo com opacity:0 e invisivel. Nas duas tiras de arrastar do celular
+   (Organization.tsx com 3 cartoes, Features.tsx com 7 janelas de console),
+   isso significava varios aneis invisiveis repintando sem parar ENQUANTO o
+   dedo arrastava a tira — a concorrencia pelo thread principal era o
+   engasgo leve que o arrasto tinha. So animar quando a borda esta de fato
+   visivel (hover/foco/ativo) resolve os dois de uma vez, sem mexer no
+   componente de nenhuma das duas secoes. */
 .glow-ring:is(:hover, :focus-within)::before,
 .glow-ring--active::before {
   opacity: 1;
+  animation: glow-spin 3.2s linear infinite;
 }
 
 @keyframes glow-spin {
@@ -208,21 +219,6 @@ body {
     transform: scale(1.8);
     opacity: 0;
   }
-}
-
-/* Feixe de luz correndo: usado como sweep decorativo em cima de badges e
-   divisores, reforcando o ar "placa de circuito" sem precisar de cor. */
-@keyframes beam-sweep {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(220%);
-  }
-}
-
-.beam-sweep {
-  animation: beam-sweep 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 /* Orbita: aneis girando no hub de integracoes. O anel gira; cada logo dentro

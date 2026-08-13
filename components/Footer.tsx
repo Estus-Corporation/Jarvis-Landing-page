@@ -117,6 +117,14 @@ export default function Footer() {
   // ele, o rodape precisa ser quem quebra a cor.
   return (
     <footer className="relative overflow-hidden border-t border-white/[0.08] bg-ink-900 px-6 py-16 sm:py-20 lg:px-10 wide:px-16">
+      {/* linha divisoria: mesmo brilho estatico (sem animacao) das outras
+          secoes — ver Showcase.tsx/Roadmap.tsx. Fica por cima do border-t
+          solido do <footer>, que continua ali por baixo. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+      />
+
       {/* Wordmark de fundo de verdade: absolute, atras de tudo (o conteudo
           real usa z-10 la embaixo), entao nao empurra mais nada no fluxo —
           antes ele vivia entre o grid e a linha do copyright como um bloco

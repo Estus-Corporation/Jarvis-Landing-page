@@ -136,6 +136,7 @@ function FeatureCardBody({
   desc,
   command,
   bigger = false,
+  mobileCarousel = false,
   stageHeight,
   children,
 }: {
@@ -144,6 +145,12 @@ function FeatureCardBody({
   desc: string;
   command: string;
   bigger?: boolean;
+  // So true na instancia do carrossel do celular (ver Organization()) — o
+  // palco la usa uma altura BASE diferente da grade de desktop (ver
+  // comentario grande no `data-card-stage`, mais abaixo). A grade usa a
+  // mesma FeatureCardBody sem esta flag, entao continua com o valor
+  // original.
+  mobileCarousel?: boolean;
   // So o carrossel do celular passa isto: altura do palco em px, pra empatar
   // a altura dos tres cartoes quando as frases do cabecalho quebram em
   // numeros de linha diferentes (ver o calculo em Organization()). Sem o
@@ -214,7 +221,16 @@ function FeatureCardBody({
             "relative overflow-hidden bg-ink-950 px-6 pt-6",
             bigger
               ? "h-[385px] laptop:h-[340px]"
-              : "h-[275px] sm:h-[295px] laptop:h-[230px]"
+              : mobileCarousel
+              ? // Carrossel do celular: unica instancia com esta flag (o
+                // container inteiro so existe abaixo de `lg`, ver `lg:hidden`
+                // em Organization()) — por isso nao precisa de prefixo `lg:`
+                // nem `laptop:` aqui, so `sm:` pra telas entre 640-1023px.
+                // 275->305, 295->325: ~30px mais alto, a pedido do usuario.
+                "h-[305px] sm:h-[325px]"
+              : // Grade de desktop (cartoes Agenda/Lembretes): valor original,
+                // intacto.
+                "h-[275px] sm:h-[295px] laptop:h-[230px]"
           )}
           // O inline sobrescreve a altura das classes acima quando o carrossel
           // do celular pede — e de proposito que a folga entre num palco que
@@ -910,6 +926,10 @@ export default function Organization() {
       {/* fundo: halo central */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <div className="absolute left-1/2 top-1/3 h-[460px] w-[720px] -translate-x-1/2 rounded-full bg-white/[0.05] blur-[150px]" />
+        {/* linha divisoria: mesmo brilho estatico (sem animacao) das outras
+            secoes — ver Showcase.tsx/Roadmap.tsx. Fica por cima do border-t
+            solido do <section>, que continua ali por baixo. */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
       </div>
 
       {/* 84rem (1344px) em vez do max-w-6xl (1152px) das outras secoes: os
@@ -933,11 +953,10 @@ export default function Organization() {
               largura, bem antes do padding da secao mudar em 1024px), entao
               nao existe salto que possa descasar do espaco real. */}
           <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(5.73vw_-_3.09px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            Tudo que você precisa. Em um só lugar.
+            Tudo em um lugar.
           </h2>
           <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
-            Tarefas, agenda e lembretes vivem dentro do Jarvis — você fala, ele
-            anota, e avisa na hora certa.
+            Você fala, ele anota e avisa na hora certa.
           </p>
         </motion.div>
 
@@ -1045,6 +1064,7 @@ export default function Organization() {
                     title={card.title}
                     desc={card.desc}
                     command={card.command}
+                    mobileCarousel
                     stageHeight={stageHeights[i]}
                   >
                     <card.mock />

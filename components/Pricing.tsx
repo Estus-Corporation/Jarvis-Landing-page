@@ -443,9 +443,7 @@ export default function Pricing() {
             Escolha como quer usar.
           </h2>
           <p className="mx-auto mt-5 max-w-[56ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
-            O Jarvis completo nos dois planos, com os mesmos 8 recursos, sem
-            diferença entre Mensal e Anual. A única coisa que muda é de
-            quanto em quanto tempo você paga.
+            O Jarvis completo nos dois planos. Só muda a forma de pagar.
           </p>
         </motion.div>
 

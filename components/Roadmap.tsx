@@ -42,6 +42,13 @@ type RoadmapItem = {
   // notificado!" agora fica fixo. Opcional: quando ausente, usa `body` normal
   // em todas as telas.
   bodyCompact?: string;
+  // Versao mais curta AINDA, so pro carrossel do celular: la o cartao ja e a
+  // largura da tela inteira, mas o pedido foi reduzir especificamente a
+  // quantidade de texto ABAIXO da imagem — mais curta que a bodyCompact do
+  // notebook (que so precisa cortar por causa da ALTURA da tela, nao por
+  // ser celular). Opcional: quando ausente, cai pra bodyCompact e depois
+  // pra body.
+  bodyMobile?: string;
   quote: string;
   image: string;
 };
@@ -52,6 +59,8 @@ const items: RoadmapItem[] = [
     step: "01",
     title: "Jarvis no seu bolso",
     body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Pergunte algo, peça uma tarefa ou só acompanhe o que ele está fazendo — tudo pelo mesmo Jarvis, agora no seu bolso. Notificações chegam na hora certa, e o histórico da conversa segue com você entre o computador e o celular, sem perder o fio.",
+    bodyMobile:
+      "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Notificações chegam na hora certa, e a conversa segue com você entre os dois aparelhos.",
     quote: "Jarvis, quanto falta pro meu build terminar?",
     image: "/images/mobile.webp",
   },
@@ -62,6 +71,8 @@ const items: RoadmapItem[] = [
     body: "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Chegou e já quer tudo do jeito certo? Basta pedir, e ele ajusta a casa inteira antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra quando sair — um comando só, e cada cômodo responde do jeito que você combinou.",
     bodyCompact:
       "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Peça, e ele ajusta tudo antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra saída — um comando só, e cada cômodo responde do jeito certo.",
+    bodyMobile:
+      "O mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa: luz, ar-condicionado, tomada. Crie rotinas pra manhã, noite ou saída — um comando só.",
     quote: "Jarvis, apaga as luzes e liga o ar-condicionado.",
     image: "/images/iot.webp",
   },
@@ -72,6 +83,8 @@ const items: RoadmapItem[] = [
     body: "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. No trânsito ou na estrada, é só falar: ele entende o pedido e cuida do resto enquanto você guia. Ele também avisa sobre trânsito na rota, sugere um caminho melhor e lê as mensagens em voz alta, sem você precisar olhar pra tela.",
     bodyCompact:
       "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. Ele avisa sobre trânsito na rota, sugere um caminho melhor e lê as mensagens em voz alta, sem você precisar olhar pra tela.",
+    bodyMobile:
+      "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. Ele também avisa sobre o trânsito na rota.",
     quote: "Jarvis, traçar trajeto para casa.",
     image: "/images/car.webp",
   },
@@ -116,10 +129,10 @@ function SectionBackdrop() {
             "radial-gradient(ellipse 60% 60% at 50% 45%, #000 25%, transparent 100%)",
         }}
       />
+      {/* linha divisoria: so o brilho estatico no meio, sem o feixe animado
+          que corria por cima (beam-sweep) — tirado a pedido do usuario em
+          todas as divisorias de secao da pagina. */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-      <div className="absolute inset-x-0 top-0 h-px overflow-hidden">
-        <div className="beam-sweep h-full w-32 bg-gradient-to-r from-transparent via-white/80 to-transparent" />
-      </div>
     </div>
   );
 }
@@ -376,6 +389,39 @@ export default function Roadmap() {
   // da tela, entao virar de tablet pra celular no meio nunca perde o lugar.
   const isMobileCarousel = useMediaQuery("(max-width: 767px)");
 
+  // Altura do TITULO, empatada entre os 3 cartoes do carrossel mobile. Sem
+  // isso, cada `h3` quebra no numero de linhas que o proprio texto pedir
+  // (o titulo do Update 3, "Jarvis no painel do seu carro", e o unico dos
+  // tres que pede 3 linhas dentro do max-w-[16ch] em vez de 2) — e como a
+  // imagem vem logo depois do titulo no fluxo normal do cartao, ela nascia
+  // mais baixo SO nesse cartao, o "pulo" que aparecia arrastando pra ele.
+  // Reservar a altura do titulo mais alto nos tres empata a posicao da
+  // imagem (e de tudo abaixo dela) nos tres, mesmo esquema de medicao que
+  // headHeights/stageHeights faz em Organization.tsx.
+  const mobileTitleRefs = useRef<(HTMLHeadingElement | null)[]>([]);
+  const [mobileTitleHeights, setMobileTitleHeights] = useState<number[]>([]);
+  useLayoutEffect(() => {
+    const bump = (i: number) => (h: number) =>
+      setMobileTitleHeights((prev) => {
+        if (prev[i] === h) return prev;
+        const next = [...prev];
+        next[i] = h;
+        return next;
+      });
+    const ros = mobileTitleRefs.current.map((el, i) => {
+      if (!el) return null;
+      const set = bump(i);
+      const ro = new ResizeObserver(([entry]) => set(entry.contentRect.height));
+      ro.observe(el);
+      return ro;
+    });
+    return () => ros.forEach((ro) => ro?.disconnect());
+  }, []);
+  const mobileTitleMinHeight =
+    mobileTitleHeights.length === items.length && mobileTitleHeights.every(Boolean)
+      ? Math.max(...mobileTitleHeights)
+      : undefined;
+
   const mobileViewportRef = useRef<HTMLDivElement | null>(null);
   const [mobileTrackWidth, setMobileTrackWidth] = useState(0);
   useEffect(() => {
@@ -482,7 +528,7 @@ export default function Roadmap() {
             Próximas atualizações
           </h2>
           <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
-            O computador é só o começo. Confira o que está por vir!
+            O computador é só o começo.
           </p>
           {/* Nada de controle aqui embaixo no desktop (md+): setas e
               tracinhos foram todos pra coluna vertical na esquerda do
@@ -524,7 +570,15 @@ export default function Roadmap() {
                       linha esticada) — sem centralizar essa caixa tambem,
                       text-center so centralizaria as linhas DENTRO dela,
                       que ainda ficaria colada a esquerda do cartao. */}
-                  <h3 className="mx-auto mt-3 max-w-[16ch] text-balance text-center font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA]">
+                  <h3
+                    ref={(el) => {
+                      mobileTitleRefs.current[index] = el;
+                    }}
+                    className="mx-auto mt-3 flex max-w-[16ch] items-center justify-center text-balance text-center font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA]"
+                    style={
+                      mobileTitleMinHeight ? { minHeight: mobileTitleMinHeight } : undefined
+                    }
+                  >
                     {item.title}
                   </h3>
                   <div className="relative mt-5 aspect-[4/3] overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
@@ -548,7 +602,7 @@ export default function Roadmap() {
                       caracteres por linha, sobrando mais espaco pra imagem
                       acima ler como o elemento principal do cartao. */}
                   <p className="mt-4 text-sm leading-relaxed text-white/55">
-                    {item.body}
+                    {item.bodyMobile ?? item.bodyCompact ?? item.body}
                   </p>
                   <p className="mt-3 text-sm italic leading-relaxed text-white/65">
                     “{item.quote}”

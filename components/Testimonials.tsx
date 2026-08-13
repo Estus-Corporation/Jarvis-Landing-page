@@ -170,6 +170,14 @@ export default function Testimonials() {
       // encolhe — junto com os respiros e o titulo.
       className="relative overflow-hidden border-t border-white/[0.07] bg-ink-900 pb-20 pt-20 sm:pb-28 sm:pt-28 laptop:pb-16 laptop:pt-16"
     >
+      {/* linha divisoria: mesmo brilho estatico (sem animacao) das outras
+          secoes — ver Showcase.tsx/Roadmap.tsx. Fica por cima do border-t
+          solido do <section>, que continua ali por baixo. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+      />
+
       <div className="relative mx-auto max-w-6xl px-6 lg:px-10 wide:max-w-shell wide:px-16">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
@@ -185,7 +193,7 @@ export default function Testimonials() {
               resultado bate com o antigo sm:text-5xl sem precisar do degrau
               (que e o que causava estouro logo apos o breakpoint). */}
           <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(8.22vw_-_4.44px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            O que dizem sobre o Jarvis.
+            O que dizem dele.
           </h2>
         </motion.div>
       </div>

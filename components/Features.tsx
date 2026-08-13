@@ -2550,11 +2550,10 @@ export default function Features() {
               (telas largas e baixas) continua sobrepondo as duas com um
               valor fixo, como sempre foi. */}
           <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(5.85vw_-_3.16px),3.75rem)] lg:text-[length:clamp(0.9rem,calc(5.85vw_-_5.03px),3.75rem)] font-semibold tracking-[-0.025em] text-[#FAFAFA] laptop:text-5xl">
-            Ele age no computador, não só no chat.
+            Ele age de verdade.
           </h2>
           <p className="mx-auto mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-5">
-            Não é mais um chat que responde e para por aí. Escolha uma
-            capacidade e veja o Jarvis executando de verdade.
+            Escolha uma capacidade e veja o Jarvis em ação.
           </p>
         </motion.div>
 

@@ -2454,8 +2454,9 @@ export default function Features() {
               quantas capacidades existem e em qual delas voce esta. E sao
               tambem o caminho de quem nao arrasta — teclado e leitor de tela
               nao dao swipe, e um carrossel so-gesto seria intocavel pra eles.
-              p-2 pra o alvo de toque passar de 40px mesmo com o ponto tendo
-              6px de altura. */}
+              p-5 (20px) pra o alvo de toque chegar perto de 44px mesmo com o
+              ponto tendo so 6px de altura visivel (6 + 20*2 = 46px — a conta
+              com p-2/8px de antes dava so 22px, bem abaixo do recomendado). */}
           <div
             className="order-3 -mt-1 flex items-center justify-center lg:hidden"
             role="tablist"
@@ -2472,7 +2473,7 @@ export default function Features() {
                   setManual(true);
                   setActiveIdx(i);
                 }}
-                className="cursor-pointer p-2"
+                className="cursor-pointer p-5"
               >
                 <span
                   aria-hidden

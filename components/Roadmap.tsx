@@ -125,31 +125,50 @@ function Pagination({
           onClick={() => onSelect(index)}
           aria-label={`Ir para "${item.title}"`}
           aria-current={index === active}
-          className={`group relative h-10 w-1 shrink-0 overflow-hidden rounded-full transition-colors duration-300 ${
-            index === active && paused
-              ? "bg-white/35"
-              : "bg-white/[0.15] hover:bg-white/25"
-          }`}
+          // O tracinho visivel e so 4px de largura (w-1) de proposito — mas
+          // isso tambem seria o alvo de toque inteiro sem ajuda. O
+          // pseudo-elemento abaixo (before:) estende a area CLICAVEL 10px
+          // pra cada lado (24px de largura no total) sem engordar o tracinho
+          // visual: ha espaco de sobra dos dois lados (a coluna vizinha mais
+          // proxima e o proprio texto do item, bem mais longe que isso), e
+          // verticalmente cada botao ja tem 40px (h-10) de altura.
+          //
+          // overflow-hidden PRECISA sair do botao e ir pro <span> visual
+          // logo abaixo: se ficasse aqui, cortaria tambem o before: (que so
+          // "vaza" pra fora da caixa de 4px de proposito, pra virar a area de
+          // toque) — overflow-hidden clipa pintura E deteccao de clique dos
+          // dois, nao so do conteudo que devia ficar preso na forma da
+          // pilula (o preenchimento animado, mais abaixo).
+          className="group relative h-10 w-1 shrink-0 before:absolute before:-inset-x-2.5 before:inset-y-0 before:content-['']"
         >
-          {/* ja mostrado neste ciclo: cheio */}
-          {index < active && (
-            <span
-              aria-hidden
-              className="absolute inset-0 rounded-full bg-white/80"
-            />
-          )}
-          {/* o ativo, enchendo ao vivo. `key={active}` remonta o span toda
-              vez que ESTE item vira o ativo (inclusive de novo, quando o
-              carrossel da a volta) — e o que reinicia a animacao do 0%
-              sempre, em vez de continuar de onde uma rodada anterior parou. */}
-          {index === active && !paused && (
-            <span
-              key={active}
-              aria-hidden
-              className="roadmap-fill absolute inset-y-0 inset-x-0 origin-top rounded-full bg-white/80"
-              style={{ animationDuration: `${AUTOPLAY_MS}ms` }}
-            />
-          )}
+          <span
+            aria-hidden
+            className={`absolute inset-0 overflow-hidden rounded-full transition-colors duration-300 ${
+              index === active && paused
+                ? "bg-white/35"
+                : "bg-white/[0.15] group-hover:bg-white/25"
+            }`}
+          >
+            {/* ja mostrado neste ciclo: cheio */}
+            {index < active && (
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full bg-white/80"
+              />
+            )}
+            {/* o ativo, enchendo ao vivo. `key={active}` remonta o span toda
+                vez que ESTE item vira o ativo (inclusive de novo, quando o
+                carrossel da a volta) — e o que reinicia a animacao do 0%
+                sempre, em vez de continuar de onde uma rodada anterior parou. */}
+            {index === active && !paused && (
+              <span
+                key={active}
+                aria-hidden
+                className="roadmap-fill absolute inset-y-0 inset-x-0 origin-top rounded-full bg-white/80"
+                style={{ animationDuration: `${AUTOPLAY_MS}ms` }}
+              />
+            )}
+          </span>
         </button>
       ))}
     </div>

@@ -2,7 +2,13 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { motion } from "motion/react";
+import {
+  motion,
+  animate,
+  useMotionValue,
+  useTransform,
+  type PanInfo,
+} from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
@@ -72,6 +78,26 @@ const items: RoadmapItem[] = [
 ];
 
 const AUTOPLAY_MS = 6000;
+
+// ---- Carrossel de arrastar (so no celular, abaixo de md) -----------------
+// A coluna de setas verticais + tracinhos (CarouselControl/Pagination, logo
+// abaixo) foi desenhada pro mouse — clicar num alvo pequeno e preciso. No
+// celular ela vira um carrossel de arrastar, so que SEM a espiada do
+// vizinho que Organization.tsx/Features.tsx tem: aqui o cartao carrega uma
+// imagem que quer o espaco todo, e reservar uma fatia da largura pro
+// vizinho so pra apertar essa imagem nao valia a troca. Cada cartao ocupa a
+// LARGURA INTEIRA da tela (sem espiada — PEEK e zero), entao em repouso so
+// se ve um cartao por vez.
+//
+// GAP nao e zero, porem: sem NENHUM vao, o cartao seguinte encostava direto
+// no fim do cartao atual assim que o arrasto comecava a revelar os dois ao
+// mesmo tempo — os dois liam como um so, colados, no meio do gesto. O vao
+// so aparece NESSE momento (arrastando), nunca em repouso, e e so uma tira
+// da cor de fundo entre os dois — suficiente pra dizer "isto e OUTRO
+// cartao chegando", nao mais que isso.
+const ROADMAP_SWIPE_DISTANCE = 56; // px percorridos
+const ROADMAP_SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
+const ROADMAP_GAP = 16; // px de vao entre cartoes, so visivel arrastando (= gap-4)
 
 // Fundo IDENTICO ao de Integracoes.tsx ("Tudo gira em torno do Jarvis."):
 // mesma grade, mesma mascara, mesma linha de brilho no topo.
@@ -225,6 +251,15 @@ export default function Roadmap() {
   const reduce = useReducedMotionSafe();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Se o carrossel do celular ja foi arrastado (ou um tracinho dele tocado)
+  // ao menos uma vez. As setas/pontinhos do desktop so RESETAM o relogio do
+  // autoplay ao clicar (ver o useEffect do autoplay, mais abaixo) — nunca o
+  // desligam, porque um clique e instantaneo, nao ha "meio do gesto" pra
+  // atropelar. Arrastar e diferente: e um gesto CONTINUO, e o autoplay
+  // trocando de cartao por baixo do dedo no meio dele seria briga de
+  // controle (mesmo raciocinio do `manual` de Features.tsx). Por isso so o
+  // carrossel mobile liga isto, e ligado ele desliga o autoplay de vez.
+  const [manual, setManual] = useState(false);
 
   // Altura do item ativo: a coluna esquerda se ajusta a ela (os itens ficam
   // sobrepostos em absolute, so o ativo visivel), pra o botao ficar sempre
@@ -319,15 +354,99 @@ export default function Roadmap() {
   // pontinho "resetar" o relogio em vez de só pular um tick. Para no
   // hover/foco (nao incomoda quem esta lendo) e com "reduzir movimento".
   useEffect(() => {
-    if (reduce || paused) return;
+    if (reduce || paused || manual) return;
     const id = setInterval(() => {
       setActive((prev) => (prev + 1) % items.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [active, reduce, paused]);
+  }, [active, reduce, paused, manual]);
 
   const goTo = (index: number) => {
     setActive(((index % items.length) + items.length) % items.length);
+  };
+
+  // ---- Mecanica do carrossel mobile ---------------------------------------
+  // Mesmas pecas de Organization.tsx (posFor/snapTo/thumbX), so que mais
+  // simples: sem PEEK nem GAP (ver comentario grande em ROADMAP_SWIPE_*,
+  // mais acima), o passo de uma parada e sempre uma largura de tela inteira
+  // — `posFor` nem precisa mais de Math.max/clamp, ja que -idx*mobileStride
+  // bate exato em mobileMinX na ultima parada.
+  // Reusa o MESMO `active` do carrossel de desktop (nao um indice proprio):
+  // os dois sao a mesma "posicao no roadmap", so a pele muda com a largura
+  // da tela, entao virar de tablet pra celular no meio nunca perde o lugar.
+  const isMobileCarousel = useMediaQuery("(max-width: 767px)");
+
+  const mobileViewportRef = useRef<HTMLDivElement | null>(null);
+  const [mobileTrackWidth, setMobileTrackWidth] = useState(0);
+  useEffect(() => {
+    const el = mobileViewportRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) =>
+      setMobileTrackWidth(entry.contentRect.width)
+    );
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const mobileX = useMotionValue(0);
+  // PASSO de uma parada = largura da tela + o vao (ver ROADMAP_GAP, mais
+  // acima) — e o vao entrando na conta e o que garante que ele SOME de
+  // repouso a repouso (cada cartao volta a preencher a tela toda) e SO
+  // aparece durante a propria transicao.
+  const mobileStride = mobileTrackWidth ? mobileTrackWidth + ROADMAP_GAP : 0;
+  const mobileMinX = -(items.length - 1) * mobileStride;
+  const posForMobile = (idx: number) => -idx * mobileStride;
+
+  const snapMobile = (idx: number) => {
+    if (!mobileStride) return;
+    animate(mobileX, posForMobile(idx), {
+      type: "spring",
+      stiffness: 380,
+      damping: 42,
+    });
+  };
+
+  useEffect(() => {
+    if (!isMobileCarousel) {
+      mobileX.set(0);
+      return;
+    }
+    snapMobile(active);
+    // snapMobile e recriado a cada render (le mobileStride); as deps abaixo
+    // sao as entradas reais dele.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, isMobileCarousel, mobileStride]);
+
+  const mobileStopsRef = useRef<number[]>([]);
+  mobileStopsRef.current = items.map((_, i) => posForMobile(i));
+  const mobileThumbX = useTransform(mobileX, (v) => {
+    const stops = mobileStopsRef.current;
+    const last = stops[stops.length - 1];
+    if (!last) return "0%";
+    const pos = Math.min(0, Math.max(last, v));
+    let seg = stops.findIndex((s, i) => i > 0 && pos >= s) - 1;
+    if (seg < 0) seg = stops.length - 2;
+    const span = stops[seg + 1] - stops[seg];
+    const frac = seg + (span ? (pos - stops[seg]) / span : 0);
+    return `${frac * 100}%`;
+  });
+
+  // Arrastar pra ESQUERDA avanca, pra DIREITA volta — mesma convencao dos
+  // outros carrosseis. Ao contrario de `goTo` (usado pelas setas do
+  // desktop), NAO da a volta nas pontas: Math.min/max trava no primeiro e
+  // no ultimo item, que e o que faz o elastico bater na ponta em vez de
+  // pular de volta pro item 1 no meio de um arrasto — a mesma mecanica de
+  // Organization.tsx/Features.tsx.
+  const handleMobileDragEnd = (_: unknown, info: PanInfo) => {
+    const { offset, velocity } = info;
+    let next = active;
+    if (offset.x < -ROADMAP_SWIPE_DISTANCE || velocity.x < -ROADMAP_SWIPE_VELOCITY)
+      next = Math.min(active + 1, items.length - 1);
+    else if (offset.x > ROADMAP_SWIPE_DISTANCE || velocity.x > ROADMAP_SWIPE_VELOCITY)
+      next = Math.max(active - 1, 0);
+
+    if (next === active) snapMobile(active);
+    else setActive(next);
   };
 
   return (
@@ -363,18 +482,140 @@ export default function Roadmap() {
             Próximas atualizações
           </h2>
           <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
-            O computador é só o começo. Confira o que está por vir! Quem
-            assinar recebe cada uma dessas atualizações sem nenhuma cobrança
-            adicional.
+            O computador é só o começo. Confira o que está por vir!
           </p>
-          {/* Nada de controle aqui embaixo: setas e tracinhos foram todos
-              pra coluna vertical na esquerda do conteudo (ver mais abaixo). */}
+          {/* Nada de controle aqui embaixo no desktop (md+): setas e
+              tracinhos foram todos pra coluna vertical na esquerda do
+              conteudo (ver mais abaixo). No celular (abaixo de md) o
+              controle e outro — ver o carrossel de arrastar logo depois
+              deste bloco. */}
         </motion.div>
 
-        {/* items-start (nao items-center): a coluna esquerda sobe pro topo
-            da linha, alinhando o rotulo "Update N.0" com o topo da imagem
-            ao lado, em vez de ficar centralizada no meio da altura dela. */}
-        <div className="relative mx-auto mt-14 grid grid-cols-1 items-start gap-10 md:grid-cols-[1fr_1.2fr] md:gap-8 laptop:mt-12">
+        {/* Versao MOBILE (abaixo de md): o mesmo carrossel de
+            arrastar-e-espiar do resto do site, em vez da coluna de setas
+            verticais pensada pro mouse. Ordem dentro de cada cartao e a
+            pedida: rotulo+titulo no topo, a imagem, a descricao, e por fim
+            (fora do cartao, ja que vale pro roadmap inteiro) a barra de
+            progresso e o CTA. */}
+        <div className="mt-10 md:hidden">
+          <div ref={mobileViewportRef} className="overflow-hidden">
+            <motion.div
+              drag={isMobileCarousel ? "x" : false}
+              dragConstraints={{ left: mobileMinX, right: 0 }}
+              dragElastic={0.15}
+              dragMomentum={false}
+              onDragStart={() => setManual(true)}
+              onDragEnd={handleMobileDragEnd}
+              style={{ x: mobileX }}
+              className="flex cursor-grab items-start gap-4 active:cursor-grabbing"
+            >
+              {items.map((item, index) => (
+                // w-full: cada cartao e uma tela inteira, sem espiada do
+                // vizinho (ver o comentario grande em ROADMAP_SWIPE_*, mais
+                // acima) — a imagem usa a largura toda em vez de ceder uma
+                // fatia pro proximo cartao aparecer. O gap-4 do pai so fica
+                // visivel arrastando (ver ROADMAP_GAP).
+                <div key={item.title} className="w-full shrink-0">
+                  <p className="text-center font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                    Update {index + 1}.0
+                  </p>
+                  {/* mx-auto: o max-w-[16ch] restringe a CAIXA do h3 (pra
+                      titulo longo quebrar em 2 linhas curtas em vez de 1
+                      linha esticada) — sem centralizar essa caixa tambem,
+                      text-center so centralizaria as linhas DENTRO dela,
+                      que ainda ficaria colada a esquerda do cartao. */}
+                  <h3 className="mx-auto mt-3 max-w-[16ch] text-balance text-center font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA]">
+                    {item.title}
+                  </h3>
+                  <div className="relative mt-5 aspect-[4/3] overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+                    <Image
+                      src={item.image}
+                      alt=""
+                      aria-hidden
+                      fill
+                      unoptimized
+                      sizes="90vw"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      draggable={false}
+                      className="object-cover"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
+                  </div>
+                  {/* text-sm (nao mais text-base) e SEM o teto de 38ch do
+                      desktop (aqui so estreitava a linha a toa, num cartao
+                      que ja e a largura da tela): a descricao ocupa menos
+                      altura tanto pela fonte menor quanto por caber mais
+                      caracteres por linha, sobrando mais espaco pra imagem
+                      acima ler como o elemento principal do cartao. */}
+                  <p className="mt-4 text-sm leading-relaxed text-white/55">
+                    {item.body}
+                  </p>
+                  <p className="mt-3 text-sm italic leading-relaxed text-white/65">
+                    “{item.quote}”
+                  </p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Barra de progresso: mesma peca de Organization.tsx (trilho +
+              polegar que segue o dedo + botoes transparentes por cima pro
+              alvo de toque, tablist real por baixo). */}
+          <div className="relative mx-auto mt-6 w-40">
+            <div
+              aria-hidden
+              className="h-[3px] overflow-hidden rounded-full bg-white/[0.12]"
+            >
+              <motion.span
+                style={{ x: mobileThumbX, width: `${100 / items.length}%` }}
+                className="block h-full rounded-full bg-white"
+              />
+            </div>
+            <div
+              className="absolute inset-x-0 top-1/2 flex -translate-y-1/2"
+              role="tablist"
+              aria-label="Próximas atualizações"
+            >
+              {items.map((item, index) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  role="tab"
+                  aria-selected={index === active}
+                  aria-label={`Ir para "${item.title}"`}
+                  onClick={() => {
+                    setManual(true);
+                    setActive(index);
+                  }}
+                  className="h-11 flex-1 cursor-pointer"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* CTA uma vez so (nao por cartao): o convite vale pro roadmap
+              inteiro, nao so pro item em cena no momento. */}
+          <div className="mt-8 flex justify-center">
+            <a
+              href="#precos"
+              className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
+            >
+              Quero ser notificado!
+              <ArrowRight
+                size={17}
+                weight="bold"
+                aria-hidden
+                className="transition-transform duration-300 group-hover:translate-x-0.5"
+              />
+            </a>
+          </div>
+        </div>
+
+        {/* Versao DESKTOP (md+). items-start (nao items-center): a coluna
+            esquerda sobe pro topo da linha, alinhando o rotulo "Update N.0"
+            com o topo da imagem ao lado, em vez de ficar centralizada no
+            meio da altura dela. */}
+        <div className="relative mx-auto mt-14 hidden grid-cols-1 items-start gap-10 md:grid md:grid-cols-[1fr_1.2fr] md:gap-8 laptop:mt-12">
           {/* Coluna esquerda: controle vertical do carrossel + rotulo
               "Update N.0" + titulo/descricao do item ativo + CTA.
               height explicita = buttonTop + buttonHeight: o unico filho em

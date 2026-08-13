@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import { Exo_2 } from "next/font/google";
 import { SITE, SITE_URL } from "@/lib/site";
 import SmoothScroll from "@/components/ui/smooth-scroll";
+import FpsMeter from "@/components/ui/fps-meter";
 import "./globals.css";
 
 // So para o titulo da Hero: peso 600/700 cobre o font-semibold usado la.
@@ -76,6 +77,9 @@ export default function RootLayout({
           Pular para o conteúdo
         </a>
         <SmoothScroll>{children}</SmoothScroll>
+        {/* So aparece com "?fps=1" na URL — fora disso nao renderiza nada e
+            nao roda loop nenhum. */}
+        <FpsMeter />
       </body>
     </html>
   );

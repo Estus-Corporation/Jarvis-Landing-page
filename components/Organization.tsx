@@ -952,7 +952,9 @@ export default function Organization() {
               cresce direto ate travar sozinha em 48px (por volta de 890px de
               largura, bem antes do padding da secao mudar em 1024px), entao
               nao existe salto que possa descasar do espaco real. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(5.73vw_-_3.09px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+          {/* Mesma formula de fonte de Roadmap.tsx ("Próximas atualizações")
+              — ver comentario identico em Showcase.tsx. */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             Tudo em um lugar.
           </h2>
           <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">

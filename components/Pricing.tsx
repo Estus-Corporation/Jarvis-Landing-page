@@ -439,8 +439,13 @@ export default function Pricing() {
           {/* Fonte fluida: trava em 48px pouco antes dos 640px, entao o
               resultado bate com o antigo sm:text-5xl sem precisar do degrau
               (que e o que causava estouro logo apos o breakpoint). */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight text-[length:clamp(0.9rem,calc(8.97vw_-_4.84px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            Escolha como quer usar.
+          {/* Mesma formula de fonte de Roadmap.tsx ("Próximas atualizações")
+              — ver comentario identico em Showcase.tsx. "Escolha como quer
+              usar." (23 caracteres) estourava a caixa em telas estreitas
+              nesse tamanho (medido: ate 44px de overflow a 414px) — encurtado
+              pra caber igual aos demais. */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+            Escolha seu plano.
           </h2>
           <p className="mx-auto mt-5 max-w-[56ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
             O Jarvis completo nos dois planos. Só muda a forma de pagar.

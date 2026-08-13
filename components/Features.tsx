@@ -2536,20 +2536,16 @@ export default function Features() {
           className="mx-auto max-w-6xl text-center"
         >
           <SectionEyebrow>Capacidades</SectionEyebrow>
-          {/* Fonte FLUIDA (calc com vw), nao degraus fixos (sm:/lg:) — o
-              motivo e o padding da secao: ate 1023px ele e px-6 (48px), de
-              1024px pra cima vira lg:px-10 (80px). Um degrau fixo bem no
-              1024 assume que ainda sobra o mesmo espaco que sobrava em
-              1023px, so que sobra MENOS (o padding cresceu) — e foi
-              exatamente esse buraco que fazia o titulo estourar a linha ali.
-              Uma formula continua reage ao espaco real a cada pixel de
-              largura, entao nunca chega nesse descasamento. Sem cap ate
-              1023px (so trava synthé no proprio 60px alvo, resolvido
-              sozinho pela matematica); de 1024px pra cima entra uma SEGUNDA
-              formula (`lg:`) que ja desconta o padding maior. `laptop:`
-              (telas largas e baixas) continua sobrepondo as duas com um
-              valor fixo, como sempre foi. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(5.85vw_-_3.16px),3.75rem)] lg:text-[length:clamp(0.9rem,calc(5.85vw_-_5.03px),3.75rem)] font-semibold tracking-[-0.025em] text-[#FAFAFA] laptop:text-5xl">
+          {/* Mesma formula de fonte de Roadmap.tsx ("Próximas atualizações"),
+              a pedido do usuario (todos os titulos de secao no mesmo
+              tamanho do de Updates) — ver comentario identico em
+              Showcase.tsx. Isto tambem tornou obsoleta a antiga formula em
+              DOIS estagios (base + `lg:`) que compensava o salto de padding
+              da secao em 1024px: com este cap (3rem) o titulo trava por
+              volta de 524px de largura, bem antes dos 1024px onde o padding
+              muda — o salto que a segunda formula corrigia nunca chega a
+              acontecer. */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.025em] text-[#FAFAFA] laptop:text-[2.625rem]">
             Ele age de verdade.
           </h2>
           <p className="mx-auto mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-5">

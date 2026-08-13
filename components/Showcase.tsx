@@ -286,7 +286,13 @@ export default function Showcase() {
           <SectionEyebrow>Interface</SectionEyebrow>
           {/* Fonte fluida: trava em 48px por volta de 740px de largura,
               bem antes do padding da secao mudar em 1024px. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(7vw_-_3.78px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+          {/* Mesma formula de fonte de Roadmap.tsx ("Próximas atualizações"),
+              nao mais calibrada pro proprio texto: o pedido foi todos os
+              titulos de secao no MESMO tamanho do de Updates, entao a
+              formula (e nao so o resultado num ponto) precisa ser igual —
+              caso contrario cada titulo volta a ter seu proprio tamanho em
+              alguma largura de tela. */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             Uma dashboard viva.
           </h2>
           <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">

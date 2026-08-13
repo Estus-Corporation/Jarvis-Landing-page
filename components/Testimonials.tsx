@@ -192,7 +192,9 @@ export default function Testimonials() {
           {/* Fonte fluida: trava em 48px pouco antes dos 640px, entao o
               resultado bate com o antigo sm:text-5xl sem precisar do degrau
               (que e o que causava estouro logo apos o breakpoint). */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(8.22vw_-_4.44px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+          {/* Mesma formula de fonte de Roadmap.tsx ("Próximas atualizações")
+              — ver comentario identico em Showcase.tsx. */}
+          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
             O que dizem dele.
           </h2>
         </motion.div>

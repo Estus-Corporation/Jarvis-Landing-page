@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import { useLowPowerDevice } from "@/components/ui/use-low-power";
+import { useMediaQuery } from "@/components/ui/use-media-query";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
 import { SpokenCaption } from "@/components/ui/spoken-caption";
@@ -86,7 +87,20 @@ export default function Hero() {
   // Teto menor que antes (era 480). A legenda falada agora divide a coluna com
   // a esfera, e o hero continua tendo que caber na primeira tela: o espaco que
   // a caixa de texto ocupa saiu do diametro da esfera.
-  const { containerRef, size } = useOrbSize({ min: 220, max: 480 });
+  //
+  // No notebook (mesma faixa do `laptop:` do tailwind.config.ts — largo mas
+  // baixo), quem trava o tamanho normalmente e a ALTURA da viewport, nao a
+  // largura da coluna (a conta de heightFraction*innerHeight fica abaixo do
+  // teto de 480 nessa faixa). Por isso um heightFraction levemente maior so
+  // aqui cresce a esfera ~7-8% sem mexer em nenhuma outra tela — mobile,
+  // tablet e monitor grande continuam limitados pela largura da coluna ou
+  // pelo teto de 480, entao nem chegam a usar essa fracao.
+  const isLaptop = useMediaQuery("(min-width: 1024px) and (max-height: 900px)");
+  const { containerRef, size } = useOrbSize({
+    min: 220,
+    max: 480,
+    heightFraction: isLaptop ? 0.76 : 0.72,
+  });
 
   // A esfera segue a legenda, exatamente como na secao de Voz clonada: fala
   // enquanto o texto e datilografado e se acalma quando a frase termina. Antes

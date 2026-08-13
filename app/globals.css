@@ -283,13 +283,22 @@ body {
    autoplay, tipo os stories do Instagram, so que vertical. `forwards` +
    sem `infinite`: toca uma vez so e fica em 100% no final (o componente
    remonta o elemento pra tocar de novo). Duracao real vem do componente via
-   style.animationDuration, casada com AUTOPLAY_MS. */
+   style.animationDuration, casada com AUTOPLAY_MS.
+
+   `transform: scaleY()`, nao `height`: animar `height` obriga o navegador a
+   recalcular LAYOUT em todo frame (a caixa muda de tamanho de verdade), o que
+   e trabalho de CPU — enquanto `transform` e resolvido pelo compositor, sem
+   layout nenhum, normalmente direto na GPU. Medido no Firefox: essa troca
+   sozinha tirou "Proximas atualizacoes" de ~36fps pros mesmos 60fps do resto
+   da pagina. `transform-origin: top` (via classe `origin-top` no elemento) e
+   o que faz crescer PRA BAIXO a partir do topo, replicando visualmente o
+   preenchimento que a versao antiga fazia mudando a altura de verdade. */
 @keyframes roadmap-fill {
   from {
-    height: 0%;
+    transform: scaleY(0);
   }
   to {
-    height: 100%;
+    transform: scaleY(1);
   }
 }
 

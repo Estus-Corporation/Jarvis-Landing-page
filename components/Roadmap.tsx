@@ -146,7 +146,7 @@ function Pagination({
             <span
               key={active}
               aria-hidden
-              className="roadmap-fill absolute inset-x-0 top-0 rounded-full bg-white/80"
+              className="roadmap-fill absolute inset-y-0 inset-x-0 origin-top rounded-full bg-white/80"
               style={{ animationDuration: `${AUTOPLAY_MS}ms` }}
             />
           )}

@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { motion, useMotionValue, animate, type PanInfo } from "motion/react";
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  animate,
+  type PanInfo,
+} from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
@@ -70,6 +76,28 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const SWIPE_DISTANCE = 56; // px percorridos
 const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
 
+// ESPIADA DO VIZINHO: o cartao nao ocupa a largura toda da tira — sobra uma
+// faixa onde o proximo aparece cortado, em repouso, desde o primeiro olhar.
+// Antes disso a unica pista de que a coisa arrasta era um empurraozinho
+// automatico (28px de ida e volta, meio segundo depois da secao entrar na
+// tela); quem chegasse na secao com a animacao ja tocada nao via pista
+// nenhuma. Um pedaco de cartao parado na borda nao tem esse problema: nao
+// depende de tempo, nao passa.
+//
+// PEEK e a fatia visivel do vizinho + o vao entre os dois; GAP e so o vao (o
+// `gap-3` da tira). Os dois vivem tambem no CSS da largura do slide
+// (`w-[calc(100%-3.5rem)]`, = 56px = PEEK + GAP) pra tira ja nascer com a
+// proporcao certa antes de qualquer medicao — o JS aqui embaixo so calcula
+// ONDE cada parada fica, nunca o tamanho.
+const PEEK = 44; // px do vizinho aparecendo (inclui o vao)
+const GAP = 12; // px de vao entre cartoes (= gap-3)
+
+// Largura do trilho da barra de progresso, em px (o polegar e 1/CARDS.length
+// dela). Fica em JS, e nao so no CSS, porque o deslocamento do polegar e
+// calculado em pixels a partir do `x` da tira — as duas contas precisam sair
+// do MESMO numero.
+const RAIL_WIDTH = 168;
+
 // ---- Icone em anel duplo -----------------------------------------------------
 function RingIcon({ icon: Glyph }: { icon: Icon }) {
   return (
@@ -100,6 +128,7 @@ function FeatureCardBody({
   desc,
   command,
   bigger = false,
+  stageHeight,
   children,
 }: {
   icon: Icon;
@@ -107,6 +136,11 @@ function FeatureCardBody({
   desc: string;
   command: string;
   bigger?: boolean;
+  // So o carrossel do celular passa isto: altura do palco em px, pra empatar
+  // a altura dos tres cartoes quando as frases do cabecalho quebram em
+  // numeros de linha diferentes (ver o calculo em Organization()). Sem o
+  // valor, o palco fica com a altura das classes, como sempre foi.
+  stageHeight?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -133,8 +167,10 @@ function FeatureCardBody({
           bigger ? "border-2 border-white/40" : "hover:border-white/25"
         )}
       >
-        {/* cabecalho */}
-        <div className="border-b border-white/[0.08] p-6">
+        {/* cabecalho (data-card-head: e por aqui que o carrossel do celular
+            acha e mede este bloco de fora — ver o comentario do calculo de
+            altura em Organization()) */}
+        <div data-card-head className="border-b border-white/[0.08] p-6">
           <div className="flex items-center gap-3.5">
             <RingIcon icon={icon} />
             <h3 className="min-w-0 flex-1 font-display text-[1.375rem] font-semibold tracking-[-0.02em] text-[#FAFAFA]">
@@ -165,12 +201,18 @@ function FeatureCardBody({
             junto (TASKS_ON_LAPTOP) pra a faixa de dias continuar fora do
             degrade. */}
         <div
+          data-card-stage
           className={cn(
             "relative overflow-hidden bg-ink-950 px-6 pt-6",
             bigger
               ? "h-[385px] laptop:h-[340px]"
               : "h-[275px] sm:h-[295px] laptop:h-[230px]"
           )}
+          // O inline sobrescreve a altura das classes acima quando o carrossel
+          // do celular pede — e de proposito que a folga entre num palco que
+          // ja e uma tela CORTADA: o que aparece a mais e mais um naco da
+          // maquete, nao um vao vazio.
+          style={stageHeight ? { height: stageHeight } : undefined}
         >
           {/* luz entrando pela borda de cima: sem ela o palco e um retangulo
               preto chapado, e a maquete parece colada em cima do nada */}
@@ -648,32 +690,110 @@ export default function Organization() {
   }, []);
 
   // Altura de CADA parada, medida por fora (ver `items-start` na tira, mais
-  // abaixo): sem isso os 3 cartoes — de alturas naturalmente diferentes,
-  // Tarefas e maior de proposito — ficavam esticados pro tamanho do mais alto
-  // (comportamento padrao de flex-row, align-items:stretch), e sobrava um
-  // vao morto embaixo de Agenda/Lembretes ate a faixa de pontinhos, que virava
-  // ate a moldura do cartao. O container visivel (trackRef, logo abaixo) usa
-  // esta altura pra acompanhar SO o cartao ativo.
+  // abaixo): sem `items-start` os 3 cartoes ficavam esticados pro tamanho do
+  // mais alto (comportamento padrao de flex-row, align-items:stretch), e a
+  // MOLDURA de Agenda/Lembretes crescia junto, com vao morto dentro dela.
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [cardHeights, setCardHeights] = useState<number[]>([]);
+  // Cabecalho e palco de cada cartao, medidos separado — e o que permite
+  // empatar as molduras sem esticar nada (ver stageHeights, logo abaixo).
+  // borderBoxSize, nao contentRect: o cabecalho tem p-6 e borda, e a conta
+  // precisa da caixa INTEIRA de cada pedaco pra fechar com a do cartao. E nao
+  // offsetHeight, que arredonda pra inteiro: com uma frase de altura fracionada
+  // (o normal), o arredondamento sozinho ja deixava as molduras com meio pixel
+  // de diferenca — pouco pra ver, mas nao e "do mesmo tamanho".
+  const [headHeights, setHeadHeights] = useState<number[]>([]);
+  const [stageMeasured, setStageMeasured] = useState<number[]>([]);
   useLayoutEffect(() => {
-    const els = cardRefs.current;
-    const ros = els.map((el, i) => {
-      if (!el) return null;
-      const ro = new ResizeObserver(([entry]) => {
-        const h = entry.contentRect.height;
-        setCardHeights((prev) => {
+    const bump =
+      (set: React.Dispatch<React.SetStateAction<number[]>>, i: number) =>
+      (h: number) =>
+        set((prev) => {
           if (prev[i] === h) return prev;
           const next = [...prev];
           next[i] = h;
           return next;
         });
+
+    const ros = cardRefs.current.map((el, i) => {
+      if (!el) return null;
+      const head = el.querySelector<HTMLElement>("[data-card-head]");
+      const stage = el.querySelector<HTMLElement>("[data-card-stage]");
+      const setSlide = bump(setCardHeights, i);
+      const setHead = bump(setHeadHeights, i);
+      const setStage = bump(setStageMeasured, i);
+      const ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const t = entry.target as HTMLElement;
+          const border = entry.borderBoxSize?.[0]?.blockSize ?? t.offsetHeight;
+          if (t === el) setSlide(entry.contentRect.height);
+          else if (t === head) setHead(border);
+          else if (t === stage) setStage(border);
+        }
       });
       ro.observe(el);
+      if (head) ro.observe(head);
+      if (stage) ro.observe(stage);
       return ro;
     });
     return () => ros.forEach((ro) => ro?.disconnect());
   }, []);
+
+  // MOLDURAS DO MESMO TAMANHO, sem esticar ninguem.
+  //
+  // O cartao e cabecalho + palco. O palco tem altura fixa (igual nos tres), e
+  // o cabecalho reserva DUAS linhas de frase — so que reserva nao e teto: a
+  // frase da Agenda ("Compromissos com dia e hora...") e a mais comprida das
+  // tres, entao e a primeira a passar pra uma linha a mais quando a fonte
+  // aumenta (ajuste de tamanho de texto do navegador/celular) ou a tela
+  // aperta. Quando isso acontece so com ela, o cartao da Agenda fica ~28px
+  // mais alto que os vizinhos — visivel agora que o vizinho aparece espiando
+  // ao lado o tempo todo.
+  //
+  // A correcao devolve a diferenca pro PALCO dos outros dois: cada um ganha
+  // exatamente as linhas que faltam no seu cabecalho, e o total fecha igual
+  // nos tres. Palco e tela cortada de proposito (a maquete sangra e some num
+  // degrade), entao a folga vira mais um naco de maquete, nunca vao vazio —
+  // que e o que aconteceria esticando a moldura (o `items-stretch` que a
+  // gente ja tinha tirado daqui por isso).
+  //
+  // O cartao mais alto NAO recebe altura inline (delta 0 => undefined): e ele
+  // que continua reportando o palco puro das classes, e e dai que sai o
+  // `base` (o minimo). Sem essa saida, todo mundo teria altura fixada e o
+  // valor ficaria preso no primeiro que fosse medido — o palco nao voltaria a
+  // 295px ao cruzar o `sm:`, nem a 230 no `laptop:`.
+  const measuredParts =
+    headHeights.length === CARDS.length &&
+    headHeights.every(Boolean) &&
+    stageMeasured.length === CARDS.length &&
+    stageMeasured.every(Boolean);
+  const stageHeights = CARDS.map((_, i) => {
+    if (!measuredParts) return undefined;
+    const delta = Math.max(...headHeights) - headHeights[i];
+    // 0.05px de folga so pra nao fixar altura por causa de ruido de
+    // arredondamento do proprio navegador; a diferenca real e de linhas
+    // inteiras de texto (dezenas de px).
+    return delta > 0.05 ? Math.min(...stageMeasured) + delta : undefined;
+  });
+
+  // ...e a altura da janela do carrossel e a MAIOR das tres, nao a do cartao
+  // ativo. Com as molduras ja empatadas (stageHeights, logo acima), o que
+  // ainda varia e a LEGENDA em italico FORA do cartao, que muda de numero de
+  // linhas conforme a largura: perto de 500-520px a da Agenda cabe numa linha
+  // a menos que as outras duas, e por volta de 320px e a de Tarefas que ganha
+  // uma linha. Acompanhando o cartao ativo, essa diferenca de ~18px virava a
+  // secao inteira mudando de altura no meio do arrasto e a barra de progresso
+  // pulando de lugar. Pela maior, o bloco fica do mesmo tamanho nos tres: o
+  // que sobra e espaco transparente embaixo de uma legenda centralizada,
+  // invisivel — ao contrario do stretch, que esticava a moldura.
+  //
+  // So aplica com as TRES medidas na mao (nao um max parcial do primeiro
+  // frame, que encolheria assim que a segunda chegasse), e a transicao so
+  // entra junto: sem altura medida ainda, "auto" ja casa com o conteudo, e
+  // animar a partir de "auto" o CSS nao sabe fazer (pularia em vez de crescer).
+  const measuredAll =
+    cardHeights.length === CARDS.length && cardHeights.every(Boolean);
+  const trackHeight = measuredAll ? Math.max(...cardHeights) : undefined;
 
   // x e a posicao da tira em PIXELS (nao %), porque o `drag` do motion move
   // em pixels — misturar as duas unidades no mesmo valor e que permite o
@@ -681,14 +801,55 @@ export default function Organization() {
   // brigarem. Comeca em 0, que ja e a posicao certa pro indice inicial (0).
   const x = useMotionValue(0);
 
+  // PASSO de uma parada = largura do cartao + o vao, ou seja a largura da
+  // tira menos a espiada. E o quanto `x` anda de um cartao pro outro.
+  const stride = cardWidth ? cardWidth - PEEK : 0;
+
+  // Fim da corrida: a tira nao para em -2*stride no ultimo cartao, senao ele
+  // sairia CORTADO na direita (a espiada existe pra mostrar o proximo, e no
+  // ultimo nao ha proximo — sobraria so vazio). Trava na posicao em que a
+  // borda direita do ultimo cartao encosta na borda da tira; a espiada muda
+  // de lado sozinha e passa a ser o cartao ANTERIOR aparecendo na esquerda,
+  // que e exatamente a leitura certa la ("ainda da pra voltar").
+  const contentWidth = stride ? CARDS.length * stride - GAP : 0;
+  const minX = Math.min(0, cardWidth - contentWidth);
+  const posFor = (idx: number) => Math.max(-idx * stride, minX);
+
   // Anima a tira ate a parada do indice pedido. `type: spring` (nao tween)
   // pra combinar com a mola elastica que o proprio arrasto usa enquanto o
   // dedo ainda esta na tela — sem isso, o gesto teria uma fisica e o
   // "snap" final teria outra, e a costura ficaria visivel.
   const snapTo = (idx: number, width: number) => {
     if (!width) return;
-    animate(x, -idx * width, { type: "spring", stiffness: 380, damping: 42 });
+    animate(x, posFor(idx), { type: "spring", stiffness: 380, damping: 42 });
   };
+
+  // Posicao do polegar da barra de progresso, derivada direto do `x` da tira:
+  // ele acompanha o DEDO durante o arrasto, nao so o resultado depois de
+  // soltar (o clamp segura o elastico das pontas, pra ele nao vazar do
+  // trilho). As paradas vem por ref porque `useTransform` so recalcula quando
+  // o `x` muda — lendo do ref a conta nunca usa uma largura velha de antes de
+  // medir ou de girar a tela.
+  //
+  // A conta e por TRECHO (parada a parada), nao uma regra de tres sobre o
+  // percurso inteiro: como a ultima parada e travada (ver minX), ela fica mais
+  // perto da anterior que as outras entre si — numa regra de tres simples o
+  // polegar chegaria torto no cartao do meio (~55% em vez de 50%) e a barra
+  // desmentiria os tres alvos iguais logo abaixo dela.
+  const stopsRef = useRef<number[]>([]);
+  stopsRef.current = CARDS.map((_, i) => posFor(i));
+  const thumbX = useTransform(x, (v) => {
+    const stops = stopsRef.current;
+    const last = stops[stops.length - 1];
+    const travel = RAIL_WIDTH - RAIL_WIDTH / CARDS.length;
+    if (!last) return 0;
+    const pos = Math.min(0, Math.max(last, v));
+    let seg = stops.findIndex((s, i) => i > 0 && pos >= s) - 1;
+    if (seg < 0) seg = stops.length - 2;
+    const span = stops[seg + 1] - stops[seg];
+    const frac = seg + (span ? (pos - stops[seg]) / span : 0);
+    return (frac / (stops.length - 1)) * travel;
+  });
 
   useEffect(() => {
     snapTo(activeIdx, cardWidth);
@@ -716,31 +877,12 @@ export default function Organization() {
     else setActiveIdx(next);
   };
 
-  // Dica de que da pra arrastar: um empurraozinho sozinho a tira faz uma vez
-  // so, pouco depois da secao entrar na tela — sem ele nada na primeira
-  // olhada sugere que o cartao se move (nao ha seta, nem pedaco do vizinho
-  // espiando em repouso). 28px descobre uma fatia real da Agenda por meio
-  // segundo e volta, sem depender de o visitante ja saber pra arrastar.
-  //
-  // O gatilho e `inView` (onViewportEnter do motion.div la embaixo), NAO so
-  // montar+medir: a secao inteira ja nasce no DOM (so fica abaixo da dobra),
-  // entao cardWidth fica disponivel quase de imediato — se a dica dependesse
-  // so disso, ela tocaria e terminaria escondida, MUITO antes de alguem
-  // rolar ate aqui pra ver. So dispara uma vez (hintedRef) e nunca com
-  // "reduzir movimento".
-  const [inView, setInView] = useState(false);
-  const hintedRef = useRef(false);
-  useEffect(() => {
-    if (reduce || hintedRef.current || !cardWidth || !inView || activeIdx !== 0)
-      return;
-    hintedRef.current = true;
-    const t = setTimeout(() => {
-      animate(x, -28, { type: "spring", stiffness: 300, damping: 20 }).then(
-        () => animate(x, 0, { type: "spring", stiffness: 260, damping: 24 })
-      );
-    }, 500);
-    return () => clearTimeout(t);
-  }, [reduce, cardWidth, inView, activeIdx, x]);
+  // (Aqui morava um empurraozinho automatico de 28px na tira, disparado uma
+  // vez quando a secao entrava na tela, pra dizer "isto arrasta". Saiu junto
+  // com a chegada da espiada permanente do vizinho — ver PEEK la em cima:
+  // com um pedaco da Agenda parado na borda o tempo todo, o empurrao virou
+  // repeticao da mesma frase, e ainda por cima uma que so quem chega na hora
+  // certa escuta.)
 
   return (
     <section
@@ -826,29 +968,21 @@ export default function Organization() {
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
-          // onViewportEnter (mesmo threshold do whileInView, via `viewport`
-          // acima): e o gatilho do empurraozinho automatico, mais acima —
-          // sem isso ele dispararia baseado so em montar+medir, quase
-          // sempre ainda fora da tela (ver comentario grande la).
-          onViewportEnter={() => setInView(true)}
           transition={{ duration: 0.6, ease: EASE }}
           className="mt-16 lg:hidden"
         >
-          {/* viewport: recorta a tira pra so um cartao aparecer por vez.
-              A ref mede a largura de UMA parada (ver cardWidth, mais acima).
-              A altura acompanha SO o cartao ativo (cardHeights, mais acima) —
-              sem o valor medido ainda (1o frame), cai pra "auto", que hoje
-              casa com o cartao inicial (Tarefas) e nao pisca. A transicao so
-              entra depois que ha alguma altura medida, senao o 1o valor real
-              chegando via ResizeObserver animaria a partir de "auto", que o
-              CSS nao sabe interpolar (o cartao "pularia" pro tamanho certo em
-              vez de crescer suave). */}
+          {/* viewport: recorta a tira num cartao + a espiada do vizinho (ver
+              PEEK la em cima).
+              A ref mede a largura da TIRA (nao a da parada — a parada e essa
+              largura menos a espiada; ver `stride`, mais acima).
+              A altura e a do cartao mais alto dos tres, fixa enquanto a
+              largura da tela nao muda (ver trackHeight, mais acima). */}
           <div
             ref={trackRef}
             className={`overflow-hidden ${
-              cardHeights.length ? "transition-[height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" : ""
+              trackHeight ? "transition-[height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" : ""
             }`}
-            style={cardHeights[activeIdx] ? { height: cardHeights[activeIdx] } : undefined}
+            style={trackHeight ? { height: trackHeight } : undefined}
           >
             {/* O bloco INTEIRO (tira + pontinhos, mais abaixo) e a area de
                 arrasto, nao so o cartao — no celular o dedo cai em qualquer
@@ -862,12 +996,12 @@ export default function Organization() {
                 acima — o vao morto que a gente esta corrigindo. */}
             <motion.div
               drag={isMobile ? "x" : false}
-              dragConstraints={{ left: -(CARDS.length - 1) * cardWidth, right: 0 }}
+              dragConstraints={{ left: minX, right: 0 }}
               dragElastic={0.15}
               dragMomentum={false}
               onDragEnd={handleDragEnd}
               style={{ x }}
-              className="flex cursor-grab items-start active:cursor-grabbing"
+              className="flex cursor-grab items-start gap-3 active:cursor-grabbing"
             >
               {CARDS.map((card, i) => (
                 <div
@@ -876,7 +1010,10 @@ export default function Organization() {
                     cardRefs.current[i] = el;
                   }}
                   aria-hidden={i !== activeIdx}
-                  className="w-full shrink-0"
+                  // 3.5rem = 56px = PEEK + GAP: e o CSS que garante a espiada
+                  // (o JS so posiciona). Sem shrink-0 o flex espremeria os
+                  // tres pra caber na tira, e nao sobraria vizinho pra espiar.
+                  className="w-[calc(100%-3.5rem)] shrink-0"
                 >
                   {/* SEM `bigger`, ao contrario da grade de desktop: os tres
                       viram slides de um carrossel de 1 por vez, entao nao ha
@@ -887,6 +1024,7 @@ export default function Organization() {
                     title={card.title}
                     desc={card.desc}
                     command={card.command}
+                    stageHeight={stageHeights[i]}
                   >
                     <card.mock />
                   </FeatureCardBody>
@@ -895,33 +1033,51 @@ export default function Organization() {
             </motion.div>
           </div>
 
-          {/* pontinhos: mesma tecnica de alvo de toque de Features.tsx — p-5
-              (20px) de padding em volta de um traco de 6px de altura da uns
-              46px de area clicavel real, bem acima dos 22px que um p-2 daria
-              (ver o ajuste identico feito la, na mesma sessao). */}
+          {/* BARRA DE PROGRESSO (no lugar dos pontinhos que moravam aqui):
+              um trilho continuo com um polegar de 1/3 que DESLIZA junto com o
+              dedo, nao um estado que troca depois de soltar. Os pontinhos
+              diziam so "voce esta no 1 de 3"; o trilho diz tambem "voce esta
+              no meio do caminho entre dois" — que e a informacao que falta
+              justamente durante o gesto, quando o cartao esta em transito.
+              O deslocamento vem de `thumbX`, derivado do mesmo `x` da tira
+              (ver la em cima), entao os dois nunca podem discordar.
+
+              Continua sendo tablist com um botao por cartao — a barra e a
+              pele, a navegacao por toque/teclado e a mesma de antes. Os
+              botoes sao uma camada TRANSPARENTE por cima do trilho: assim
+              cada alvo tem os 44px de altura recomendados sem que o trilho
+              precise ser grosso desse tanto (mesma ideia do p-5 em volta do
+              traco de 6px em Features.tsx, resolvida por sobreposicao). */}
           <div
-            className="mt-6 flex items-center justify-center gap-2"
-            role="tablist"
-            aria-label="Recursos de organização"
+            className="relative mx-auto mt-6"
+            style={{ width: RAIL_WIDTH }}
           >
-            {CARDS.map((card, i) => (
-              <button
-                key={card.id}
-                type="button"
-                role="tab"
-                aria-selected={i === activeIdx}
-                aria-label={card.title}
-                onClick={() => setActiveIdx(i)}
-                className="cursor-pointer p-5"
-              >
-                <span
-                  aria-hidden
-                  className={`block h-1.5 rounded-full transition-all duration-300 ${
-                    i === activeIdx ? "w-6 bg-white" : "w-1.5 bg-white/25"
-                  }`}
+            <div
+              aria-hidden
+              className="h-[3px] overflow-hidden rounded-full bg-white/[0.12]"
+            >
+              <motion.span
+                style={{ x: thumbX, width: RAIL_WIDTH / CARDS.length }}
+                className="block h-full rounded-full bg-white"
+              />
+            </div>
+            <div
+              className="absolute inset-x-0 top-1/2 flex -translate-y-1/2"
+              role="tablist"
+              aria-label="Recursos de organização"
+            >
+              {CARDS.map((card, i) => (
+                <button
+                  key={card.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === activeIdx}
+                  aria-label={card.title}
+                  onClick={() => setActiveIdx(i)}
+                  className="h-11 flex-1 cursor-pointer"
                 />
-              </button>
-            ))}
+              ))}
+            </div>
           </div>
         </motion.div>
       </div>

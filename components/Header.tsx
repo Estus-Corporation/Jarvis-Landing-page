@@ -150,7 +150,26 @@ export default function Header() {
       // depois) substituem a borda lisa de antes: vidro de verdade nao tem
       // contorno solido uniforme, tem luz pegando mais forte no topo/bordas
       // e quase nada no meio — e o que da o "brilho de vidro" da Apple.
-      className="glass-surface fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 flex-col items-center rounded-3xl bg-ink-900/20 px-6 py-3.5 shadow-[0_18px_50px_-16px_rgba(0,0,0,0.65)]"
+      //
+      // bg-ink-900/90, nao mais /20: o blur (backdrop-filter acima) por si
+      // so nao e garantia de legibilidade em toda maquina — testado em
+      // Chromium real (nao so headless), rolar texto animado (motion.p com
+      // whileInView) por baixo do header as vezes passa CRU, sem nenhum
+      // borrao, provavel bug de composicao do proprio motor (backdrop-filter
+      // perdendo o rastro de conteudo que vive numa camada de GPU separada
+      // por causa de transform/will-change do Framer Motion — comportamento
+      // ja documentado publicamente em bugs abertos do Chromium). Testado
+      // /45 e /65 antes deste valor: a diferenca visual entre eles era
+      // pequena porque o problema NAO e so contraste — e branco puro
+      // "vazando" por tras de um fundo semitransparente, que continua
+      // perceptivel ate opacidade bem alta (a mesma conta que fez o fallback
+      // antigo de "menos transparencia" usar 95%, comentario logo abaixo).
+      // Como o logo/menu do header PRECISA ficar legivel sempre, nao so
+      // quando o blur decide cooperar, a base ficou bem mais opaca. Ainda da
+      // pra ver o vidro liquido refratando sobre fundo escuro (o caso comum,
+      // ver Hero) — o que se perde e so a transparencia nos raros momentos
+      // em que algo bem claro passa embaixo, que e justo o caso que quebrava.
+      className="glass-surface fixed left-1/2 top-5 z-50 flex w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 flex-col items-center rounded-3xl bg-ink-900/90 px-6 py-3.5 shadow-[0_18px_50px_-16px_rgba(0,0,0,0.65)]"
       style={{
         backdropFilter:
           "blur(14px) saturate(1.9) brightness(1.05) url(#header-liquid-glass)",
@@ -228,8 +247,13 @@ export default function Header() {
 
         <div className="hidden items-center lg:flex">{signupButton}</div>
 
+        {/* h-11 w-11 (44px): abaixo disso o alvo de toque fica menor que o
+            minimo recomendado (Apple/Material, ~44px) — e o unico jeito de
+            abrir a navegacao inteira no celular, vale a folga extra. O icone
+            em si continua do mesmo tamanho (h-5 w-5), so ganhou mais area
+            clicavel ao redor. */}
         <button
-          className="flex h-8 w-8 cursor-pointer items-center justify-center text-white/70 transition-colors hover:text-white lg:hidden"
+          className="flex h-11 w-11 cursor-pointer items-center justify-center text-white/70 transition-colors hover:text-white lg:hidden"
           onClick={() => setIsOpen((v) => !v)}
           aria-expanded={isOpen}
           aria-label={isOpen ? "Fechar menu" : "Abrir menu"}

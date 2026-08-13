@@ -39,15 +39,43 @@ function currentSection(): string {
   return "—";
 }
 
+// Quem esta desenhando de verdade. Este e o dado que separa "a pagina e
+// pesada" de "o navegador esta renderizando por software": se vier
+// SwiftShader/Software, a aceleracao de hardware esta desligada e NENHUMA
+// otimizacao de pagina conserta isso — a placa de video nem esta sendo usada.
+// Vale a pena estar aqui porque, de fora, o sintoma e identico ao de uma
+// pagina mal feita, e sem isto a gente ficaria cortando visual a esmo.
+function gpuInfo(): string {
+  try {
+    const gl = document.createElement("canvas").getContext("webgl");
+    if (!gl) return "sem WebGL";
+    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+    if (!ext) return "n/d";
+    return String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)).slice(0, 40);
+  } catch {
+    return "erro";
+  }
+}
+
 export default function FpsMeter() {
   const [on, setOn] = useState(false);
   const [now, setNow] = useState(0);
   const [worst, setWorst] = useState({ fps: Infinity, where: "—" });
   const [lowPower, setLowPower] = useState(false);
+  const [env, setEnv] = useState({ gpu: "", dpr: 0, w: 0, h: 0 });
 
   useEffect(() => {
     if (new URLSearchParams(location.search).get("fps") !== "1") return;
     setOn(true);
+    setEnv({
+      gpu: gpuInfo(),
+      // dpr importa porque o custo de PINTAR cresce com a quantidade de
+      // pixels: uma tela em 150% pinta mais que o dobro de area que uma em
+      // 100%, com a pagina sendo exatamente a mesma.
+      dpr: window.devicePixelRatio,
+      w: window.innerWidth,
+      h: window.innerHeight,
+    });
 
     let raf = 0;
     let frames = 0;
@@ -103,6 +131,12 @@ export default function FpsMeter() {
       <div className="text-white/50">em: {worst.where}</div>
       <div className="mt-1 text-white/70">
         modo leve: {lowPower ? "SIM" : "não"}
+      </div>
+      <div className="mt-2 max-w-[260px] border-t border-white/15 pt-2 text-[11px] leading-snug text-white/50">
+        <div>
+          tela: {env.w}x{env.h} @{env.dpr}x
+        </div>
+        <div className="break-words">gpu: {env.gpu}</div>
       </div>
       <div className="mt-1 text-[11px] text-white/40">toque para zerar</div>
     </button>

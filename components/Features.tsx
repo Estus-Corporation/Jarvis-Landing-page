@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence, type PanInfo } from "motion/react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  motion,
+  AnimatePresence,
+  animate,
+  useMotionValue,
+  useTransform,
+  type PanInfo,
+} from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
@@ -254,6 +261,41 @@ const COMMAND_CHAR_MS = 28;
 // gestos naturais nao trocaria de cartao.
 const SWIPE_DISTANCE = 56; // px percorridos
 const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
+
+// ESPIADA DO PROXIMO CARTAO (mesma ideia do carrossel de Organization.tsx): um
+// pedaco da proxima janela fica parado na borda direita o tempo todo. E o que
+// diz "isto arrasta" sem depender de o visitante chegar na hora certa de ver
+// uma animacao — e, junto com a barra de progresso mais abaixo, o que faz a
+// tira ler como carrossel em vez de um cartao que troca de conteudo sozinho.
+//
+// A tira aqui e FULL-BLEED (`-mx-6 px-6` na janela de recorte): ela sangra por
+// baixo do respiro lateral da secao, entao a espiada visivel = respiro (24px)
+// + o quanto o cartao cede - o vao. E dai que vem quase toda ela, e o motivo e
+// o cartao: as maquetes do console (fila do Spotify, terminal do Git, conversa
+// do WhatsApp) ja sao apertadas no celular, e cada pixel de largura que some
+// delas custa mais do que a espiada ganha — medido: com o cartao cedendo 36px,
+// o nome da playlist do Spotify caia de "Foco P…" pra "Fo…" e o "TOCANDO
+// AGORA" quebrava em duas linhas. Sangrando pro respiro, o cartao cede so 20px
+// e mesmo assim aparecem 32px do vizinho.
+//
+// Sobra de troco: com o vao (16px) menor que o respiro (24px), nas paradas do
+// meio aparecem 8px do cartao ANTERIOR na borda esquerda. Nao e sobra
+// indesejada, e a mesma frase do outro lado ("da pra voltar"), so que dita
+// mais baixo — e nas duas pontas a conta fecha simetrica: no primeiro cartao
+// nao ha nada a esquerda, no ultimo sao os mesmos 28px espiando de la.
+//
+// O vao (SLIDE_GAP) e o mesmo `gap-4`/16px do carrossel de Organization.tsx —
+// as duas secoes tem sete/tres cartoes na mesma pagina, e diferencas sutis de
+// espacamento entre elas leem como inconsistencia mesmo sem o visitante saber
+// nomear o porque. SLIDE_INSET fica de fora dessa equivalencia de proposito
+// (mede quanto o CARTAO cede, nao o vao entre eles), entao subir o vao aqui
+// so encurta um pouco a espiada (32px -> 28px), sem apertar mais a maquete.
+//
+// Os dois vivem tambem no CSS da tira (`w-[calc(100%-1.25rem)]` e `gap-4`) pra
+// ela ja nascer na proporcao certa antes de qualquer medicao — o JS so calcula
+// ONDE cada parada fica, nunca o tamanho.
+const SLIDE_INSET = 20; // px que o cartao cede pro vizinho (= 1.25rem)
+const SLIDE_GAP = 16; // px de vao entre cartoes (= gap-4, igual Organization.tsx)
 
 // ---- Icone do botao: logo do app (svg de marca, sempre em branco sobre o
 // chip escuro) ou icone Phosphor da capacidade (herda a cor do chip via
@@ -2018,6 +2060,230 @@ function ConsoleBody({
   }
 }
 
+// ---- A janela do console -------------------------------------------------
+// Virou componente proprio quando a secao passou a ser carrossel DE VERDADE no
+// celular: a tira tem uma janela por capacidade (sete), e nao mais uma so com
+// o conteudo trocando por baixo. So a da capacidade ativa toca a cena (`live`);
+// as outras seis sao a MESMA moldura parada no instante zero — barra de
+// titulo, cartao do pedido ainda vazio, resposta invisivel.
+//
+// E o mesmo componente de proposito: quando o carrossel para numa das seis,
+// nao existe troca de casca nenhuma (a moldura ja estava ali desde antes de
+// entrar em cena, exatamente igual) — o que muda e so o conteudo comecar a
+// rodar. Uma "casca de espiada" separada, mais simples, criaria um pulo
+// visivel bem no fim do gesto, que e o pior momento possivel.
+//
+// `live` tambem e o interruptor de custo: e ele que impede as seis paradas de
+// montarem suas demos (cada uma tem timers proprios) e de repetirem as
+// animacoes infinitas da moldura (o LED da barra de titulo, o anel do
+// microfone, o cursor piscando). Sete copias disso rodando ao mesmo tempo
+// seria pagar sete vezes por uma cena que so uma pessoa esta vendo.
+function ConsoleWindow({
+  cap,
+  live,
+  command,
+  commandChars,
+  showReply,
+  reply,
+  sceneKey,
+  reduce,
+  device,
+  onDevice,
+}: {
+  cap: Cap;
+  live: boolean;
+  command: string;
+  commandChars: number;
+  showReply: boolean;
+  reply: string;
+  sceneKey: string;
+  reduce: boolean;
+  device: DeviceId;
+  onDevice: (id: DeviceId) => void;
+}) {
+  const typed = commandChars >= command.length;
+
+  return (
+    // glow-ring SEM --active: o anel girando e um conic-gradient animado via
+    // @property, que o navegador precisa REPINTAR a cada frame (nao e so
+    // compositor como transform/opacity) — deixado sempre ligado, isso e um
+    // repaint continuo pra sempre numa janela grande e sempre visivel. Vira
+    // hover/focus (:is(:hover,:focus-within), ja definido em globals.css),
+    // igual o resto dos usos de glow-ring no site.
+    //
+    // h-[Npx] fixo, NAO min-h: com min-h, um pedido ou resposta que quebrasse
+    // em 2 linhas (algumas capacidades sao bem mais longas que outras)
+    // empurrava a caixa inteira pra crescer — e, como ela e item de grid ao
+    // lado da pilha de botoes, a coluna INTEIRA crescia junto, o cartao
+    // mudando de forma a cada troca de capacidade. Altura fixa +
+    // overflow-hidden fecham essa porta: por maior que o conteudo de dentro
+    // queira ficar, a caixa nunca muda de tamanho — o que nao couber e
+    // cortado, nao empurrado. (No celular isso vale dobrado: com as sete
+    // janelas lado a lado na tira, alturas diferentes fariam a secao pular de
+    // tamanho no meio do arrasto.) Os 1o/3o atos abaixo reservam 2 linhas
+    // fixas pelo mesmo motivo (ver comentario la).
+    <div className="glow-ring relative flex h-[500px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[620px] lg:h-[680px] laptop:h-[600px]">
+      {/* barra de titulo */}
+      <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
+        <span className="flex gap-1.5" aria-hidden>
+          <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+        </span>
+        <span className="ml-1 font-display text-xs font-semibold uppercase tracking-[0.15em] text-white/45">
+          Jarvis Console
+        </span>
+        <span className="ml-auto flex items-center gap-2 text-xs text-white/40">
+          {/* fora de cena o LED e so o miolo, parado: mesmo tamanho e mesmo
+              lugar, sem o halo pulsando (ver `live` no topo). */}
+          {live ? (
+            <span className="led-dot" aria-hidden />
+          ) : (
+            <span
+              aria-hidden
+              className="inline-flex h-1.5 w-1.5 rounded-full bg-white/70"
+            />
+          )}
+          ativo
+        </span>
+      </div>
+
+      {/* corpo. Os dois cartoes de fala usam o mesmo esqueleto de UMA
+          linha — avatar, rotulo, divisor e frase lado a lado. O rotulo
+          tem largura fixa (w-20) nos dois pra frase do usuario e a do
+          Jarvis comecarem exatamente na mesma coluna: sem isso
+          "USUÁRIO" e "JARVIS" tem larguras diferentes e os dois textos
+          ficariam desalinhados um do outro. Dentro dessa caixa o texto
+          e centralizado, entao cada rotulo fica no meio do vao entre o
+          avatar e o divisor, independente do tamanho da palavra. */}
+      <div className="flex flex-1 flex-col gap-3 p-3.5 sm:gap-4 sm:p-5 laptop:gap-3.5">
+        {/* 1o ato — o pedido, sem truncar, pra ler numa boa */}
+        <div className="flex items-center gap-2.5 rounded-chip border border-white/[0.08] bg-ink-950/60 px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
+          <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.04]">
+            {live && (
+              <span
+                aria-hidden
+                className="core-ping absolute inset-0 rounded-full border border-white/20"
+                style={{ animationDuration: "2.4s" }}
+              />
+            )}
+            <Microphone
+              size={16}
+              weight="light"
+              aria-hidden
+              className="text-white/60"
+            />
+          </span>
+          {/* font-mono (Geist Mono) em vez da Exo 2 dos titulos: aqui o
+              rotulo faz papel de etiqueta de terminal, e a monoespacada
+              e o que casa com o resto da linguagem do console.
+              O rotulo e o divisor somem no celular (hidden sm:block):
+              juntos comem ~110px de uma linha que tem ~300, e o avatar
+              ja diz quem fala (microfone = voce, marca = Jarvis). O que
+              ganha o espaco de volta e a frase, que e o conteudo. */}
+          <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/40 sm:block laptop:w-16 laptop:text-[11px]">
+            Usuário
+          </span>
+          <span
+            aria-hidden
+            className="mx-1 hidden h-6 w-px shrink-0 bg-white/15 sm:block"
+          />
+          {/* h-14 FIXO (nao mais min-h de 1 linha): reserva espaco pra
+              2 linhas sempre, pedido curto ou longo — e o que garante
+              que o cartao inteiro nunca muda de altura ao trocar de
+              capacidade (ver comentario grande na janela do console,
+              mais acima). line-clamp-2 e so um cinto de seguranca:
+              nenhum pedido real passa de 2 linhas nas larguras do
+              site, mas se um dia passar, corta em vez de estourar.
+              Mais o cursor piscando enquanto digita (estilo WhatsApp)
+              — a aspa de fechamento so entra quando `typed` vira
+              true, junto com o cursor sumindo. */}
+          <div className="flex h-14 min-w-0 flex-1 items-center">
+            <p className="line-clamp-2 text-[0.95rem] italic leading-snug text-white/90 sm:text-xl laptop:text-base">
+              “{command.slice(0, commandChars)}
+              {typed && "”"}
+              {!typed && !reduce && live && (
+                <span className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* 2o ato — a tela da acao. So MONTA depois que o pedido termina
+            de digitar (typed): assim os timers internos de cada demo
+            (GitViz, WhatsAppViz...) comecam a contar do zero exatamente
+            quando a acao "comeca", em vez de correr escondidos por trás
+            da digitacao do 1o ato.
+            flex-1 SEM min-h proprio: a janela do console tem altura
+            FIXA (h-[Npx] no container la fora, nao mais min-h), entao
+            este bloco recebe sempre exatamente "o que sobra" depois da
+            barra de titulo e dos 1o/3o atos (que tambem tem altura fixa
+            agora) — nao precisa mais de um piso proprio pra empatar com
+            a pilha de botoes do lado, isso ja vem garantido pela altura
+            fixa do pai. */}
+        <div className="relative flex-1">
+          <AnimatePresence mode="wait">
+            {live && typed && (
+              <motion.div
+                key={sceneKey}
+                // "foco nitidez": entra borrada e um pouco menor,
+                // resolvendo pra nitida no lugar — como uma camera
+                // ajustando o foco, em vez do fade+leve-subida simples
+                // de antes. Sai so com fade (sem desfocar de novo),
+                // que fica mais limpo numa troca rapida de cena.
+                initial={
+                  reduce
+                    ? false
+                    : { opacity: 0, scale: 0.96, filter: "blur(6px)" }
+                }
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={reduce ? undefined : { opacity: 0 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute inset-0"
+              >
+                <ConsoleBody cap={cap} device={device} onDevice={onDevice} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* 3o ato — a resposta. So aparece (showReply) depois que a demo
+            do meio termina de tocar — a caixa inteira fica de opacidade
+            0 ate la, NAO desmontada: se ela sumisse do fluxo, a demo
+            logo acima (flex-1) esticaria pra ocupar o espaco vazio e
+            encolheria de novo quando a resposta chegasse, um solavanco
+            de layout. Com opacidade 0 o espaco fica reservado o tempo
+            todo e ela so surge (fade + leve subida). Mais clara que o
+            cartao do usuario de proposito: e a "voz" do produto, o fim
+            da historia. */}
+        <motion.div
+          initial={false}
+          animate={{ opacity: showReply ? 1 : 0, y: showReply ? 0 : 8 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          aria-hidden={!showReply}
+          className="flex items-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3"
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
+            <JarvisMark />
+          </span>
+          <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
+            Jarvis
+          </span>
+          <span
+            aria-hidden
+            className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
+          />
+          {/* mesma reserva fixa de 2 linhas do 1o ato, mesmo motivo:
+              ver comentario grande na janela do console. */}
+          <div className="flex h-14 min-w-0 flex-1 items-center">
+            <JarvisReply text={reply} />
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 export default function Features() {
   const reduce = useReducedMotionSafe();
   const [activeIdx, setActiveIdx] = useState(0);
@@ -2041,21 +2307,120 @@ export default function Features() {
 
   const active = CAPS[activeIdx];
 
-  // avanca/volta uma capacidade, dando a volta nas pontas
-  const paginate = (dir: number) => {
-    setManual(true);
-    setActiveIdx((i) => (i + dir + CAPS.length) % CAPS.length);
+  // ---- Carrossel do celular ----------------------------------------------
+  // Antes daqui o "carrossel" era um cartao parado: o arrasto so trocava o
+  // conteudo depois de soltar, com um fade. Agora as sete janelas vivem lado a
+  // lado numa tira que se move de verdade — o vizinho ja esta espiando na
+  // borda antes do gesto e entra DURANTE ele. Mesma mecanica (e quase o mesmo
+  // codigo) do carrossel de Organization.tsx, de proposito: sao dois
+  // carrosseis na mesma pagina, e inventar duas fisicas diferentes pro mesmo
+  // gesto e o tipo de detalhe que o dedo percebe antes da cabeca.
+
+  // Largura da JANELA DE RECORTE (nao a do cartao — o cartao e essa largura
+  // menos o SLIDE_INSET). Medida, e nao calculada de vw, porque ela muda
+  // tambem quando o respiro da secao muda de degrau.
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [trackWidth, setTrackWidth] = useState(0);
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) =>
+      setTrackWidth(entry.contentRect.width)
+    );
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // x e a posicao da tira em PIXELS (nao %), porque o `drag` do motion move em
+  // pixels — misturar as duas unidades no mesmo valor e que permite o dedo
+  // "somar" deslocamento em cima da posicao ja animada, sem os dois brigarem.
+  const x = useMotionValue(0);
+
+  // PASSO de uma parada = largura do cartao + o vao.
+  const stride = trackWidth ? trackWidth - SLIDE_INSET + SLIDE_GAP : 0;
+
+  // Fim da corrida: no ultimo cartao a tira NAO para em -6*stride, senao
+  // sobraria um vao morto na direita (a espiada existe pra mostrar o proximo, e
+  // no ultimo nao ha proximo). Trava onde a borda direita do ultimo cartao
+  // encosta na borda da janela de recorte — o que deixa a ultima parada como
+  // espelho exata da primeira: la o cartao cola na esquerda e o vizinho espia
+  // na direita, aqui ele cola na direita e o ANTERIOR espia na esquerda, que e
+  // a leitura certa nessa ponta ("ainda da pra voltar").
+  const contentWidth = stride ? CAPS.length * stride - SLIDE_GAP : 0;
+  const minX = Math.min(0, trackWidth - contentWidth);
+  const posFor = (idx: number) => Math.max(-idx * stride, minX);
+
+  // `type: spring` (nao tween) pra combinar com a mola elastica que o proprio
+  // arrasto usa enquanto o dedo ainda esta na tela — sem isso, o gesto teria
+  // uma fisica e o "snap" final teria outra, e a costura ficaria visivel.
+  const snapTo = (idx: number) => {
+    if (!stride) return;
+    animate(x, posFor(idx), { type: "spring", stiffness: 380, damping: 42 });
   };
 
-  // Arrastar pra ESQUERDA puxa o proximo cartao (o dedo empurra o atual pra
-  // fora), arrastar pra direita volta — a mesma convencao de qualquer
-  // carrossel de app. Gestos verticais nem chegam aqui: com drag="x" o motion
-  // deixa `touch-action: pan-y` no elemento, entao rolar a pagina continua
-  // sendo rolagem nativa.
+  useEffect(() => {
+    // No desktop a tira volta a ser um cartao so (as outras seis saem por
+    // `lg:hidden`), entao qualquer deslocamento aqui jogaria a janela pra fora
+    // da coluna. `stride` entra nas deps pra tira se realinhar quando a tela
+    // gira ou muda de tamanho com o carrossel no meio do caminho.
+    if (!isMobile) {
+      x.set(0);
+      return;
+    }
+    snapTo(activeIdx);
+    // snapTo e recriado a cada render (le stride); as deps abaixo sao as
+    // entradas reais dele.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIdx, isMobile, stride]);
+
+  // Posicao do polegar da barra de progresso, derivada direto do `x` da tira:
+  // ele acompanha o DEDO durante o arrasto, nao so o resultado depois de
+  // soltar (o clamp segura o elastico das pontas pra ele nao vazar do trilho).
+  // As paradas vem por ref porque `useTransform` so recalcula quando o `x`
+  // muda — lendo do ref a conta nunca usa uma largura velha de antes de medir
+  // ou de girar a tela.
+  //
+  // A conta e por TRECHO (parada a parada), nao uma regra de tres sobre o
+  // percurso inteiro: como a ultima parada e travada (ver minX), ela fica mais
+  // perto da anterior que as outras entre si — numa regra de tres simples o
+  // polegar chegaria torto no meio do caminho e desmentiria os sete alvos
+  // iguais logo abaixo dele.
+  //
+  // O deslocamento sai em % do PROPRIO polegar (que mede 1/7 do trilho), entao
+  // "andar uma parada" e sempre exatamente 100% — a barra nao precisa saber
+  // quantos pixels o trilho tem, e continua certa em qualquer largura de tela.
+  const stopsRef = useRef<number[]>([]);
+  stopsRef.current = CAPS.map((_, i) => posFor(i));
+  const thumbX = useTransform(x, (v) => {
+    const stops = stopsRef.current;
+    const last = stops[stops.length - 1];
+    if (!last) return "0%";
+    const pos = Math.min(0, Math.max(last, v));
+    let seg = stops.findIndex((s, i) => i > 0 && pos >= s) - 1;
+    if (seg < 0) seg = stops.length - 2;
+    const span = stops[seg + 1] - stops[seg];
+    const frac = seg + (span ? (pos - stops[seg]) / span : 0);
+    return `${frac * 100}%`;
+  });
+
+  // Arrastar pra ESQUERDA avanca (o dedo empurra o cartao atual pra fora,
+  // puxando o proximo), pra DIREITA volta — convencao de qualquer carrossel de
+  // app, e a mesma de Organization.tsx. Nos extremos, Math.min/max trava o
+  // indice e `snapTo` chama de volta pra MESMA posicao: e o que da o efeito de
+  // elastico batendo na ponta em vez de continuar arrastando pro vazio.
+  // Gestos verticais nem chegam aqui: com drag="x" o motion deixa
+  // `touch-action: pan-y` no elemento, entao rolar a pagina continua sendo
+  // rolagem nativa.
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     const { offset, velocity } = info;
-    if (offset.x < -SWIPE_DISTANCE || velocity.x < -SWIPE_VELOCITY) paginate(1);
-    else if (offset.x > SWIPE_DISTANCE || velocity.x > SWIPE_VELOCITY) paginate(-1);
+    let next = activeIdx;
+    if (offset.x < -SWIPE_DISTANCE || velocity.x < -SWIPE_VELOCITY)
+      next = Math.min(activeIdx + 1, CAPS.length - 1);
+    else if (offset.x > SWIPE_DISTANCE || velocity.x > SWIPE_VELOCITY)
+      next = Math.max(activeIdx - 1, 0);
+
+    if (next === activeIdx) snapTo(activeIdx);
+    else setActiveIdx(next);
   };
 
   // Na cena do Spotify o pedido e a resposta sao montados a partir do aparelho
@@ -2113,8 +2478,6 @@ export default function Features() {
     // evita reiniciar a digitacao no meio quando nada realmente mudou.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sceneKey, reduce]);
-
-  const typed = commandChars >= command.length;
 
   // Auto-play: percorre as capacidades sozinho, como uma demo rodando. Para
   // no hover/foco (o visitante assumiu o controle) e em reduced-motion.
@@ -2204,18 +2567,14 @@ export default function Features() {
           onMouseLeave={() => setPaused(false)}
           onFocusCapture={() => setPaused(true)}
           onBlurCapture={() => setPaused(false)}
-          // O bloco INTEIRO e a area de arrasto (cartao + botao + pontos),
-          // nao so o cartao: no celular o dedo cai em qualquer lugar dessa
-          // pilha, e ter uma parte que "nao pega" o gesto parece defeito.
-          // Constraint 0/0 + elastic = ele acompanha o dedo com resistencia e
-          // volta sozinho; quem troca de cena e o onDragEnd, nao a posicao.
-          drag={isMobile ? "x" : false}
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.25}
-          dragMomentum={false}
-          onDragStart={() => setManual(true)}
-          onDragEnd={handleDragEnd}
-          className="mt-10 grid cursor-grab grid-cols-1 gap-4 active:cursor-grabbing sm:mt-14 lg:cursor-auto lg:grid-cols-[0.9fr_1.35fr] lg:gap-5 lg:active:cursor-auto laptop:mt-9"
+          // O arrasto saiu daqui e foi pra TIRA (mais abaixo): agora quem se
+          // move e ela, nao o bloco inteiro. Enquanto o cartao estava parado
+          // fazia sentido o bloco todo ceder um pouco pro dedo, que era a
+          // unica resposta ao gesto; com a tira andando de verdade, mover a
+          // pilha junto seria uma segunda coisa se mexendo em cima da
+          // primeira. O que responde ao dedo fora do cartao agora e o polegar
+          // da barra de progresso, que anda no mesmo compasso.
+          className="mt-10 grid grid-cols-1 gap-4 sm:mt-14 lg:grid-cols-[0.9fr_1.35fr] lg:gap-5 laptop:mt-9"
         >
           {/* Coluna esquerda: seletor de capacidades. Sao 7 botoes, e e a
               altura DELES que define a linha do grid — no notebook, 7x74px
@@ -2281,208 +2640,124 @@ export default function Features() {
             })}
           </div>
 
-          {/* Coluna direita: a janela do console. glow-ring SEM --active: o
-              anel girando e um conic-gradient animado via @property, que o
-              navegador precisa REPINTAR a cada frame (nao e so compositor
-              como transform/opacity) — deixado sempre ligado, isso e um
-              repaint continuo pra sempre numa janela grande e sempre
-              visivel. Vira hover/focus (:is(:hover,:focus-within), ja
-              definido em globals.css), igual o resto dos usos de
-              glow-ring no site.
+          {/* Coluna direita: a TIRA com as sete janelas do console.
 
-              h-[Npx] fixo, NAO mais min-h: com min-h, um pedido ou resposta
-              que quebrasse em 2 linhas (algumas capacidades sao bem mais
-              longas que outras) empurrava a caixa inteira pra crescer — e,
-              como ela e item de grid ao lado da pilha de botoes, a coluna
-              INTEIRA crescia junto, o cartao mudando de forma a cada troca
-              de capacidade. Altura fixa + overflow-hidden fecham essa
-              porta: por maior que o conteudo de dentro queira ficar, a
-              caixa nunca muda de tamanho — o que nao couber e cortado, nao
-              empurrado. Os 1o/3o atos abaixo reservam 2 linhas fixas pelo
-              mesmo motivo (ver comentario la). */}
-          <div className="glow-ring relative order-1 flex h-[500px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[620px] lg:order-none lg:h-[680px] laptop:h-[600px]">
-            {/* barra de titulo */}
-            <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
-              <span className="flex gap-1.5" aria-hidden>
-                <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-                <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-                <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-              </span>
-              <span className="ml-1 font-display text-xs font-semibold uppercase tracking-[0.15em] text-white/45">
-                Jarvis Console
-              </span>
-              <span className="ml-auto flex items-center gap-2 text-xs text-white/40">
-                <span className="led-dot" aria-hidden />
-                ativo
-              </span>
-            </div>
+              No desktop ela nao existe como tira — o `lg:block` desfaz o flex
+              e as seis janelas fora de cena saem por `lg:hidden`, entao sobra
+              exatamente o que sempre houve ali: uma janela, na segunda coluna
+              do grid.
 
-            {/* corpo. Os dois cartoes de fala usam o mesmo esqueleto de UMA
-                linha — avatar, rotulo, divisor e frase lado a lado. O rotulo
-                tem largura fixa (w-20) nos dois pra frase do usuario e a do
-                Jarvis comecarem exatamente na mesma coluna: sem isso
-                "USUÁRIO" e "JARVIS" tem larguras diferentes e os dois textos
-                ficariam desalinhados um do outro. Dentro dessa caixa o texto
-                e centralizado, entao cada rotulo fica no meio do vao entre o
-                avatar e o divisor, independente do tamanho da palavra. */}
-            <div className="flex flex-1 flex-col gap-3 p-3.5 sm:gap-4 sm:p-5 laptop:gap-3.5">
-              {/* 1o ato — o pedido, sem truncar, pra ler numa boa */}
-              <div className="flex items-center gap-2.5 rounded-chip border border-white/[0.08] bg-ink-950/60 px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
-                <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.04]">
-                  <span
-                    aria-hidden
-                    className="core-ping absolute inset-0 rounded-full border border-white/20"
-                    style={{ animationDuration: "2.4s" }}
-                  />
-                  <Microphone
-                    size={16}
-                    weight="light"
-                    aria-hidden
-                    className="text-white/60"
-                  />
-                </span>
-                {/* font-mono (Geist Mono) em vez da Exo 2 dos titulos: aqui o
-                    rotulo faz papel de etiqueta de terminal, e a monoespacada
-                    e o que casa com o resto da linguagem do console.
-                    O rotulo e o divisor somem no celular (hidden sm:block):
-                    juntos comem ~110px de uma linha que tem ~300, e o avatar
-                    ja diz quem fala (microfone = voce, marca = Jarvis). O que
-                    ganha o espaco de volta e a frase, que e o conteudo. */}
-                <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/40 sm:block laptop:w-16 laptop:text-[11px]">
-                  Usuário
-                </span>
-                <span
-                  aria-hidden
-                  className="mx-1 hidden h-6 w-px shrink-0 bg-white/15 sm:block"
-                />
-                {/* h-14 FIXO (nao mais min-h de 1 linha): reserva espaco pra
-                    2 linhas sempre, pedido curto ou longo — e o que garante
-                    que o cartao inteiro nunca muda de altura ao trocar de
-                    capacidade (ver comentario grande na janela do console,
-                    mais abaixo). line-clamp-2 e so um cinto de seguranca:
-                    nenhum pedido real passa de 2 linhas nas larguras do
-                    site, mas se um dia passar, corta em vez de estourar.
-                    Mais o cursor piscando enquanto digita (estilo WhatsApp)
-                    — a aspa de fechamento so entra quando `typed` vira
-                    true, junto com o cursor sumindo. */}
-                <div className="flex h-14 min-w-0 flex-1 items-center">
-                  <p className="line-clamp-2 text-[0.95rem] italic leading-snug text-white/90 sm:text-xl laptop:text-base">
-                    “{command.slice(0, commandChars)}
-                    {typed && "”"}
-                    {!typed && !reduce && (
-                      <span className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
-                    )}
-                  </p>
-                </div>
-              </div>
+              No celular e um carrossel de verdade. A janela de recorte sangra
+              pra fora do respiro da secao (-mx-6 px-6) porque e dai que sai
+              quase toda a espiada do vizinho sem o cartao ter que encolher
+              (ver SLIDE_INSET/SLIDE_GAP la em cima): o pedaco do proximo
+              cartao ocupa o respiro que ja estava vazio, e some cortado na
+              borda da tela em vez de num vao no meio do nada.
 
-              {/* 2o ato — a tela da acao. So MONTA depois que o pedido termina
-                  de digitar (typed): assim os timers internos de cada demo
-                  (GitViz, WhatsAppViz...) comecam a contar do zero exatamente
-                  quando a acao "comeca", em vez de correr escondidos por trás
-                  da digitacao do 1o ato.
-                  flex-1 SEM min-h proprio: a janela do console agora tem
-                  altura FIXA (h-[Npx] no container la fora, nao mais
-                  min-h), entao este bloco recebe sempre exatamente "o que
-                  sobra" depois da barra de titulo e dos 1o/3o atos (que
-                  tambem tem altura fixa agora) — nao precisa mais de um
-                  piso proprio pra empatar com a pilha de botoes do lado,
-                  isso ja vem garantido pela altura fixa do pai. */}
-              <div className="relative flex-1">
-                <AnimatePresence mode="wait">
-                  {typed && (
-                    <motion.div
-                      key={sceneKey}
-                      // "foco nitidez": entra borrada e um pouco menor,
-                      // resolvendo pra nitida no lugar — como uma camera
-                      // ajustando o foco, em vez do fade+leve-subida simples
-                      // de antes. Sai so com fade (sem desfocar de novo),
-                      // que fica mais limpo numa troca rapida de cena.
-                      initial={
-                        reduce
-                          ? false
-                          : { opacity: 0, scale: 0.96, filter: "blur(6px)" }
-                      }
-                      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                      exit={reduce ? undefined : { opacity: 0 }}
-                      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                      className="absolute inset-0"
-                    >
-                      <ConsoleBody cap={active} device={device} onDevice={setDevice} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* 3o ato — a resposta. So aparece (showReply) depois que a demo
-                  do meio termina de tocar — a caixa inteira fica de opacidade
-                  0 ate la, NAO desmontada: se ela sumisse do fluxo, a demo
-                  logo acima (flex-1) esticaria pra ocupar o espaco vazio e
-                  encolheria de novo quando a resposta chegasse, um solavanco
-                  de layout. Com opacidade 0 o espaco fica reservado o tempo
-                  todo e ela so surge (fade + leve subida). Mais clara que o
-                  cartao do usuario de proposito: e a "voz" do produto, o fim
-                  da historia. */}
-              <motion.div
-                initial={false}
-                animate={{ opacity: showReply ? 1 : 0, y: showReply ? 0 : 8 }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                aria-hidden={!showReply}
-                className="flex items-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3"
-              >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
-                  <JarvisMark />
-                </span>
-                <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
-                  Jarvis
-                </span>
-                <span
-                  aria-hidden
-                  className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
-                />
-                {/* mesma reserva fixa de 2 linhas do 1o ato, mesmo motivo:
-                    ver comentario grande na janela do console. */}
-                <div className="flex h-14 min-w-0 flex-1 items-center">
-                  <JarvisReply text={reply} />
-                </div>
-              </motion.div>
-            </div>
+              O arrasto mora AQUI, na tira, e nao no bloco inteiro: e o cartao
+              que anda com o dedo. */}
+          <div
+            ref={viewportRef}
+            className="order-1 -mx-6 overflow-hidden px-6 lg:order-none lg:mx-0 lg:overflow-visible lg:px-0"
+          >
+            <motion.div
+              drag={isMobile ? "x" : false}
+              dragConstraints={{ left: minX, right: 0 }}
+              dragElastic={0.15}
+              dragMomentum={false}
+              onDragStart={() => setManual(true)}
+              onDragEnd={handleDragEnd}
+              style={{ x }}
+              className="flex cursor-grab gap-4 active:cursor-grabbing lg:block lg:cursor-auto lg:active:cursor-auto"
+            >
+              {CAPS.map((cap, i) => {
+                const isLive = i === activeIdx;
+                return (
+                  // Sem shrink-0 o flex espremeria as sete pra caber na tira,
+                  // e nao sobraria vizinho pra espiar. aria-hidden nas seis
+                  // paradas: pra quem le a pagina com leitor de tela, a secao
+                  // continua tendo UM console (o da capacidade em cena) — a
+                  // navegacao entre elas e a barra de progresso logo abaixo,
+                  // que e tablist de verdade.
+                  <div
+                    key={cap.id}
+                    aria-hidden={!isLive}
+                    className={`w-[calc(100%-1.25rem)] shrink-0 lg:w-full ${
+                      isLive ? "" : "lg:hidden"
+                    }`}
+                  >
+                    <ConsoleWindow
+                      cap={cap}
+                      live={isLive}
+                      // Fora de cena a janela mostra o pedido VAZIO (zero
+                      // caracteres digitados), que e exatamente o estado em
+                      // que a cena ao vivo comeca — por isso a troca no fim
+                      // do gesto nao tem pulo: o cartao que chegou ja estava
+                      // desenhado assim, e so passa a digitar.
+                      command={isLive ? command : cap.command}
+                      commandChars={isLive ? commandChars : 0}
+                      showReply={isLive ? showReply : false}
+                      reply={isLive ? reply : cap.reply}
+                      sceneKey={sceneKey}
+                      reduce={reduce}
+                      device={device}
+                      onDevice={setDevice}
+                    />
+                  </div>
+                );
+              })}
+            </motion.div>
           </div>
 
-          {/* Pontos — so no celular, onde ve-se UM botao de cada vez. Eles
-              respondem as duas perguntas que o botao sozinho nao responde:
-              quantas capacidades existem e em qual delas voce esta. E sao
-              tambem o caminho de quem nao arrasta — teclado e leitor de tela
-              nao dao swipe, e um carrossel so-gesto seria intocavel pra eles.
-              p-5 (20px) pra o alvo de toque chegar perto de 44px mesmo com o
-              ponto tendo so 6px de altura visivel (6 + 20*2 = 46px — a conta
-              com p-2/8px de antes dava so 22px, bem abaixo do recomendado). */}
-          <div
-            className="order-3 -mt-1 flex items-center justify-center lg:hidden"
-            role="tablist"
-            aria-label="Capacidades"
-          >
-            {CAPS.map((cap, i) => (
-              <button
-                key={cap.id}
-                type="button"
-                role="tab"
-                aria-selected={i === activeIdx}
-                aria-label={cap.tab}
-                onClick={() => {
-                  setManual(true);
-                  setActiveIdx(i);
-                }}
-                className="cursor-pointer p-5"
-              >
-                <span
-                  aria-hidden
-                  className={`block h-1.5 rounded-full transition-all duration-300 ${
-                    i === activeIdx ? "w-6 bg-white" : "w-1.5 bg-white/25"
-                  }`}
+          {/* BARRA DE PROGRESSO (no lugar dos pontinhos que moravam aqui):
+              um trilho continuo com um polegar de 1/7 que DESLIZA junto com o
+              dedo, nao um estado que troca depois de soltar. Com sete
+              capacidades os pontinhos ja estavam no limite — sete tracinhos
+              lado a lado viram enfeite, e cada alvo de toque ficava com a
+              largura de um grao de arroz. O trilho diz as mesmas duas coisas
+              (quantas existem, em qual voce esta) e mais uma que faltava
+              justamente durante o gesto: o quanto do caminho entre duas ja
+              foi andado. O deslocamento vem de `thumbX`, derivado do mesmo
+              `x` da tira, entao os dois nunca podem discordar.
+
+              Continua sendo tablist com um botao por capacidade — a barra e a
+              pele, a navegacao por toque/teclado e a mesma de antes (teclado e
+              leitor de tela nao dao swipe; um carrossel so-gesto seria
+              intocavel pra eles). Os botoes sao uma camada TRANSPARENTE por
+              cima do trilho: assim cada alvo tem os 44px de altura
+              recomendados sem que o trilho precise ser grosso desse tanto, e
+              os 304px de largura dividos por sete dao 43px pra cada um — a
+              mesma solucao por sobreposicao do carrossel de Organization.tsx. */}
+          <div className="relative order-3 mx-auto mt-1 w-full max-w-[19rem] lg:hidden">
+            <div
+              aria-hidden
+              className="h-[3px] overflow-hidden rounded-full bg-white/[0.12]"
+            >
+              <motion.span
+                style={{ x: thumbX, width: `${100 / CAPS.length}%` }}
+                className="block h-full rounded-full bg-white"
+              />
+            </div>
+            <div
+              className="absolute inset-x-0 top-1/2 flex -translate-y-1/2"
+              role="tablist"
+              aria-label="Capacidades"
+            >
+              {CAPS.map((cap, i) => (
+                <button
+                  key={cap.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === activeIdx}
+                  aria-label={cap.tab}
+                  onClick={() => {
+                    setManual(true);
+                    setActiveIdx(i);
+                  }}
+                  className="h-11 flex-1 cursor-pointer"
                 />
-              </button>
-            ))}
+              ))}
+            </div>
           </div>
         </motion.div>
 

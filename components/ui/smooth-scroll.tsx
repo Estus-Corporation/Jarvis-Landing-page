@@ -20,8 +20,12 @@ import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import "lenis/dist/lenis.css";
 
 // Recuo do topo pra ancora nao parar embaixo do header flutuante (que vive em
-// top-5 e tem ~64px de altura).
-const ANCHOR_OFFSET = -96;
+// top-5 e tem ~60-68px de altura, top-5 incluso). Mesmo valor do
+// scroll-padding-top nativo em globals.css — ver o comentario la pra
+// entender por que e 90 e nao um numero redondo maior (a faixa de recursos
+// fica sem vao nenhum antes da secao de Recursos, entao qualquer folga a
+// mais que a altura do header revela um pedaco do texto dela).
+const ANCHOR_OFFSET = -90;
 
 // Intercepta cliques em links de ancora e delega pro Lenis, pra o salto ser
 // suave (senao o browser pularia seco, ignorando a inercia do Lenis).

@@ -12,10 +12,20 @@
    via ANCHOR_OFFSET: sem ela, nos casos em que o Lenis nao monta, "#precos"
    pararia com o titulo escondido atras do header flutuante. Nao conflita com
    o Lenis porque ele nao usa o salto de ancora do navegador — chama scrollTo
-   com o proprio offset. */
+   com o proprio offset.
+
+   90px, nao mais 96: o header flutuante mede ~80px de baixo (60px de altura +
+   20px de top-5) no celular e ~88px no desktop. Como a faixa de recursos
+   (FeatureTicker) fica ENCOSTADA na secao de Recursos, sem vao nenhum entre
+   os dois, qualquer folga alem da altura do header nessa conta "vaza" e
+   revela um pedaco do texto correndo da faixa, por baixo do header, ao clicar
+   em "Recursos" no menu. 90px e o minimo que ainda cobre o header no
+   desktop (88px) com uma migalha de respiro — reduz a folga que sobra no
+   celular ao ponto de nao alcancar mais o texto da faixa, so um triz do
+   espaco em branco dela. */
 html {
   scroll-behavior: auto;
-  scroll-padding-top: 96px;
+  scroll-padding-top: 90px;
 }
 
 /* Quem pediu menos movimento nao deve receber scroll animado. */

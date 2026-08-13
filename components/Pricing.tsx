@@ -93,13 +93,18 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 // ---- Carrossel de arrastar (so no celular, abaixo de sm) -----------------
 // Mesma mecanica de Organization.tsx (posFor/snapTo/handleDragEnd) — ver os
-// comentarios grandes la pro raciocinio completo. PEEK/GAP ficam menores
-// que os 44/16 de la de proposito: e "leve previa" (pedido explicito), nao
-// a espiada cheia dos outros carrosseis do site.
+// comentarios grandes la pro raciocinio completo.
+//
+// A tira e FULL-BLEED (`-mx-6 px-6` na janela de recorte, mais abaixo): ela
+// sangra por baixo do respiro lateral da secao, entao o vizinho aparece ate a
+// borda REAL da tela em vez de parar 24px antes dela, com uma faixa morta de
+// fundo no meio. Numeros identicos aos de Features.tsx e Organization.tsx —
+// os tres carrosseis da pagina passam a ter a MESMA geometria, e a espiada
+// visivel = respiro (24px) + SLIDE_INSET - GAP.
 const SWIPE_DISTANCE = 56; // px percorridos
 const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
-const PEEK = 32; // px do vizinho aparecendo
-const GAP = 12; // px de vao entre cartoes (= gap-3)
+const SLIDE_INSET = 20; // px que o cartao cede pro vizinho (= 1.25rem)
+const GAP = 16; // px de vao entre cartoes (= gap-4)
 
 // Em fonte monoespacada o caractere de espaco ocupa uma largura inteira, que
 // no text-5xl vira um vao grande entre "R$" e o numero. Separar os dois deixa
@@ -321,7 +326,9 @@ export default function Pricing() {
   }, []);
 
   const x = useMotionValue(0);
-  const stride = trackWidth ? trackWidth - PEEK : 0;
+  // PASSO de uma parada = largura do cartao (trackWidth - SLIDE_INSET) + o
+  // vao.
+  const stride = trackWidth ? trackWidth - SLIDE_INSET + GAP : 0;
   const contentWidth = stride ? plans.length * stride - GAP : 0;
   const minX = Math.min(0, trackWidth - contentWidth);
   const posFor = (idx: number) => Math.max(-idx * stride, minX);
@@ -486,16 +493,27 @@ export default function Pricing() {
             transition={{ duration: 0.6, ease: EASE }}
             className="mt-5 sm:hidden"
           >
-            {/* -mt-3 + pt-3: o overflow-hidden corta em RETANGULO, topo
-                incluso — sem essa folga ele cortava a pilula "Mais
-                popular" do Anual quando ele e o cartao ativo (ela fica de
-                proposito 12px/-top-3 pra fora da borda de cima do
-                cartao). O par -mt-3/pt-3 abre exatamente esses 12px de
-                clearance ACIMA sem empurrar o carrossel pra baixo: a
-                margem negativa sobe a caixa, o padding devolve o mesmo
-                tanto por dentro, entao o conteudo comeca exatamente onde
-                comecaria sem os dois. */}
-            <div ref={viewportRef} className="-mt-3 overflow-hidden pt-3">
+            {/* O mesmo par margem-negativa/padding em DOIS eixos, por dois
+                motivos diferentes:
+                -mx-6 + px-6 (horizontal): a janela sangra por baixo do
+                respiro lateral da secao, entao ela recorta na borda REAL da
+                tela e o vizinho aparece ate la — sem isso ele parava 24px
+                antes, com uma faixa morta de fundo entre a espiada e a
+                borda (ver SLIDE_INSET/GAP, mais acima).
+                -mt-3 + pt-3 (vertical): o overflow-hidden corta em
+                RETANGULO, topo incluso — sem essa folga ele cortava a
+                pilula "Mais popular" do Anual quando ele e o cartao ativo
+                (ela fica de proposito 12px/-top-3 pra fora da borda de cima
+                do cartao).
+                Nos dois eixos a conta e a mesma: a margem negativa estica a
+                caixa pra fora, o padding devolve o mesmo tanto por dentro,
+                entao o conteudo continua comecando exatamente onde
+                comecaria sem os dois — o que muda e so ONDE o recorte
+                acontece. */}
+            <div
+              ref={viewportRef}
+              className="-mx-6 -mt-3 overflow-hidden px-6 pt-3"
+            >
               <motion.div
                 drag={isMobileCarousel ? "x" : false}
                 dragConstraints={{ left: minX, right: 0 }}
@@ -503,13 +521,13 @@ export default function Pricing() {
                 dragMomentum={false}
                 onDragEnd={handleDragEnd}
                 style={{ x }}
-                className="flex cursor-grab items-start gap-3 active:cursor-grabbing"
+                className="flex cursor-grab items-start gap-4 active:cursor-grabbing"
               >
                 {plans.map((plan, i) => (
-                  // 2.75rem = 44px = PEEK(32) + GAP(12): mesmo par de
-                  // constantes que decide ONDE a tira para, aqui virando o
-                  // tamanho real do cartao — ver PEEK/GAP, mais acima.
-                  <div key={plan.id} className="w-[calc(100%-2.75rem)] shrink-0">
+                  // 1.25rem = 20px = SLIDE_INSET, o mesmo numero de
+                  // Features.tsx/Organization.tsx — e dai que sai o cartao
+                  // do mesmo tamanho nas tres secoes.
+                  <div key={plan.id} className="w-[calc(100%-1.25rem)] shrink-0">
                     <PlanCard
                       plan={plan}
                       isPeeking={i !== activeIndex}

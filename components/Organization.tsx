@@ -84,14 +84,20 @@ const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
 // nenhuma. Um pedaco de cartao parado na borda nao tem esse problema: nao
 // depende de tempo, nao passa.
 //
-// PEEK e a fatia visivel do vizinho + o vao entre os dois; GAP e so o vao (o
-// `gap-4` da tira). Os dois vivem tambem no CSS da largura do slide
-// (`w-[calc(100%-3.75rem)]`, = 60px = PEEK + GAP) pra tira ja nascer com a
-// proporcao certa antes de qualquer medicao — o JS aqui embaixo so calcula
-// ONDE cada parada fica, nunca o tamanho.
-// Mexer no GAP obriga a mexer nesse calc junto (GAP entra nos dois): so
-// assim o vao cresce sem comer a espiada, que continua nos mesmos 44px.
-const PEEK = 44; // px do vizinho aparecendo (inclui o vao)
+// A tira e FULL-BLEED (`-mx-6 px-6` na janela de recorte, mais abaixo): ela
+// sangra por baixo do respiro lateral da secao, entao o vizinho aparece ate a
+// borda REAL da tela, sem parar 24px antes dela. Numeros identicos aos de
+// Features.tsx ("Ele age no computador") de proposito: os dois carrosseis
+// ficam a um scroll de distancia um do outro, e cartao de tamanho diferente
+// entre eles lia como descuido. Com estes valores o cartao mede exatamente o
+// mesmo dos de la, e a espiada visivel = respiro (24px) + SLIDE_INSET - GAP.
+//
+// SLIDE_INSET e o quanto o cartao cede de largura; GAP e so o vao entre eles
+// (o `gap-4` da tira). Os dois vivem tambem no CSS da largura do slide
+// (`w-[calc(100%-1.25rem)]`) pra tira ja nascer com a proporcao certa antes
+// de qualquer medicao — o JS aqui embaixo so calcula ONDE cada parada fica,
+// nunca o tamanho.
+const SLIDE_INSET = 20; // px que o cartao cede pro vizinho (= 1.25rem)
 const GAP = 16; // px de vao entre cartoes (= gap-4)
 
 // Largura do trilho da barra de progresso, em px (o polegar e 1/CARDS.length
@@ -684,9 +690,15 @@ export default function Organization() {
   useLayoutEffect(() => {
     const el = trackRef.current;
     if (!el) return;
-    const measure = () => setCardWidth(el.offsetWidth);
-    measure();
-    const ro = new ResizeObserver(measure);
+    // contentRect, NAO offsetWidth: a janela de recorte agora sangra por
+    // baixo do respiro da secao (`-mx-6 px-6`, ver mais abaixo), entao
+    // offsetWidth passaria a devolver a largura da TELA (390) em vez da
+    // largura da coluna (342) — 48px a mais em toda a conta de paradas.
+    // contentRect ja desconta o padding, que e exatamente o que as contas
+    // de `stride`/`minX` esperam (mesma medicao de Features.tsx).
+    const ro = new ResizeObserver(([entry]) =>
+      setCardWidth(entry.contentRect.width)
+    );
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -803,9 +815,9 @@ export default function Organization() {
   // brigarem. Comeca em 0, que ja e a posicao certa pro indice inicial (0).
   const x = useMotionValue(0);
 
-  // PASSO de uma parada = largura do cartao + o vao, ou seja a largura da
-  // tira menos a espiada. E o quanto `x` anda de um cartao pro outro.
-  const stride = cardWidth ? cardWidth - PEEK : 0;
+  // PASSO de uma parada = largura do cartao (cardWidth - SLIDE_INSET) + o
+  // vao. E o quanto `x` anda de um cartao pro outro.
+  const stride = cardWidth ? cardWidth - SLIDE_INSET + GAP : 0;
 
   // Fim da corrida: a tira nao para em -2*stride no ultimo cartao, senao ele
   // sairia CORTADO na direita (a espiada existe pra mostrar o proximo, e no
@@ -974,14 +986,19 @@ export default function Organization() {
           className="mt-16 lg:hidden"
         >
           {/* viewport: recorta a tira num cartao + a espiada do vizinho (ver
-              PEEK la em cima).
-              A ref mede a largura da TIRA (nao a da parada — a parada e essa
-              largura menos a espiada; ver `stride`, mais acima).
+              SLIDE_INSET la em cima).
+              -mx-6 px-6: a janela sangra por baixo do respiro lateral da
+              secao, entao ela recorta na borda REAL da tela e o vizinho
+              aparece ate la — sem isso ele parava 24px antes, com uma faixa
+              morta de fundo entre a espiada e a borda.
+              A ref mede a largura da COLUNA (contentRect, ja sem o padding
+              que a sangria devolve — ver o ResizeObserver la em cima); a
+              parada e essa largura menos o inset, ver `stride`.
               A altura e a do cartao mais alto dos tres, fixa enquanto a
               largura da tela nao muda (ver trackHeight, mais acima). */}
           <div
             ref={trackRef}
-            className={`overflow-hidden ${
+            className={`-mx-6 overflow-hidden px-6 ${
               trackHeight ? "transition-[height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" : ""
             }`}
             style={trackHeight ? { height: trackHeight } : undefined}
@@ -1012,10 +1029,12 @@ export default function Organization() {
                     cardRefs.current[i] = el;
                   }}
                   aria-hidden={i !== activeIdx}
-                  // 3.75rem = 60px = PEEK + GAP: e o CSS que garante a espiada
-                  // (o JS so posiciona). Sem shrink-0 o flex espremeria os
-                  // tres pra caber na tira, e nao sobraria vizinho pra espiar.
-                  className="w-[calc(100%-3.75rem)] shrink-0"
+                  // 1.25rem = 20px = SLIDE_INSET: e o CSS que garante a
+                  // espiada (o JS so posiciona), e e o mesmo numero de
+                  // Features.tsx — e dai que sai o cartao do mesmo tamanho
+                  // nas duas secoes. Sem shrink-0 o flex espremeria os tres
+                  // pra caber na tira, e nao sobraria vizinho pra espiar.
+                  className="w-[calc(100%-1.25rem)] shrink-0"
                 >
                   {/* SEM `bigger`, ao contrario da grade de desktop: os tres
                       viram slides de um carrossel de 1 por vez, entao nao ha

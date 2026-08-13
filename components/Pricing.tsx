@@ -2,9 +2,15 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import { motion } from "motion/react";
+import {
+  motion,
+  animate,
+  useMotionValue,
+  type PanInfo,
+} from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
 import { useLowPowerDevice } from "@/components/ui/use-low-power";
+import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
   Check,
   ShieldCheck,
@@ -83,6 +89,18 @@ const plans = [
   },
 ];
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+
+// ---- Carrossel de arrastar (so no celular, abaixo de sm) -----------------
+// Mesma mecanica de Organization.tsx (posFor/snapTo/handleDragEnd) — ver os
+// comentarios grandes la pro raciocinio completo. PEEK/GAP ficam menores
+// que os 44/16 de la de proposito: e "leve previa" (pedido explicito), nao
+// a espiada cheia dos outros carrosseis do site.
+const SWIPE_DISTANCE = 56; // px percorridos
+const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
+const PEEK = 32; // px do vizinho aparecendo
+const GAP = 12; // px de vao entre cartoes (= gap-3)
+
 // Em fonte monoespacada o caractere de espaco ocupa uma largura inteira, que
 // no text-5xl vira um vao grande entre "R$" e o numero. Separar os dois deixa
 // o respiro sob controle em em, proporcional ao tamanho da fonte.
@@ -96,16 +114,249 @@ function Price({ value, className }: { value: string; className?: string }) {
   );
 }
 
+// ---- Cartao de plano -------------------------------------------------------
+// Conteudo puro, sem animacao de entrada propria: agora ele e desenhado duas
+// vezes — dentro da tira arrastavel do celular (as duas copias sempre no ar,
+// uma ativa e uma espiando) e dentro do grid lado a lado do desktop (as duas
+// sempre inteiras) — e quem decide COMO ele entra em cena e o CHAMADOR (ver
+// Pricing(), mais abaixo), nao este componente.
+function PlanCard({
+  plan,
+  isPeeking,
+  mensalHovered,
+  setMensalHovered,
+  reduce,
+}: {
+  plan: (typeof plans)[number];
+  isPeeking: boolean;
+  mensalHovered: boolean;
+  setMensalHovered: (v: boolean) => void;
+  reduce: boolean;
+}) {
+  return (
+    <div
+      // aria-hidden: enquanto so espiando (arrastando ou parado do lado do
+      // ativo), o cartao inteiro (preco, lista, botao) continua no DOM mas
+      // nao deve ser anunciado por leitor de tela nem alcancado por Tab —
+      // ver tambem o tabIndex no CTA, mais abaixo, que e o unico elemento
+      // focavel aqui dentro.
+      aria-hidden={isPeeking || undefined}
+      // h-full: preenche a celula do grid de desktop (que estica pra
+      // altura da MAIOR das duas via align-items:stretch, o padrao de
+      // grid) e a altura natural do proprio min-h na tira do celular (que
+      // nao estica ninguem). aspect-ratio saiu de vez: ele calcula a
+      // altura a partir da LARGURA do proprio cartao, e cada cartao aqui e
+      // bem largo (~metade do container), entao qualquer proporcao
+      // retrato virava uma altura enorme (800-900px+).
+      // min-h fixo em vez disso: um pouco mais alto que o cartao 100%
+      // compacto de antes, sem depender da largura pra nada.
+      // justify-between espalha o conteudo do topo (identidade + preco)
+      // ate o rodape (CTA + nota) dentro dessa altura.
+      // min-h MENOR so abaixo de sm (480px, era 530 tambem ali): no
+      // celular so um cartao aparece por vez, e os 530px originais
+      // sobravam vao morto entre a lista de destaques e o botao — o
+      // `justify-between` esticava esse respiro em vez de conteudo real.
+      // sm: recupera os 530px de sempre pro grid lado a lado, onde os
+      // DOIS cartoes precisam bater na mesma altura.
+      // Sem overflow-hidden NO CARTAO: cortava a pilula "Mais popular",
+      // que fica de proposito meio pra fora da borda de cima dele — quem
+      // corta a espiada e o WRAPPER da tira (ver Pricing(), mais abaixo),
+      // nunca o cartao.
+      // Sem hover nos dois cartoes de proposito: o brilho da borda do
+      // Anual (que antes so aparecia no hover) virou permanente
+      // (border-white/40 direto), e o Mensal fica parado no
+      // border-white/10 sempre — nenhum dos dois reage mais ao mouse
+      // passando por cima.
+      className={cn(
+        "relative flex h-full min-h-[480px] flex-col justify-between rounded-2xl border p-6 sm:min-h-[530px] sm:p-7 laptop:min-h-[430px] laptop:p-6",
+        plan.highlighted
+          ? "border-white/40 bg-ink-800"
+          : "border-white/10 bg-ink-900",
+        // So decorativa enquanto espia: sem isso, tocar bem na borda da
+        // espiada ativaria o CTA por baixo sem o visitante ter arrastado
+        // ou escolhido o plano de verdade.
+        isPeeking && "pointer-events-none"
+      )}
+    >
+      {plan.highlighted && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#FAFAFA] px-3.5 py-1 text-xs font-semibold text-ink-950">
+          Mais popular
+        </span>
+      )}
+
+      <div>
+        <h3 className="flex items-center gap-2 text-base font-semibold text-[#FAFAFA]">
+          <plan.icon
+            size={17}
+            weight="light"
+            className="shrink-0 text-white/50"
+            aria-hidden
+          />
+          {plan.name}
+        </h3>
+        <p className="mt-1 text-sm text-white/45">{plan.subtitle}</p>
+
+        <div className="mt-5 flex items-baseline gap-1.5">
+          <Price
+            value={plan.price}
+            className="font-mono text-4xl font-semibold tracking-tight text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]"
+          />
+          <span className="text-sm text-white/45">{plan.period}</span>
+        </div>
+        <p className="mt-1.5 text-xs leading-relaxed text-white/40">
+          {plan.billingNote}
+        </p>
+
+        {/* Preenche o vao que sobrava entre a nota de preco e o botao.
+            Antes essa lista repetia 4 dos 8 recursos do produto, que sao
+            IDENTICOS nos dois planos, entao os dois cartoes acabavam
+            mostrando quase a mesma coisa — a diferenca so parecia existir,
+            sem existir de verdade. Trocado por 3 pontos sobre a forma de
+            cobranca de cada plano, que e a UNICA diferenca real entre
+            eles. */}
+        <ul className="mt-6 flex flex-col gap-2.5 laptop:mt-5">
+          {plan.highlights.map((label) => (
+            <li
+              key={label}
+              className="flex items-center gap-2.5 text-sm text-white/65"
+            >
+              <Check
+                size={14}
+                weight="bold"
+                className="shrink-0 text-white/40"
+                aria-hidden
+              />
+              {label}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <a
+          href="#top"
+          // tabIndex -1 enquanto so espiando: e o UNICO elemento focavel
+          // do cartao, entao tirar ele da ordem de tab basta pra fechar o
+          // cartao inteiro pra quem navega por teclado (o aria-hidden do
+          // cartao, mais acima, cuida do leitor de tela).
+          tabIndex={isPeeking ? -1 : undefined}
+          onMouseEnter={() => {
+            if (plan.id === "mensal") setMensalHovered(true);
+          }}
+          onMouseLeave={() => {
+            if (plan.id === "mensal") setMensalHovered(false);
+          }}
+          // Botao do Mensal: aro que gira pelas 4 bordas quando ocioso e
+          // acende branco uniforme no hover (HoverBorderGradient,
+          // components/ui/hover-border-gradient.tsx, adaptado do "Hover
+          // Border Gradient" da Aceternity UI). Precisa do estado real de
+          // hover (mensalHovered) porque o alvo do gradiente muda com o
+          // hover — group-hover em CSS puro so controlaria opacidade, nao
+          // decidiria qual gradiente animar.
+          // hover:-translate-y-0.5 + hover:scale-[1.02]: mesmo gesto do
+          // CTA "Comecar agora" da Hero — levanta 2px e cresce de leve,
+          // voltando ao chao e encolhendo no clique. Vale para os dois
+          // planos; o que continua diferente entre eles e so a superficie
+          // (branca no Anual, aro girando no Mensal).
+          className={cn(
+            "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-base font-semibold transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]",
+            plan.highlighted
+              ? "border-transparent bg-[#FAFAFA] text-ink-950 hover:bg-white"
+              : "border-white/15 text-white/85 hover:border-white/40 hover:text-white"
+          )}
+        >
+          {!plan.highlighted && !reduce && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-[inherit]"
+            >
+              <HoverBorderGradient hovered={mensalHovered} />
+            </div>
+          )}
+          <span className="relative">
+            {plan.id === "mensal" ? "Obter plano Mensal" : "Obter plano Anual"}
+          </span>
+        </a>
+
+        <p className="mt-3 text-center text-xs text-white/40">{plan.note}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function Pricing() {
   const reduce = useReducedMotionSafe();
   // Ver o comentario do fundo, mais abaixo: decide entre o shader WebGL e o
   // degrade estatico que faz as vezes dele.
   const lowPower = useLowPowerDevice();
   const [mensalHovered, setMensalHovered] = React.useState(false);
-  // So no mobile: qual dos dois cartoes esta visivel. No desktop os dois
-  // aparecem lado a lado e este estado e ignorado (o alternador tem sm:hidden
-  // e os cartoes voltam a `sm:flex` sempre).
+  // So no mobile: qual dos dois cartoes esta ativo. No desktop os dois
+  // aparecem lado a lado e este estado e ignorado (o grid de la nunca
+  // depende dele).
   const [mobilePlan, setMobilePlan] = React.useState<string>("mensal");
+  const activeIndex = plans.findIndex((p) => p.id === mobilePlan);
+
+  // ---- Carrossel de arrastar (so no celular, abaixo de sm) ---------------
+  // Mesma mecanica de Organization.tsx (posFor/snapTo) — ver os comentarios
+  // grandes la pro raciocinio completo. O alternador (mais abaixo) agora
+  // "arrasta sozinho": clicar em "Anual" so troca `mobilePlan`, e o
+  // useEffect logo depois de `snapTo` reage a essa troca animando a tira
+  // ate la, em vez de so re-renderizar o cartao ativo na hora.
+  //
+  // Precisa de JS (nao so `sm:` no className) pra saber quando ligar o
+  // `drag` do motion e a interseccao dele com aria-hidden/tabIndex — ver
+  // `isPeeking`, mais abaixo, calculado por cartao dentro do proprio JSX.
+  const isMobileCarousel = useMediaQuery("(max-width: 639px)");
+
+  const viewportRef = React.useRef<HTMLDivElement | null>(null);
+  const [trackWidth, setTrackWidth] = React.useState(0);
+  React.useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) =>
+      setTrackWidth(entry.contentRect.width)
+    );
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const x = useMotionValue(0);
+  const stride = trackWidth ? trackWidth - PEEK : 0;
+  const contentWidth = stride ? plans.length * stride - GAP : 0;
+  const minX = Math.min(0, trackWidth - contentWidth);
+  const posFor = (idx: number) => Math.max(-idx * stride, minX);
+
+  const snapTo = (idx: number) => {
+    if (!stride) return;
+    animate(x, posFor(idx), { type: "spring", stiffness: 380, damping: 42 });
+  };
+
+  React.useEffect(() => {
+    if (!isMobileCarousel) {
+      x.set(0);
+      return;
+    }
+    snapTo(activeIndex);
+    // snapTo e recriado a cada render (le stride); as deps abaixo sao as
+    // entradas reais dele.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, isMobileCarousel, stride]);
+
+  // Arrastar pra ESQUERDA avanca (Mensal -> Anual), pra DIREITA volta —
+  // mesma convencao dos outros carrosseis. Math.min/max trava nas pontas
+  // (sem dar a volta), que e o que faz o elastico bater no Anual em vez de
+  // pular de volta pro Mensal no meio de um arrasto.
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
+    const { offset, velocity } = info;
+    let next = activeIndex;
+    if (offset.x < -SWIPE_DISTANCE || velocity.x < -SWIPE_VELOCITY)
+      next = Math.min(activeIndex + 1, plans.length - 1);
+    else if (offset.x > SWIPE_DISTANCE || velocity.x > SWIPE_VELOCITY)
+      next = Math.max(activeIndex - 1, 0);
+
+    if (next === activeIndex) snapTo(activeIndex);
+    else setMobilePlan(plans[next].id);
+  };
 
   return (
     <section
@@ -192,9 +443,11 @@ export default function Pricing() {
         </motion.div>
 
         {/* Alternador so no mobile: os dois cartoes nao cabem lado a lado num
-            celular, e empilhar os dois deixava o de baixo quase sempre
-            invisivel. Aqui mostramos UM cartao por vez, com dois botoes por
-            cima pra trocar. Some em sm+, onde os dois cartoes voltam a
+            celular. Continua UM cartao por vez, com dois botoes por cima pra
+            trocar — so que agora "trocar" e a MESMA tira arrastavel do
+            carrossel logo abaixo (ver `snapTo`/useEffect, mais acima):
+            clicar em "Anual" desliza a tira ate la, em vez de so re-renderizar
+            o cartao ativo na hora. Some em sm+, onde os dois cartoes voltam a
             aparecer lado a lado no grid. Ativo = "selo branco" (mesmo padrao
             de selecao do resto do site). */}
         <div className="mx-auto mt-10 flex w-full max-w-[320px] gap-1 rounded-full border border-white/10 bg-ink-900 p-1 sm:hidden">
@@ -216,149 +469,86 @@ export default function Pricing() {
           ))}
         </div>
 
-        {/* Estilo de referencia: dois cartoes iguais, compactos, sem efeito
-            de fundo animado dentro deles. O selo do plano em destaque virou
-            uma pilula sobreposta na borda de cima, centralizada, em vez do
-            chip no canto de antes. */}
-        <div className="mx-auto mt-5 grid max-w-[970px] grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 laptop:mt-8">
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.id}
-              initial={reduce ? false : { opacity: 0, y: 22 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{
-                duration: 0.65,
-                delay: reduce ? 0 : i * 0.09,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              // aspect-ratio saiu: ele calcula a altura a partir da LARGURA
-              // do proprio cartao, e cada cartao aqui e bem largo (~metade
-              // do container), entao qualquer proporcao retrato virava uma
-              // altura enorme (800-900px+) — por isso 9/16 e 3/4 pareciam
-              // igualmente esticados, o numero nao era o problema.
-              // min-h fixo em vez disso: um pouco mais alto que o cartao 100%
-              // compacto de antes, sem depender da largura pra nada.
-              // justify-between espalha o conteudo do topo (identidade +
-              // preco) ate o rodape (CTA + nota) dentro dessa altura.
-              // Sem overflow-hidden: cortava a pilula "Mais popular", que
-              // fica de proposito meio pra fora da borda de cima do cartao.
-              // Sem hover nos dois cartoes de proposito: o brilho da borda
-              // do Anual (que antes so aparecia no hover) virou permanente
-              // (border-white/40 direto), e o Mensal fica parado no
-              // border-white/10 sempre — nenhum dos dois reage mais ao
-              // mouse passando por cima.
-              className={cn(
-                "relative min-h-[530px] flex-col justify-between rounded-2xl border p-6 sm:p-7 laptop:min-h-[430px] laptop:p-6",
-                plan.highlighted
-                  ? "border-white/40 bg-ink-800"
-                  : "border-white/10 bg-ink-900",
-                // no mobile so o cartao selecionado aparece; em sm+ os dois
-                // voltam sempre (flex), independente do alternador.
-                plan.id === mobilePlan ? "flex" : "hidden sm:flex"
-              )}
-            >
-              {plan.highlighted && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#FAFAFA] px-3.5 py-1 text-xs font-semibold text-ink-950">
-                  Mais popular
-                </span>
-              )}
+        <div className="mx-auto max-w-[970px]">
+          {/* Celular (abaixo de sm): carrossel de arrastar de verdade — a
+              tira acompanha o dedo, com uma leve previa do vizinho (PEEK=32,
+              GAP=12 — mais discreta que os 44/16 dos outros carrosseis do
+              site, "leve previa" foi pedido assim). So 2 itens, entao o
+              mecanismo e simetrico: com o Mensal ativo o Anual espia a
+              direita; arrastando ate o Anual (ultima parada, trava flush a
+              direita) e o Mensal quem passa a espiar a esquerda — mesmo
+              "elastico bate na ponta" de Organization.tsx/Roadmap.tsx, so
+              que com 2 cartoes em vez de 3. */}
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="mt-5 sm:hidden"
+          >
+            {/* -mt-3 + pt-3: o overflow-hidden corta em RETANGULO, topo
+                incluso — sem essa folga ele cortava a pilula "Mais
+                popular" do Anual quando ele e o cartao ativo (ela fica de
+                proposito 12px/-top-3 pra fora da borda de cima do
+                cartao). O par -mt-3/pt-3 abre exatamente esses 12px de
+                clearance ACIMA sem empurrar o carrossel pra baixo: a
+                margem negativa sobe a caixa, o padding devolve o mesmo
+                tanto por dentro, entao o conteudo comeca exatamente onde
+                comecaria sem os dois. */}
+            <div ref={viewportRef} className="-mt-3 overflow-hidden pt-3">
+              <motion.div
+                drag={isMobileCarousel ? "x" : false}
+                dragConstraints={{ left: minX, right: 0 }}
+                dragElastic={0.15}
+                dragMomentum={false}
+                onDragEnd={handleDragEnd}
+                style={{ x }}
+                className="flex cursor-grab items-start gap-3 active:cursor-grabbing"
+              >
+                {plans.map((plan, i) => (
+                  // 2.75rem = 44px = PEEK(32) + GAP(12): mesmo par de
+                  // constantes que decide ONDE a tira para, aqui virando o
+                  // tamanho real do cartao — ver PEEK/GAP, mais acima.
+                  <div key={plan.id} className="w-[calc(100%-2.75rem)] shrink-0">
+                    <PlanCard
+                      plan={plan}
+                      isPeeking={i !== activeIndex}
+                      mensalHovered={mensalHovered}
+                      setMensalHovered={setMensalHovered}
+                      reduce={reduce}
+                    />
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+          </motion.div>
 
-              <div>
-                <h3 className="flex items-center gap-2 text-base font-semibold text-[#FAFAFA]">
-                  <plan.icon
-                    size={17}
-                    weight="light"
-                    className="shrink-0 text-white/50"
-                    aria-hidden
-                  />
-                  {plan.name}
-                </h3>
-                <p className="mt-1 text-sm text-white/45">{plan.subtitle}</p>
-
-                <div className="mt-5 flex items-baseline gap-1.5">
-                  <Price
-                    value={plan.price}
-                    className="font-mono text-4xl font-semibold tracking-tight text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]"
-                  />
-                  <span className="text-sm text-white/45">{plan.period}</span>
-                </div>
-                <p className="mt-1.5 text-xs leading-relaxed text-white/40">
-                  {plan.billingNote}
-                </p>
-
-                {/* Preenche o vao que sobrava entre a nota de preco e o
-                    botao. Antes essa lista repetia 4 dos 8 recursos do
-                    produto, que sao IDENTICOS nos dois planos, entao os dois
-                    cartoes acabavam mostrando quase a mesma coisa — a
-                    diferenca so parecia existir, sem existir de verdade.
-                    Trocado por 3 pontos sobre a forma de cobranca de cada
-                    plano, que e a UNICA diferenca real entre eles. */}
-                <ul className="mt-6 flex flex-col gap-2.5 laptop:mt-5">
-                  {plan.highlights.map((label) => (
-                    <li
-                      key={label}
-                      className="flex items-center gap-2.5 text-sm text-white/65"
-                    >
-                      <Check
-                        size={14}
-                        weight="bold"
-                        className="shrink-0 text-white/40"
-                        aria-hidden
-                      />
-                      {label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <a
-                  href="#top"
-                  onMouseEnter={() => {
-                    if (plan.id === "mensal") setMensalHovered(true);
-                  }}
-                  onMouseLeave={() => {
-                    if (plan.id === "mensal") setMensalHovered(false);
-                  }}
-                  // Botao do Mensal: aro que gira pelas 4 bordas quando ocioso
-                  // e acende branco uniforme no hover (HoverBorderGradient,
-                  // components/ui/hover-border-gradient.tsx, adaptado do
-                  // "Hover Border Gradient" da Aceternity UI). Precisa do
-                  // estado real de hover (mensalHovered) porque o alvo do
-                  // gradiente muda com o hover — group-hover em CSS puro so
-                  // controlaria opacidade, nao decidiria qual gradiente animar.
-                  // hover:-translate-y-0.5 + hover:scale-[1.02]: mesmo gesto do
-                  // CTA "Comecar agora" da Hero — levanta 2px e cresce de leve,
-                  // voltando ao chao e encolhendo no clique. Vale para os dois
-                  // planos; o que continua diferente entre eles e so a
-                  // superficie (branca no Anual, aro girando no Mensal).
-                  className={cn(
-                    "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-base font-semibold transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]",
-                    plan.highlighted
-                      ? "border-transparent bg-[#FAFAFA] text-ink-950 hover:bg-white"
-                      : "border-white/15 text-white/85 hover:border-white/40 hover:text-white"
-                  )}
-                >
-                  {!plan.highlighted && !reduce && (
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 rounded-[inherit]"
-                    >
-                      <HoverBorderGradient hovered={mensalHovered} />
-                    </div>
-                  )}
-                  <span className="relative">
-                    {plan.id === "mensal" ? "Obter plano Mensal" : "Obter plano Anual"}
-                  </span>
-                </a>
-
-                <p className="mt-3 text-center text-xs text-white/40">
-                  {plan.note}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+          {/* Desktop (sm+): grid lado a lado, como sempre foi — sem tira,
+              sem drag, os dois cartoes inteiros e do mesmo tamanho (grid
+              estica os dois pra altura do mais alto). */}
+          <div className="hidden gap-4 sm:mt-10 sm:grid sm:grid-cols-2 laptop:mt-8">
+            {plans.map((plan, i) => (
+              <motion.div
+                key={plan.id}
+                initial={reduce ? false : { opacity: 0, y: 22 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{
+                  duration: 0.65,
+                  delay: reduce ? 0 : i * 0.09,
+                  ease: EASE,
+                }}
+              >
+                <PlanCard
+                  plan={plan}
+                  isPeeking={false}
+                  mensalHovered={mensalHovered}
+                  setMensalHovered={setMensalHovered}
+                  reduce={reduce}
+                />
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         {/* Garantia, fora dos cartoes: vale para os dois planos igualmente,

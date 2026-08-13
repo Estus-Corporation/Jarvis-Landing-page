@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
 import { SpokenCaption } from "@/components/ui/spoken-caption";
@@ -73,6 +74,11 @@ const HERO_PHRASES = [
 
 export default function Hero() {
   const reduce = useReducedMotionSafe();
+  // Os canvas daqui sao os unicos que aparecem com a pagina parada no topo, e
+  // junto com as animacoes CSS infinitas (ver globals.css) eram o motivo de a
+  // pagina nunca chegar a 60fps mesmo sem ninguem tocar nela. Precisam sair
+  // JUNTO com aquelas: desligar so um dos dois lados quase nao muda o numero.
+  const lowPower = useLowPowerDevice();
   // O teto acompanha a largura da coluna do orb, alargada logo abaixo no grid.
   // A caixa desenhada e (size + 144) por causa do padding dos aneis, entao o
   // limite util da coluna de ~640px e 496. O hook ainda corta por altura de
@@ -154,10 +160,11 @@ export default function Hero() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-[5] h-96 bg-gradient-to-b from-ink-950 via-ink-950 to-transparent lg:hidden"
       />
-      {/* Particulas desligadas por quem pede menos movimento: e um loop de
-          canvas continuo, sem quadro parado equivalente, entao a saida
-          honesta e nao rodar (mesmo padrao do JarvisOrb `paused`). */}
-      {!reduce && (
+      {/* Particulas desligadas por quem pede menos movimento OU por maquina
+          fraca: e um loop de canvas continuo, sem quadro parado equivalente,
+          entao a saida honesta e nao rodar (mesmo padrao do JarvisOrb
+          `paused`). */}
+      {!reduce && !lowPower && (
         <Particles
           color="#ffffff"
           quantity={90}
@@ -282,10 +289,15 @@ export default function Hero() {
         >
           <div ref={containerRef} className="flex w-full justify-center">
             <div className="relative inline-block">
+              {/* `paused` desenha um quadro e para (ver jarvis-sphere.tsx),
+                  entao em maquina fraca a esfera continua inteira na tela —
+                  so nao gira. Diferente das particulas, aqui existe quadro
+                  parado que se sustenta sozinho, entao nao ha motivo pra
+                  sumir com ela. */}
               <JarvisOrb
                 state={speaking ? "speaking" : "idle"}
                 sphereSize={size}
-                paused={!!reduce}
+                paused={!!reduce || lowPower}
               />
 
               {/* Escondidos abaixo de sm: a esfera fica pequena demais nesse

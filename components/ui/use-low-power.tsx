@@ -156,6 +156,24 @@ function startProbe() {
     document.addEventListener("visibilitychange", onVisible);
   }
 
+  // Segunda chance, na primeira rolagem. A medicao de cima acontece com a
+  // pagina parada no topo, que e o momento mais pesado que existe (os canvas
+  // da Hero rodando) — mas rolar acrescenta trabalho que ali nao aparece, e
+  // uma maquina limitrofe pode passar parada e engasgar em movimento. Uma
+  // rodada a mais e barata; ficar preso na versao pesada nao e.
+  //
+  // `once: true` mais o `probeStarted` la em cima garantem que isso acontece
+  // no maximo uma vez: se a primeira medicao ja tiver condenado a maquina,
+  // markLowPower ignora a segunda de qualquer jeito.
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (isLowPower) return;
+      schedule();
+    },
+    { once: true, passive: true }
+  );
+
   if (document.hidden) retryWhenVisible();
   else schedule();
 }

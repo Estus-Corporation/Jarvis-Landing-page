@@ -50,6 +50,35 @@ html.low-power *::before,
 html.low-power *::after {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+
+  /* O QUE MAIS PESA na pagina inteira, medido: as animacoes com `infinite`
+     (sao 14) nunca terminam, entao o navegador nunca para de desenhar — a
+     pagina fica em ~10fps PARADA, sem ninguem rolar nada.
+
+     E preciso desligar isto E os canvas da Hero JUNTOS: com CPU 4x mais
+     lenta, so um dos dois quase nao muda nada (10.8 -> 15 fps), porque o que
+     sobrar continua obrigando um frame novo o tempo todo. Os dois juntos vao
+     de 10.8 pra 49.2 fps. Nao adianta escolher um.
+
+     `animation: none` e nao `animation-play-state: paused`: os dois removem
+     o custo, mas o congelado ainda custa ~15% a mais (41.7 vs 49.2 fps
+     medidos), porque a camada de composicao segue viva. O preco de `none` e
+     que cada elemento volta pro estado BASE dele, ignorando o keyframe 0% —
+     e alguns so fazem sentido em movimento; esses estao logo abaixo. */
+  animation: none !important;
+}
+
+/* Enfeites que so existem enquanto se movem. Sem a animacao eles nao ficam
+   "parados", ficam ERRADOS: o feixe e a linha de varredura comecam fora do
+   container (translate -120%) e voltariam pro meio dele como uma barra
+   branca acesa; os dois pings terminam em opacity 0 e voltariam a ser um
+   anel solido em volta do ponto. Como sao decoracao pura, sumir e a saida
+   honesta — o resto do desenho (o LED aceso, o nucleo, a moldura) continua. */
+html.low-power .beam-sweep,
+html.low-power .scan-y,
+html.low-power .core-ping,
+html.low-power .led-dot::after {
+  display: none !important;
 }
 
 body {

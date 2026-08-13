@@ -25,11 +25,14 @@ const ANCHOR_OFFSET = -96;
 
 // Intercepta cliques em links de ancora e delega pro Lenis, pra o salto ser
 // suave (senao o browser pularia seco, ignorando a inercia do Lenis).
-function AnchorSmoothing() {
+//
+// `enabled` em vez de renderizar condicionalmente la em cima: ver o
+// comentario grande no SmoothScroll — a forma da arvore aqui nao pode mudar.
+function AnchorSmoothing({ enabled }: { enabled: boolean }) {
   const lenis = useLenis();
 
   useEffect(() => {
-    if (!lenis) return;
+    if (!lenis || !enabled) return;
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey)
         return;
@@ -50,7 +53,7 @@ function AnchorSmoothing() {
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
-  }, [lenis]);
+  }, [lenis, enabled]);
 
   return null;
 }
@@ -79,12 +82,38 @@ export default function SmoothScroll({
   // presa. Devolver o scroll nativo e a maior tacada de fluidez que existe
   // aqui, e o preco (perder a inercia) e barato perto disso.
   const lowPower = useLowPowerDevice();
+  const inert = !enabled || lowPower;
 
-  if (!enabled || lowPower) return <>{children}</>;
+  // O ReactLenis fica SEMPRE montado, e quem muda sao as opcoes. A versao
+  // obvia disto era `if (inert) return <>{children}</>`, e ela custava caro de
+  // um jeito que nao da pra ver lendo: trocar o elemento daquela posicao de
+  // <ReactLenis> pra um fragmento muda o TIPO do no, e a resposta do React a
+  // isso e jogar fora a subarvore inteira e montar tudo de novo — a pagina
+  // toda, todo canvas, todo observer. Medido com a CPU 4x mais lenta: um
+  // unico frame de 1270ms, no meio do carregamento, exatamente em quem menos
+  // pode pagar por isso. E o mesmo defeito valia pro caminho de "reduzir
+  // movimento", que ja existia antes.
+  //
+  // autoRaf:false tira o loop de animacao do Lenis, e smoothWheel:false faz
+  // ele parar de interceptar a roda — juntos deixam a rolagem nativa passar
+  // direto, que e o que a gente queria desde o comeco, so que sem remontar
+  // nada. As ancoras voltam a ser salto nativo, com o recuo do header vindo
+  // do scroll-padding-top (globals.css).
+  // useMemo pra o objeto nao nascer novo a cada render: o ReactLenis observa
+  // `options` por identidade e recria a instancia do Lenis quando ela muda —
+  // com um literal inline isso aconteceria em TODO render, nao so quando a
+  // configuracao de fato mudasse.
+  const options = React.useMemo(
+    () =>
+      inert
+        ? { autoRaf: false, smoothWheel: false }
+        : { lerp: 0.1, smoothWheel: true },
+    [inert]
+  );
 
   return (
-    <ReactLenis root options={{ lerp: 0.1, smoothWheel: true }}>
-      <AnchorSmoothing />
+    <ReactLenis root options={options}>
+      <AnchorSmoothing enabled={!inert} />
       {children}
     </ReactLenis>
   );

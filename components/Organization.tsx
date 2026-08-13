@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
-import { motion } from "motion/react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { motion, useMotionValue, animate, type PanInfo } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useMediaQuery } from "@/components/ui/use-media-query";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,14 @@ import type { Icon } from "@phosphor-icons/react";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
+// ---- Arrasto lateral (so no celular) -------------------------------------
+// Mesmos limiares do carrossel de capacidades em Features.tsx — gatilho por
+// DISTANCIA ou por VELOCIDADE (um peteleco curto e rapido conta tanto quanto
+// um arrasto lento e longo), pra ficar consistente com o unico outro
+// carrossel-de-arrastar que a pagina ja tem.
+const SWIPE_DISTANCE = 56; // px percorridos
+const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
+
 // ---- Icone em anel duplo -----------------------------------------------------
 function RingIcon({ icon: Glyph }: { icon: Icon }) {
   return (
@@ -75,39 +84,33 @@ function RingIcon({ icon: Glyph }: { icon: Icon }) {
 }
 
 // ---- O cartao ----------------------------------------------------------------
+// Miolo visual separado da animacao de entrada (FeatureCard, logo abaixo) —
+// o carrossel do celular (mais abaixo, dentro de Organization()) precisa do
+// MESMO desenho de cartao mas SEM o whileInView de entrada, que so faz
+// sentido tocar uma vez, quando a secao aparece na tela — nao de novo a cada
+// vez que alguem arrasta pro cartao seguinte.
 // As duas alturas fixas (min-h na frase do cabecalho, h no palco) existem so
 // pra uma coisa: garantir que os cartoes fiquem alinhados mesmo quando um
 // texto quebra em menos linhas que o outro — se um cabecalho encolhe, o palco
 // do lado desalinha do vizinho. O cabecalho tem a mesma altura nos tres
 // (inclusive no do meio); quem muda no `bigger` e so o palco.
-function FeatureCard({
+function FeatureCardBody({
   icon,
   title,
   desc,
   command,
-  delay = 0,
   bigger = false,
-  className,
   children,
 }: {
   icon: Icon;
   title: string;
   desc: string;
   command: string;
-  delay?: number;
   bigger?: boolean;
-  className?: string;
   children: React.ReactNode;
 }) {
-  const reduce = useReducedMotionSafe();
   return (
-    <motion.div
-      initial={reduce ? false : { opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 0.6, ease: EASE, delay }}
-      className={className}
-    >
+    <>
       {/* bg-[#111114]: um passo escuro FORA da escala, a meio caminho entre
           ink-800 (#141417, o tom original do cartao) e ink-900 (#0E0E10, o
           fundo da secao). Mesma manobra que Showcase.tsx faz com #0C0C0E: os
@@ -196,6 +199,45 @@ function FeatureCard({
       <p className="mt-4 px-1 text-center text-[13px] italic leading-snug text-white/45 laptop:mt-3 laptop:px-0 laptop:text-[11px]">
         “{command}”
       </p>
+    </>
+  );
+}
+
+// Casca fina: so a animacao de entrada (uma vez, quando a secao aparece na
+// tela) por cima do miolo acima. E o que a grade de desktop usa — o
+// carrossel do celular (dentro de Organization()) usa FeatureCardBody direto,
+// com uma transicao propria de troca de cartao no lugar desta.
+function FeatureCard({
+  icon,
+  title,
+  desc,
+  command,
+  delay = 0,
+  bigger = false,
+  className,
+  children,
+}: {
+  icon: Icon;
+  title: string;
+  desc: string;
+  command: string;
+  delay?: number;
+  bigger?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const reduce = useReducedMotionSafe();
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.25 }}
+      transition={{ duration: 0.6, ease: EASE, delay }}
+      className={className}
+    >
+      <FeatureCardBody icon={icon} title={title} desc={desc} command={command} bigger={bigger}>
+        {children}
+      </FeatureCardBody>
     </motion.div>
   );
 }
@@ -257,6 +299,15 @@ const TASK_LIST = [
 // Quantas linhas sobrevivem no breakpoint de notebook (tela larga, mas baixa).
 const TASKS_ON_LAPTOP = 4;
 
+// Quantas linhas sobrevivem no carrossel do celular. Ali o palco de Tarefas
+// nao e mais "maior" que o dos outros dois (ver comentario no `<FeatureCardBody>`
+// do carrossel, em Organization()) — usa o MESMO palco curto de Agenda e
+// Lembretes (275px). Medido no navegador (nao so calculado): com 4 linhas a
+// faixa de dias ainda passava 27px da zona do degrade (h-64) e ficava
+// visivelmente cortada; com 3 ela sobra alguns pixels pra dentro do degrade,
+// mas so o suficiente pra escurecer a base dos circulos, sem cortar nenhum.
+const TASKS_ON_MOBILE = 3;
+
 // D S T Q Q S S — semana comecando no domingo, como em toda agenda BR. `on`
 // marca os dias em que a tarefa se repete: e o "quais dias sim e quais nao".
 const WEEK = [
@@ -287,9 +338,13 @@ function TaskMock() {
               key={t.text}
               className={cn(
                 "flex items-center gap-2.5",
-                // as linhas alem do limite somem no notebook, onde o palco e
-                // mais curto — sem isso elas empurrariam a faixa de dias pra
-                // fora do quadro justo nas telas mais baixas
+                // abaixo de lg (carrossel do celular) o palco e sempre curto
+                // (ver TASKS_ON_MOBILE) — comeca escondida e so reaparece no
+                // grid de desktop (lg:flex). Dali pra cima, as linhas alem do
+                // limite do notebook (tela larga, mas baixa) somem nele
+                // tambem — sem isso elas empurrariam a faixa de dias pra fora
+                // do quadro.
+                i >= TASKS_ON_MOBILE && "hidden lg:flex",
                 i >= TASKS_ON_LAPTOP && "laptop:hidden"
               )}
             >
@@ -508,8 +563,184 @@ function ReminderMock() {
   );
 }
 
+// Dados dos tres cartoes, extraidos pra array pra alimentar TANTO a grade de
+// desktop (inalterada) QUANTO o carrossel do celular, sem duplicar os textos
+// dos dois lugares — se alguem editar a descricao da Agenda, os dois layouts
+// atualizam juntos. Tarefas vem PRIMEIRO (e o principal dos tres — o primeiro
+// cartao que aparece tanto na pilha antiga quanto no carrossel novo), e so
+// visualmente vai pro meio no desktop via lgOrder.
+const CARDS: {
+  id: string;
+  icon: Icon;
+  title: string;
+  desc: string;
+  command: string;
+  bigger?: boolean;
+  delay?: number;
+  lgOrder: string;
+  mock: React.ComponentType;
+}[] = [
+  {
+    id: "tarefas",
+    icon: ListChecks,
+    title: "Tarefas",
+    desc: "Ele cria, marca como feita e repete nos dias que você escolher.",
+    command:
+      "Jarvis, cria uma tarefa pra revisar o contrato toda segunda, quarta e sexta.",
+    bigger: true,
+    lgOrder: "lg:order-2",
+    mock: TaskMock,
+  },
+  {
+    id: "agenda",
+    icon: CalendarCheck,
+    title: "Agenda",
+    desc: "Compromissos com dia e hora. Ele repete e avisa antes, se você pedir.",
+    command: "Jarvis, marca dentista quinta às 14h e me avisa uma hora antes.",
+    delay: 0.08,
+    lgOrder: "lg:order-1",
+    mock: AgendaMock,
+  },
+  {
+    id: "lembretes",
+    icon: BellRinging,
+    title: "Lembretes",
+    desc: "Aquilo que você só não quer esquecer, avisado na hora exata.",
+    command:
+      "Jarvis, me lembra de ligar pra Ana hoje às 18h e de tomar o remédio.",
+    delay: 0.16,
+    lgOrder: "lg:order-3",
+    mock: ReminderMock,
+  },
+];
+
 export default function Organization() {
   const reduce = useReducedMotionSafe();
+
+  // Abaixo de lg a secao de 3 cartoes vira carrossel de um cartao so,
+  // arrastavel de lado — mesmos limiares (distancia/velocidade) do seletor
+  // de capacidades em Features.tsx, mas o MECANISMO aqui e diferente: la, o
+  // arrasto so decide um indice e o conteudo troca por baixo (fade); aqui os
+  // TRES cartoes vivem lado a lado numa tira, e o dedo arrasta a tira de
+  // verdade — o vizinho entra visivelmente durante o proprio gesto, nao so
+  // depois que solta. Testado a versao antiga (fade pos-solta): parecia
+  // dois movimentos desconexos, arrastar pra um vazio e so depois o cartao
+  // trocar. Sem wrap-around (a ultima nao volta pra primeira arrastando mais)
+  // — com so 3 itens, dar a volta exigiria clonar cartoes nas pontas so pra
+  // um carrossel manual de 3 paradas, complexidade que nao paga o ganho.
+  const isMobile = useMediaQuery("(max-width: 1023px)");
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  // Largura de UMA parada da tira = largura do proprio viewport (o cartao
+  // ocupa a tela toda). Medida via ResizeObserver, nao chutada, pra x nao
+  // ficar CM/px trocados quando a fonte do sistema muda o layout ou a tela
+  // gira — mesmo padrao de use-orb-size.ts.
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [cardWidth, setCardWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const measure = () => setCardWidth(el.offsetWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Altura de CADA parada, medida por fora (ver `items-start` na tira, mais
+  // abaixo): sem isso os 3 cartoes — de alturas naturalmente diferentes,
+  // Tarefas e maior de proposito — ficavam esticados pro tamanho do mais alto
+  // (comportamento padrao de flex-row, align-items:stretch), e sobrava um
+  // vao morto embaixo de Agenda/Lembretes ate a faixa de pontinhos, que virava
+  // ate a moldura do cartao. O container visivel (trackRef, logo abaixo) usa
+  // esta altura pra acompanhar SO o cartao ativo.
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [cardHeights, setCardHeights] = useState<number[]>([]);
+  useLayoutEffect(() => {
+    const els = cardRefs.current;
+    const ros = els.map((el, i) => {
+      if (!el) return null;
+      const ro = new ResizeObserver(([entry]) => {
+        const h = entry.contentRect.height;
+        setCardHeights((prev) => {
+          if (prev[i] === h) return prev;
+          const next = [...prev];
+          next[i] = h;
+          return next;
+        });
+      });
+      ro.observe(el);
+      return ro;
+    });
+    return () => ros.forEach((ro) => ro?.disconnect());
+  }, []);
+
+  // x e a posicao da tira em PIXELS (nao %), porque o `drag` do motion move
+  // em pixels — misturar as duas unidades no mesmo valor e que permite o
+  // dedo "somar" deslocamento em cima da posicao ja animada, sem os dois
+  // brigarem. Comeca em 0, que ja e a posicao certa pro indice inicial (0).
+  const x = useMotionValue(0);
+
+  // Anima a tira ate a parada do indice pedido. `type: spring` (nao tween)
+  // pra combinar com a mola elastica que o proprio arrasto usa enquanto o
+  // dedo ainda esta na tela — sem isso, o gesto teria uma fisica e o
+  // "snap" final teria outra, e a costura ficaria visivel.
+  const snapTo = (idx: number, width: number) => {
+    if (!width) return;
+    animate(x, -idx * width, { type: "spring", stiffness: 380, damping: 42 });
+  };
+
+  useEffect(() => {
+    snapTo(activeIdx, cardWidth);
+    // cardWidth entra nas deps: se a tela girar/redimensionar com o
+    // carrossel no meio de um cartao, a tira precisa se realinhar pra nova
+    // largura, nao ficar com a posicao antiga (em pixels) desencontrada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIdx, cardWidth]);
+
+  // Arrastar pra ESQUERDA avanca (o dedo empurra o cartao atual pra fora,
+  // puxando o proximo), pra DIREITA volta — convencao de qualquer carrossel
+  // de app, e a mesma de Features.tsx. Nos extremos (primeiro/ultimo
+  // cartao), Math.min/max trava o indice e `snapTo` chama de volta pra
+  // MESMA posicao — e o que da o efeito de elastico batendo na ponta em vez
+  // de continuar arrastando pro vazio.
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
+    const { offset, velocity } = info;
+    let next = activeIdx;
+    if (offset.x < -SWIPE_DISTANCE || velocity.x < -SWIPE_VELOCITY)
+      next = Math.min(activeIdx + 1, CARDS.length - 1);
+    else if (offset.x > SWIPE_DISTANCE || velocity.x > SWIPE_VELOCITY)
+      next = Math.max(activeIdx - 1, 0);
+
+    if (next === activeIdx) snapTo(activeIdx, cardWidth);
+    else setActiveIdx(next);
+  };
+
+  // Dica de que da pra arrastar: um empurraozinho sozinho a tira faz uma vez
+  // so, pouco depois da secao entrar na tela — sem ele nada na primeira
+  // olhada sugere que o cartao se move (nao ha seta, nem pedaco do vizinho
+  // espiando em repouso). 28px descobre uma fatia real da Agenda por meio
+  // segundo e volta, sem depender de o visitante ja saber pra arrastar.
+  //
+  // O gatilho e `inView` (onViewportEnter do motion.div la embaixo), NAO so
+  // montar+medir: a secao inteira ja nasce no DOM (so fica abaixo da dobra),
+  // entao cardWidth fica disponivel quase de imediato — se a dica dependesse
+  // so disso, ela tocaria e terminaria escondida, MUITO antes de alguem
+  // rolar ate aqui pra ver. So dispara uma vez (hintedRef) e nunca com
+  // "reduzir movimento".
+  const [inView, setInView] = useState(false);
+  const hintedRef = useRef(false);
+  useEffect(() => {
+    if (reduce || hintedRef.current || !cardWidth || !inView || activeIdx !== 0)
+      return;
+    hintedRef.current = true;
+    const t = setTimeout(() => {
+      animate(x, -28, { type: "spring", stiffness: 300, damping: 20 }).then(
+        () => animate(x, 0, { type: "spring", stiffness: 260, damping: 24 })
+      );
+    }, 500);
+    return () => clearTimeout(t);
+  }, [reduce, cardWidth, inView, activeIdx, x]);
 
   return (
     <section
@@ -554,51 +785,145 @@ export default function Organization() {
           </p>
         </motion.div>
 
-        {/* A coluna do meio e 1.14fr contra 1fr das laterais: e dai que sai a
-            largura maior do cartao em destaque. Tarefas vem PRIMEIRO no HTML
-            (e o principal dos tres, e no celular, onde a grade vira coluna
-            unica, tem que abrir a fila) e so vai pro meio quando os tres
-            entram lado a lado, em lg.
+        {/* Desktop (lg+): os tres lado a lado, como sempre foi. A coluna do
+            meio e 1.14fr contra 1fr das laterais: e dai que sai a largura
+            maior do cartao em destaque. Tarefas vem PRIMEIRO no array (e o
+            principal dos tres) e so vai pro meio visualmente aqui, via
+            lgOrder — no carrossel do celular, logo abaixo, ele sai primeiro
+            tambem, sem precisar de reordenar nada.
             items-center (nao items-start): os dois laterais sao mais baixos
             que o do meio, entao centraliza-los no eixo os desce um pouco e
             faz os tres compartilharem a MESMA LINHA DO MEIO em vez do mesmo
             topo. Com topo alinhado a diferenca de altura virava um degrau so
             embaixo, que lia como desalinho; centrado, ela se divide nas duas
             pontas e vira escalonamento de proposito. */}
-        <div className="mt-16 grid gap-x-6 gap-y-10 lg:grid-cols-[1fr_1.14fr_1fr] lg:items-center laptop:mt-12">
-          <FeatureCard
-            icon={ListChecks}
-            title="Tarefas"
-            desc="Ele cria, marca como feita e repete nos dias que você escolher."
-            command="Jarvis, cria uma tarefa pra revisar o contrato toda segunda, quarta e sexta."
-            bigger
-            className="lg:order-2"
-          >
-            <TaskMock />
-          </FeatureCard>
-
-          <FeatureCard
-            icon={CalendarCheck}
-            title="Agenda"
-            desc="Compromissos com dia e hora. Ele repete e avisa antes, se você pedir."
-            command="Jarvis, marca dentista quinta às 14h e me avisa uma hora antes."
-            delay={0.08}
-            className="lg:order-1"
-          >
-            <AgendaMock />
-          </FeatureCard>
-
-          <FeatureCard
-            icon={BellRinging}
-            title="Lembretes"
-            desc="Aquilo que você só não quer esquecer, avisado na hora exata."
-            command="Jarvis, me lembra de ligar pra Ana hoje às 18h e de tomar o remédio."
-            delay={0.16}
-            className="lg:order-3"
-          >
-            <ReminderMock />
-          </FeatureCard>
+        <div className="mt-16 hidden gap-x-6 gap-y-10 lg:grid lg:grid-cols-[1fr_1.14fr_1fr] lg:items-center laptop:mt-12">
+          {CARDS.map((card) => (
+            <FeatureCard
+              key={card.id}
+              icon={card.icon}
+              title={card.title}
+              desc={card.desc}
+              command={card.command}
+              bigger={card.bigger}
+              delay={card.delay}
+              className={card.lgOrder}
+            >
+              <card.mock />
+            </FeatureCard>
+          ))}
         </div>
+
+        {/* Celular (abaixo de lg): os tres cartoes empilhados verticalmente
+            eram MUITO scroll — cada um carrega uma maquete de app inteira.
+            Vira carrossel de VERDADE: os tres vivem lado a lado numa tira, e
+            arrastar move a tira mesmo — o vizinho entra visivelmente durante
+            o proprio gesto (nao um fade desconexo depois de soltar). Mesmos
+            limiares de distancia/velocidade do seletor de capacidades em
+            Features.tsx, pra nao inventar uma segunda linguagem de gesto na
+            mesma pagina. */}
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          // onViewportEnter (mesmo threshold do whileInView, via `viewport`
+          // acima): e o gatilho do empurraozinho automatico, mais acima —
+          // sem isso ele dispararia baseado so em montar+medir, quase
+          // sempre ainda fora da tela (ver comentario grande la).
+          onViewportEnter={() => setInView(true)}
+          transition={{ duration: 0.6, ease: EASE }}
+          className="mt-16 lg:hidden"
+        >
+          {/* viewport: recorta a tira pra so um cartao aparecer por vez.
+              A ref mede a largura de UMA parada (ver cardWidth, mais acima).
+              A altura acompanha SO o cartao ativo (cardHeights, mais acima) —
+              sem o valor medido ainda (1o frame), cai pra "auto", que hoje
+              casa com o cartao inicial (Tarefas) e nao pisca. A transicao so
+              entra depois que ha alguma altura medida, senao o 1o valor real
+              chegando via ResizeObserver animaria a partir de "auto", que o
+              CSS nao sabe interpolar (o cartao "pularia" pro tamanho certo em
+              vez de crescer suave). */}
+          <div
+            ref={trackRef}
+            className={`overflow-hidden ${
+              cardHeights.length ? "transition-[height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" : ""
+            }`}
+            style={cardHeights[activeIdx] ? { height: cardHeights[activeIdx] } : undefined}
+          >
+            {/* O bloco INTEIRO (tira + pontinhos, mais abaixo) e a area de
+                arrasto, nao so o cartao — no celular o dedo cai em qualquer
+                lugar dessa pilha, e ter uma parte que "nao pega" o gesto
+                parece defeito. Ver comentario grande em handleDragEnd/snapTo,
+                mais acima, pra como o `x` (motion value) e o `drag` do motion
+                convivem no mesmo elemento sem brigar.
+                items-start (nao o stretch padrao do flex): sem isso os 3
+                cartoes eram esticados pro tamanho do mais alto (Tarefas), e
+                cada um passava a reportar a MESMA altura pro ResizeObserver
+                acima — o vao morto que a gente esta corrigindo. */}
+            <motion.div
+              drag={isMobile ? "x" : false}
+              dragConstraints={{ left: -(CARDS.length - 1) * cardWidth, right: 0 }}
+              dragElastic={0.15}
+              dragMomentum={false}
+              onDragEnd={handleDragEnd}
+              style={{ x }}
+              className="flex cursor-grab items-start active:cursor-grabbing"
+            >
+              {CARDS.map((card, i) => (
+                <div
+                  key={card.id}
+                  ref={(el) => {
+                    cardRefs.current[i] = el;
+                  }}
+                  aria-hidden={i !== activeIdx}
+                  className="w-full shrink-0"
+                >
+                  {/* SEM `bigger`, ao contrario da grade de desktop: os tres
+                      viram slides de um carrossel de 1 por vez, entao nao ha
+                      "vizinho" pra Tarefas parecer maior QUE — os tres devem
+                      ter o mesmo tamanho de palco aqui. */}
+                  <FeatureCardBody
+                    icon={card.icon}
+                    title={card.title}
+                    desc={card.desc}
+                    command={card.command}
+                  >
+                    <card.mock />
+                  </FeatureCardBody>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* pontinhos: mesma tecnica de alvo de toque de Features.tsx — p-5
+              (20px) de padding em volta de um traco de 6px de altura da uns
+              46px de area clicavel real, bem acima dos 22px que um p-2 daria
+              (ver o ajuste identico feito la, na mesma sessao). */}
+          <div
+            className="mt-6 flex items-center justify-center gap-2"
+            role="tablist"
+            aria-label="Recursos de organização"
+          >
+            {CARDS.map((card, i) => (
+              <button
+                key={card.id}
+                type="button"
+                role="tab"
+                aria-selected={i === activeIdx}
+                aria-label={card.title}
+                onClick={() => setActiveIdx(i)}
+                className="cursor-pointer p-5"
+              >
+                <span
+                  aria-hidden
+                  className={`block h-1.5 rounded-full transition-all duration-300 ${
+                    i === activeIdx ? "w-6 bg-white" : "w-1.5 bg-white/25"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   );

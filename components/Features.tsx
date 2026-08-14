@@ -230,7 +230,10 @@ const CAPS: Cap[] = [
     tab: "Digita por você",
     hint: "Escreve no campo que você selecionar",
     icon: Keyboard,
-    command: "Jarvis, me escreva uma receita de bolo completa no Word.",
+    // "completa" saiu: com ela o pedido nao cabia em 2 linhas na largura do
+    // celular e o line-clamp-2 do cartao "Usuario" cortava a frase no meio
+    // (ver comentario grande no 1o ato, em ConsoleWindow).
+    command: "Jarvis, me escreva uma receita de bolo no Word.",
     reply: "Pronto! Escrevi a receita completa no documento.",
     replyDelay: 2.7,
     kind: "type",
@@ -412,7 +415,7 @@ function SpotifyViz({
         }}
       />
 
-      <div className="relative flex items-center gap-2.5 border-b border-white/[0.06] px-5 py-3">
+      <div className="relative flex items-center gap-2.5 border-b border-white/[0.06] px-4 py-3 sm:px-5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/brands/spotify.svg"
@@ -422,7 +425,12 @@ function SpotifyViz({
           aria-hidden
           className="h-[15px] w-[15px] shrink-0 brightness-0 invert opacity-70"
         />
-        <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/40">
+        {/* hidden no celular: o rotulo + o seletor de aparelho ja disputam a
+            linha toda a essa largura, e o icone do Spotify sozinho ja diz
+            "tocando agora" o bastante — ver mobileCarousel* em outras
+            demos pra mesma ideia de cortar rotulo antes de cortar
+            controle. */}
+        <span className="hidden text-[11px] font-medium uppercase tracking-[0.14em] text-white/40 sm:inline">
           Tocando agora
         </span>
 
@@ -493,10 +501,14 @@ function SpotifyViz({
         </div>
       </div>
 
-      {/* capa + dados da playlist. gap-9 e nao gap-4: o disco e absoluto, entao
-          ele nao entra na conta do gap — 16px dele vazam pra fora da capa e
-          comiam quase todo o respiro ate o texto. */}
-      <div className="relative flex items-end gap-9 px-5 pb-4 pt-5">
+      {/* capa + dados da playlist. gap-9 e nao gap-4 (a partir de sm:): o
+          disco e absoluto, entao ele nao entra na conta do gap — 16px dele
+          vazam pra fora da capa e comiam quase todo o respiro ate o texto.
+          No celular a capa/disco encolhem (86px/74px -> 56px/44px) e o gap
+          cai pra 3: sem isso a coluna de texto sobrava tao estreita que o
+          nome da playlist truncava pra "Foc…" — ver medicao no comentario
+          da altura da janela, mais acima em ConsoleWindow. */}
+      <div className="relative flex items-end gap-3 px-4 pb-3 pt-4 sm:gap-9 sm:px-5 sm:pb-4 sm:pt-5">
         <div className="relative shrink-0">
           {/* O disco assoma so um pedaco por tras da capa. Duas caixas de
               proposito: a de fora POSICIONA (o -translate-y-1/2 que centraliza)
@@ -505,7 +517,7 @@ function SpotifyViz({
               apaga o translate — a cada volta o disco pulava meia altura pra
               baixo. */}
           <div
-            className="absolute -right-4 top-1/2 h-[74px] w-[74px] -translate-y-1/2"
+            className="absolute -right-2 top-1/2 h-8 w-8 -translate-y-1/2 sm:-right-4 sm:h-[74px] sm:w-[74px]"
             aria-hidden
           >
             <div
@@ -516,14 +528,14 @@ function SpotifyViz({
                   "conic-gradient(from 180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.14), rgba(255,255,255,0.02))",
               }}
             >
-              <span className="absolute inset-[29px] rounded-full border border-white/20" />
+              <span className="absolute inset-[10px] rounded-full border border-white/20 sm:inset-[29px]" />
             </div>
           </div>
           {/* bg-ink-800 sob o degrade: sem essa base opaca o disco aparecia
               ATRAVES da capa (o degrade e todo em branco transparente), que era
               a sobreposicao esquisita no meio da arte. */}
           <div
-            className="relative flex h-[86px] w-[86px] items-center justify-center rounded-chip border border-white/[0.12] bg-ink-800 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)]"
+            className="relative flex h-14 w-14 items-center justify-center rounded-chip border border-white/[0.12] bg-ink-800 shadow-[0_18px_40px_-18px_rgba(0,0,0,1)] sm:h-[86px] sm:w-[86px]"
             style={{
               backgroundImage:
                 "linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.03) 55%, rgba(255,255,255,0.09))",
@@ -536,7 +548,7 @@ function SpotifyViz({
               width={26}
               height={26}
               aria-hidden
-              className="h-[26px] w-[26px] brightness-0 invert opacity-80"
+              className="h-4 w-4 brightness-0 invert opacity-80 sm:h-[26px] sm:w-[26px]"
             />
           </div>
         </div>
@@ -545,7 +557,7 @@ function SpotifyViz({
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
             Playlist
           </p>
-          <p className="mt-1 truncate font-display text-2xl font-semibold tracking-[-0.02em] text-white/95">
+          <p className="mt-1 truncate font-display text-lg font-semibold tracking-[-0.02em] text-white/95 sm:text-2xl">
             Foco Profundo
           </p>
           <p className="mt-1 truncate text-[11px] text-white/40">
@@ -564,7 +576,7 @@ function SpotifyViz({
       {/* a fila. min-h-0 + overflow-hidden: se a janela do console encolher, e
           a lista que cede — sem isso ela empurraria a barra do tocador pra
           fora da moldura. */}
-      <div className="relative min-h-0 flex-1 overflow-hidden px-5 pb-2">
+      <div className="relative min-h-0 flex-1 overflow-hidden px-4 pb-2 sm:px-5">
         <div className="flex items-center gap-3 border-b border-white/[0.07] pb-1.5 text-[9px] uppercase tracking-[0.14em] text-white/25">
           <span className="w-4 text-center">#</span>
           <span className="flex-1">Título</span>
@@ -604,12 +616,15 @@ function SpotifyViz({
 
       {/* Barra do tocador, tudo numa linha so: controles, progresso e mixer. A
           faixa "saída de áudio" saiu daqui — quem diz onde o som esta tocando
-          agora e o proprio seletor no topo da janela. */}
-      <div className="relative flex items-center gap-4 border-t border-white/[0.08] bg-white/[0.02] px-5 py-3">
-        <div className="flex shrink-0 items-center gap-4 text-white/45">
+          agora e o proprio seletor no topo da janela. Vao menor no celular e
+          o mixer de volume some abaixo de sm: a largura fixa dele (w-36) nao
+          sobrava depois dos controles + barra de progresso, que sao mais
+          essenciais. */}
+      <div className="relative flex items-center gap-2 border-t border-white/[0.08] bg-white/[0.02] px-4 py-2.5 sm:gap-4 sm:px-5 sm:py-3">
+        <div className="flex shrink-0 items-center gap-2.5 text-white/45 sm:gap-4">
           <ShuffleAngular size={15} aria-hidden />
           <SkipBack size={17} weight="fill" aria-hidden className="text-white/70" />
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink-950 shadow-[0_4px_18px_-4px_rgba(255,255,255,0.5)]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink-950 shadow-[0_4px_18px_-4px_rgba(255,255,255,0.5)] sm:h-9 sm:w-9">
             <Pause size={15} weight="fill" aria-hidden />
           </span>
           <SkipForward size={17} weight="fill" aria-hidden className="text-white/70" />
@@ -633,8 +648,8 @@ function SpotifyViz({
           </span>
         </div>
 
-        {/* mixer, agora vizinho do progresso na mesma linha */}
-        <div className="flex w-36 shrink-0 items-center gap-2">
+        {/* mixer, vizinho do progresso na mesma linha — so a partir de sm: */}
+        <div className="hidden w-36 shrink-0 items-center gap-2 sm:flex">
           <SpeakerLow size={14} aria-hidden className="shrink-0 text-white/40" />
           <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.1]">
             <motion.div
@@ -1242,9 +1257,17 @@ function GitViz() {
         </div>
       </div>
 
-      {/* ---- os dois paineis, reagindo ao terminal ---- */}
+      {/* ---- os dois paineis, reagindo ao terminal ----
+          No celular so o de "Alterações" fica de pe, ocupando a largura
+          inteira — os dois lado a lado (w-1/2 cada) nao sobravam espaco
+          nenhum pra nome de arquivo ou numero, e o "Histórico" media, medido
+          num iPhone comum, sumia por completo (0px de largura util depois do
+          nome do commit truncar). O terminal acima ja narra a historia
+          inteira (os 3 comandos, incluindo o push); o footer da janela (mais
+          abaixo) tambem resume "3 commits hoje" — entao cortar Histórico no
+          celular nao perde informacao nova, so a redundancia visual. */}
       <div className="flex min-h-0 flex-1">
-        <div className="flex w-1/2 shrink-0 flex-col overflow-hidden border-r border-white/[0.06] px-4 py-3">
+        <div className="flex w-full shrink-0 flex-col overflow-hidden px-4 py-3 sm:w-1/2 sm:border-r sm:border-white/[0.06]">
           <p className="mb-2 flex items-center gap-1.5 text-[9px] uppercase tracking-[0.14em] text-white/25">
             Alterações
             <motion.span
@@ -1287,8 +1310,9 @@ function GitViz() {
 
         {/* historico em grafo: o fio ligando os commits e o que faz isso
             parecer Git, e nao uma lista qualquer. O commit de cima so nasce
-            quando o terminal termina o commit de verdade. */}
-        <div className="min-w-0 flex-1 overflow-hidden px-4 py-3">
+            quando o terminal termina o commit de verdade. hidden no celular
+            — ver comentario grande no painel "Alterações", ao lado. */}
+        <div className="hidden min-w-0 flex-1 overflow-hidden px-4 py-3 sm:block">
           <p className="mb-2 text-[9px] uppercase tracking-[0.14em] text-white/25">
             Histórico
           </p>
@@ -1443,8 +1467,13 @@ function ChromeViz() {
 
       {/* ---- a pagina do Google ---- */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* cabecalho: logo + campo de busca com a pergunta digitada */}
-        <div className="flex items-center gap-4 px-5 pb-2.5 pt-4">
+        {/* cabecalho: logo + campo de busca com a pergunta digitada. No
+            celular a wordmark "Google" some (fica so o G) e o campo de busca
+            perde os icones secundarios (limpar, divisor, microfone) — medido:
+            com os quatro icones fixos + padding, sobravam ~48px pro texto da
+            pergunta numa tela de 375px, truncando pra "pre…" ja na 4a letra.
+            So a lupa fica, e o texto ganha o resto do campo. */}
+        <div className="flex items-center gap-2.5 px-4 pb-2.5 pt-4 sm:gap-4 sm:px-5">
           <span className="flex shrink-0 items-center gap-1.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -1455,7 +1484,7 @@ function ChromeViz() {
               aria-hidden
               className="h-4 w-4 brightness-0 invert opacity-80"
             />
-            <span className="font-display text-lg font-semibold tracking-[-0.03em] text-white/85">
+            <span className="hidden font-display text-lg font-semibold tracking-[-0.03em] text-white/85 sm:inline">
               Google
             </span>
           </span>
@@ -1467,14 +1496,14 @@ function ChromeViz() {
               size={11}
               weight="bold"
               aria-hidden
-              className="shrink-0 text-white/25"
+              className="hidden shrink-0 text-white/25 sm:block"
             />
-            <span aria-hidden className="h-4 w-px shrink-0 bg-white/10" />
+            <span aria-hidden className="hidden h-4 w-px shrink-0 bg-white/10 sm:block" />
             <Microphone
               size={13}
               weight="fill"
               aria-hidden
-              className="shrink-0 text-white/40"
+              className="hidden shrink-0 text-white/40 sm:block"
             />
             <MagnifyingGlass
               size={13}
@@ -1485,15 +1514,18 @@ function ChromeViz() {
           </div>
         </div>
 
-        {/* abas da busca + contagem de resultados */}
+        {/* abas da busca + contagem de resultados. No celular so as 3
+            primeiras abas cabem sem espremer — Videos/Ferramentas somem (a
+            5a, "Ferramentas", estourava a borda da janela e ficava cortada
+            na metade). */}
         <div
-          className="flex items-center gap-5 border-b border-white/[0.06] px-5 text-[11px]"
+          className="flex items-center gap-3 border-b border-white/[0.06] px-4 text-[11px] sm:gap-5 sm:px-5"
           aria-hidden
         >
           {GOOGLE_TABS.map((t, i) => (
             <span
               key={t}
-              className={`pb-2 ${
+              className={`pb-2 ${i >= 3 ? "hidden sm:inline" : ""} ${
                 i === 0
                   ? "border-b-2 border-white/70 font-medium text-white/85"
                   : "text-white/30"
@@ -1503,11 +1535,11 @@ function ChromeViz() {
             </span>
           ))}
         </div>
-        <p className="px-5 pt-2 text-[10px] text-white/25">
+        <p className="px-4 pt-2 text-[10px] text-white/25 sm:px-5">
           Aproximadamente 38.400.000 resultados (0,42 segundos)
         </p>
 
-        <div className="flex-1 space-y-3 overflow-hidden px-5 pb-4 pt-2.5">
+        <div className="flex-1 space-y-3 overflow-hidden px-4 pb-4 pt-2.5 sm:px-5">
           {/* o quadro de cotacao que o Google mostra no topo */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -1655,21 +1687,35 @@ function WinWindow({
         >
           {name}
         </span>
+        {/* botoes de minimizar/maximizar/fechar somem no celular — so a
+            partir de sm: (ver comentario grande abaixo sobre o pre-visualizar
+            do conteudo tambem sumir la). No lugar deles, so no fechado, um
+            "fechado" ainda mais compacto (sem o X, que ja repete o mesmo
+            "x" da janela ao lado). */}
         {live ? (
-          <span className="flex shrink-0 items-center gap-2 text-white/30" aria-hidden>
+          <span className="hidden shrink-0 items-center gap-2 text-white/30 sm:flex" aria-hidden>
             <span className="h-px w-2 bg-current" />
             <span className="h-2 w-2 border border-current" />
             <X size={9} weight="bold" />
           </span>
         ) : (
           <span className="flex shrink-0 items-center gap-1 text-[9px] uppercase tracking-[0.1em] text-white/35">
-            <X size={9} weight="bold" aria-hidden />
+            <X size={9} weight="bold" aria-hidden className="hidden sm:block" />
             fechado
           </span>
         )}
       </div>
 
-      <div className="relative min-h-0 flex-1 p-3">
+      {/* pre-visualizar o CONTEUDO da janela (as barrinhas fake, o
+          equalizador...) so a partir de sm:. No celular a janela vira um
+          chip compacto — so a barra de titulo acima, com icone + nome +
+          estado — porque o miolo (skeleton de conteudo) e decorativo, nao
+          informa nada de novo, e era exatamente o que sobrava sem espaco:
+          nome do app truncando pra 1-2 letras e os botoes da janela se
+          sobrepondo. Sobrar altura aqui tambem da mais folga pro PowerShell
+          logo abaixo, que e a janela com informacao de verdade (os comandos
+          digitados). */}
+      <div className="relative hidden min-h-0 flex-1 p-3 sm:block">
         <AnimatePresence mode="wait">
           {live ? (
             <motion.div
@@ -1726,13 +1772,23 @@ function WindowsViz() {
           className="h-[14px] w-[14px] shrink-0 brightness-0 invert opacity-70"
         />
         <span className="text-xs text-white/70">Windows 11 Pro</span>
-        <span className="text-[11px] text-white/25">· build 26100</span>
-        <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-white/25">
+        {/* "· build 26100" e "Área de trabalho" somem no celular: com o
+            nome do Windows sozinho ja ocupando boa parte da linha, os dois
+            juntos quebravam a barra em 2 linhas — ver print que motivou
+            esta rodada de ajustes mobile. */}
+        <span className="hidden text-[11px] text-white/25 sm:inline">· build 26100</span>
+        <span className="ml-auto hidden text-[10px] uppercase tracking-[0.14em] text-white/25 sm:inline">
           Área de trabalho
         </span>
       </div>
 
-      {/* ---- a mesa: duas janelas trocando de estado ---- */}
+      {/* ---- a mesa: duas janelas trocando de estado ----
+          flex-[0.35] no celular (era 1.1 fixo): as duas janelas viraram
+          chips compactos so de titulo (ver WinWindow), entao nao precisam
+          mais da mesma fatia de altura que precisavam com o conteudo
+          visivel — o que sobra vai pro PowerShell logo abaixo, que e onde
+          mora a informacao de verdade (os comandos digitados) e que antes
+          ficava quase todo cortado. */}
       <div
         className="relative flex min-h-0 flex-1 flex-col gap-3 p-4"
         style={{
@@ -1740,7 +1796,7 @@ function WindowsViz() {
             "radial-gradient(ellipse 80% 70% at 50% 0%, rgba(255,255,255,0.05), transparent 70%)",
         }}
       >
-        <div className="flex min-h-0 flex-[1.1] gap-3">
+        <div className="flex min-h-0 flex-[0.35] gap-3 sm:flex-[1.1]">
           <WinWindow brand="/brands/spotify.svg" name="Spotify" live={!closed}>
             <div className="flex h-full items-center gap-2.5">
               <span className="h-9 w-9 shrink-0 rounded bg-white/[0.08]" aria-hidden />
@@ -2122,7 +2178,10 @@ function ConsoleWindow({
     // janelas lado a lado na tira, alturas diferentes fariam a secao pular de
     // tamanho no meio do arrasto.) Os 1o/3o atos abaixo reservam 2 linhas
     // fixas pelo mesmo motivo (ver comentario la).
-    <div className="glow-ring relative flex h-[500px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[620px] lg:h-[680px] laptop:h-[600px]">
+    // 540px (era 500): folga extra pras versoes mobile das demos (ver
+    // SpotifyViz/GitViz/ChromeViz/WindowsViz) terem um pouco mais de altura
+    // pra respirar sem espremer o conteudo real. sm:/lg:/laptop: intactos.
+    <div className="glow-ring relative flex h-[540px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[620px] lg:h-[680px] laptop:h-[600px]">
       {/* barra de titulo */}
       <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
         <span className="flex gap-1.5" aria-hidden>

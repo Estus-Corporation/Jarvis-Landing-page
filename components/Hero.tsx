@@ -18,7 +18,13 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
-const HEADLINE = ["Sua", "voz", "vira", "ação."];
+// "Sua voz vira ação." era correto mas abstrato demais pra quem chega sem
+// contexto — "vira ação" nao diz O QUE, especificamente, acontece. Nomear o
+// Windows direto no titulo (em vez de deixar so pro subtitulo, logo abaixo)
+// da o "chao" imediato — MEU computador, de verdade — e "obedece" carrega o
+// efeito wow que "vira ação" nao tinha: e a fantasia de comandar a maquina
+// por voz, cumprida na primeira frase que a pessoa le.
+const HEADLINE = ["Fale.", "Seu", "Windows", "obedece."];
 
 // Selos flutuantes ao redor da esfera: mostram, de relance, tres coisas
 // concretas que o Jarvis faz, sem exigir que a pessoa leia a secao de

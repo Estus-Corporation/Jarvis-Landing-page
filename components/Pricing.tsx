@@ -371,8 +371,15 @@ export default function Pricing() {
       // laptop:* (ver tailwind.config.ts): tela de desktop, mas baixa. O
       // rodape ja e curto (pb-9/10), entao o que cede aqui e o topo, o bloco
       // do titulo e a altura minima dos dois cartoes.
-      className="relative overflow-hidden bg-ink-950 px-6 pb-9 pt-20 sm:pb-10 sm:pt-28 lg:px-10 laptop:pt-16 wide:px-16"
+      className="relative overflow-hidden border-t border-white/[0.07] bg-ink-950 px-6 pb-9 pt-20 sm:pb-10 sm:pt-28 lg:px-10 laptop:pt-16 wide:px-16"
     >
+      {/* linha divisoria: mesmo brilho estatico (sem animacao) das outras
+          secoes — ver Showcase.tsx/Roadmap.tsx/Testimonials.tsx. Fica por
+          cima do border-t solido do <section>, que continua ali por baixo. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+      />
       {/* Fundo animado no lugar da imagem de curvas de nivel: mesma funcao
           (textura no topo da secao, esmaecendo pro fundo solido). A mascara
           em gradiente e a mesma logica de antes: nasce transparente, pico no
@@ -444,10 +451,16 @@ export default function Pricing() {
               usar." (23 caracteres) estourava a caixa em telas estreitas
               nesse tamanho (medido: ate 44px de overflow a 414px) — encurtado
               pra caber igual aos demais. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            Escolha seu plano.
-          </h2>
-          <p className="mx-auto mt-5 max-w-[56ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
+          {/* wrapper inline-block: ver comentario identico em Organization.tsx
+              — encolhe pra largura do texto, entao a linha (w-full deste
+              wrapper) casa com a frase do titulo em qualquer largura. */}
+          <div className="inline-block">
+            <h2 className="mt-5 whitespace-nowrap leading-tight text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+              Escolha seu plano
+            </h2>
+            <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
+          </div>
+          <p className="mx-auto mt-3 max-w-[56ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
             O Jarvis completo nos dois planos. Só muda a forma de pagar.
           </p>
         </motion.div>

@@ -160,18 +160,15 @@ function FeatureCardBody({
 }) {
   return (
     <>
-      {/* bg-[#111114]: um passo escuro FORA da escala, a meio caminho entre
-          ink-800 (#141417, o tom original do cartao) e ink-900 (#0E0E10, o
-          fundo da secao). Mesma manobra que Showcase.tsx faz com #0C0C0E: os
-          degraus da escala sao largos demais pra um ajuste fino como este —
-          descer o degrau inteiro ate ink-900 sumiria com o cartao dentro da
-          secao.
+      {/* bg-ink-700: mesma cor dos cartoes de widget do carrossel do celular
+          em Showcase.tsx — pedido do usuario pra unificar as duas familias
+          de cartao.
           Os paineis das maquetes continuam em ink-800: eles vivem sobre o
           palco ink-950, sao outra superficie, e mexer neles ia junto tirar o
           contraste que faz a maquete ler como app. */}
       <Card
         className={cn(
-          "glow-ring group overflow-hidden bg-[#111114] transition-colors duration-300",
+          "glow-ring group overflow-hidden bg-ink-700 transition-colors duration-300",
           // O cartao em destaque tem a borda clara SEMPRE, sem depender de
           // hover — mesma gramatica de destaque do cartao Anual em Precos —, e
           // com 2px no lugar de 1: `border-2` sobrescreve o `border` que vem do
@@ -954,11 +951,18 @@ export default function Organization() {
               nao existe salto que possa descasar do espaco real. */}
           {/* Mesma formula de fonte de Roadmap.tsx ("Próximas atualizações")
               — ver comentario identico em Showcase.tsx. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            Tudo em um lugar.
-          </h2>
-          <p className="mx-auto mt-5 max-w-[52ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
-            Você fala, ele anota e avisa na hora certa.
+          {/* wrapper inline-block: encolhe pra largura do proprio texto do
+              titulo (h2 e whitespace-nowrap), entao a linha abaixo (w-full
+              DESTE wrapper, nao da secao) fica sempre do mesmo tamanho da
+              frase, em qualquer largura de tela — sem numero de px fixo. */}
+          <div className="inline-block">
+            <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+              Tudo em um lugar
+            </h2>
+            <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
+          </div>
+          <p className="mx-auto mt-3 max-w-[52ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
+            Você fala, ele anota e avisa você na hora certa.
           </p>
         </motion.div>
 

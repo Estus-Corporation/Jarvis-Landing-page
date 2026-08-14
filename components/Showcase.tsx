@@ -292,10 +292,16 @@ export default function Showcase() {
               formula (e nao so o resultado num ponto) precisa ser igual —
               caso contrario cada titulo volta a ter seu proprio tamanho em
               alguma largura de tela. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            Uma dashboard viva.
-          </h2>
-          <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
+          {/* wrapper inline-block: ver comentario identico em Organization.tsx
+              — encolhe pra largura do texto, entao a linha (w-full deste
+              wrapper) casa com a frase do titulo em qualquer largura. */}
+          <div className="inline-block">
+            <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+              Uma dashboard viva
+            </h2>
+            <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
+          </div>
+          <p className="mx-auto mt-3 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
             Widgets que você arrasta, reorganiza e personaliza.
           </p>
         </motion.div>
@@ -484,7 +490,7 @@ export default function Showcase() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.6, ease: EASE }}
-            className="relative -mx-6 mt-10 overflow-hidden px-6 lg:hidden"
+            className="relative -mx-6 mt-10 overflow-hidden lg:hidden"
           >
             <Marquee repeat={3} className="[--duration:26s] [--gap:1rem] p-1">
               {WIDGETS.map((w) => (
@@ -512,17 +518,6 @@ export default function Showcase() {
                 </div>
               ))}
             </Marquee>
-            {/* degrades: escondem onde os cartoes entram/saem no corte da
-                sangria — #0C0C0E casa com o fundo desta secao (ver a classe
-                da <section>, mais abaixo). */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-[#0C0C0E] to-transparent"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#0C0C0E] to-transparent"
-            />
           </motion.div>
         </div>
       </div>

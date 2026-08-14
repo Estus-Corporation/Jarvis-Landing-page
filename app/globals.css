@@ -187,8 +187,24 @@ body {
    dedo arrastava a tira — a concorrencia pelo thread principal era o
    engasgo leve que o arrasto tinha. So animar quando a borda esta de fato
    visivel (hover/foco/ativo) resolve os dois de uma vez, sem mexer no
-   componente de nenhuma das duas secoes. */
-.glow-ring:is(:hover, :focus-within)::before,
+   componente de nenhuma das duas secoes.
+
+   :hover fica atras de `(hover: hover)` de proposito — pedido do usuario.
+   Em touchscreen um toque no cartao deixa `:hover` PRESO (o navegador nao
+   tem mouse pra "sair" do elemento depois), entao o anel acendia e girava
+   so por causa do toque, sem ninguem pedir. Dispositivos sem hover de
+   verdade (todo touchscreen) nunca casam a media query, entao o toque no
+   mobile fica sempre sem animacao de borda — so mouse de verdade aciona.
+   :focus-within e --active continuam fora da media query: foco por teclado
+   e o estado "ativo" (Features.tsx) nao sao o bug do toque preso. */
+@media (hover: hover) {
+  .glow-ring:hover::before {
+    opacity: 1;
+    animation: glow-spin 3.2s linear infinite;
+  }
+}
+
+.glow-ring:focus-within::before,
 .glow-ring--active::before {
   opacity: 1;
   animation: glow-spin 3.2s linear infinite;

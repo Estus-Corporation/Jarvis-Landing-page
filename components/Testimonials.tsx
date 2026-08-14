@@ -201,9 +201,18 @@ export default function Testimonials() {
               (que e o que causava estouro logo apos o breakpoint). */}
           {/* Mesma formula de fonte de Roadmap.tsx ("Próximas atualizações")
               — ver comentario identico em Showcase.tsx. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            O que dizem dele.
-          </h2>
+          {/* wrapper inline-block: ver comentario identico em Organization.tsx
+              — encolhe pra largura do texto, entao a linha (w-full deste
+              wrapper) casa com a frase do titulo em qualquer largura. */}
+          <div className="inline-block">
+            <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+              Quem usa, recomenda
+            </h2>
+            <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
+          </div>
+          <p className="mx-auto mt-3 max-w-[52ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
+            Histórias reais de quem já colocou o Jarvis pra trabalhar todos os dias.
+          </p>
         </motion.div>
       </div>
 
@@ -274,18 +283,24 @@ export default function Testimonials() {
               ficarem do lado de dentro nas duas metades, simetricas em
               relacao a imagem do centro. */}
           <div className="absolute inset-y-0 right-0 flex w-[46vw] items-center justify-end overflow-hidden pr-[3vw]">
+            {/* Padrao INVERTIDO em relacao a metade esquerda (desce-sobe-desce
+                em vez de sobe-desce-sobe) — pedido do usuario: a metade
+                direita tinha 2 das 3 colunas subindo, igual a esquerda, e
+                lia como repetitivo/duplicado. Espelhando a direcao tambem
+                (nao so a ancoragem), as duas metades ficam visualmente
+                distintas. */}
             <div className="flex flex-row items-center gap-5">
-              <Marquee vertical repeat={3} paused={lowPower} className="[--duration:40s]">
-                {testimonials.map((item, i) => (
-                  <TestimonialCard key={i} item={item} />
-                ))}
-              </Marquee>
               <Marquee vertical reverse repeat={3} paused={lowPower} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
               <Marquee vertical repeat={3} paused={lowPower} className="[--duration:40s]">
+                {testimonials.map((item, i) => (
+                  <TestimonialCard key={i} item={item} />
+                ))}
+              </Marquee>
+              <Marquee vertical reverse repeat={3} paused={lowPower} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}

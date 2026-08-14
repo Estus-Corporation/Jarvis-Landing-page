@@ -231,7 +231,7 @@ export default function Hero() {
             initial={reduce ? false : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.42, ease: [0.16, 1, 0.3, 1] }}
-            className="mx-auto mt-7 max-w-[46ch] text-center text-lg font-light leading-relaxed text-white/60 lg:mx-0 lg:text-left"
+            className="mx-auto mt-6 max-w-[46ch] text-center text-lg font-light leading-relaxed text-white/60 lg:mx-0 lg:text-left"
           >
             Um assistente de voz que vive no seu Windows. Controla o navegador,
             abre programas e roda comandos de terminal.

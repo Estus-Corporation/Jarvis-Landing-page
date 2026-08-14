@@ -524,10 +524,16 @@ export default function Roadmap() {
           {/* Fonte fluida: titulo curto, entao a formula trava em 48px bem
               antes mesmo do fim do celular — aqui e mais pra ficar
               consistente com as outras secoes do que por necessidade real. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            Próximas atualizações
-          </h2>
-          <p className="mx-auto mt-5 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-4">
+          {/* wrapper inline-block: ver comentario identico em Organization.tsx
+              — encolhe pra largura do texto, entao a linha (w-full deste
+              wrapper) casa com a frase do titulo em qualquer largura. */}
+          <div className="inline-block">
+            <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
+              Próximas atualizações
+            </h2>
+            <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
+          </div>
+          <p className="mx-auto mt-3 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
             O computador é só o começo.
           </p>
           {/* Nada de controle aqui embaixo no desktop (md+): setas e
@@ -562,9 +568,16 @@ export default function Roadmap() {
                 // fatia pro proximo cartao aparecer. O gap-4 do pai so fica
                 // visivel arrastando (ver ROADMAP_GAP).
                 <div key={item.title} className="w-full shrink-0">
-                  <p className="text-center font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
-                    Update {index + 1}.0
-                  </p>
+                  {/* wrapper w-fit + mx-auto: encolhe pra largura do proprio
+                      rotulo, entao a linha abaixo (w-full DESTE wrapper) casa
+                      com o texto "Update N.0" em vez da largura do cartao —
+                      mesma ideia das linhas sob os titulos de secao. */}
+                  <div className="mx-auto w-fit">
+                    <p className="text-center font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                      Update {index + 1}.0
+                    </p>
+                    <div aria-hidden className="mt-1.5 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+                  </div>
                   {/* mx-auto: o max-w-[16ch] restringe a CAIXA do h3 (pra
                       titulo longo quebrar em 2 linhas curtas em vez de 1
                       linha esticada) — sem centralizar essa caixa tambem,
@@ -574,14 +587,14 @@ export default function Roadmap() {
                     ref={(el) => {
                       mobileTitleRefs.current[index] = el;
                     }}
-                    className="mx-auto mt-3 flex max-w-[16ch] items-center justify-center text-balance text-center font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA]"
+                    className="mx-auto mt-2 flex max-w-[16ch] items-center justify-center text-balance text-center font-display text-3xl font-semibold tracking-[-0.02em] text-[#FAFAFA]"
                     style={
                       mobileTitleMinHeight ? { minHeight: mobileTitleMinHeight } : undefined
                     }
                   >
                     {item.title}
                   </h3>
-                  <div className="relative mt-5 aspect-[4/3] overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+                  <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
                     <Image
                       src={item.image}
                       alt=""
@@ -595,6 +608,7 @@ export default function Roadmap() {
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
                   </div>
+                  <div aria-hidden className="mt-3 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
                   {/* text-sm (nao mais text-base) e SEM o teto de 38ch do
                       desktop (aqui so estreitava a linha a toa, num cartao
                       que ja e a largura da tela): a descricao ocupa menos
@@ -753,11 +767,20 @@ export default function Roadmap() {
                     }
                   >
                     {/* Rotulo "Update N.0": no lugar onde a paginacao ficava
-                        antes de subir pra baixo do titulo da secao. */}
-                    <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
-                      Update {index + 1}.0
-                    </p>
-                    <h3 className="mt-3 max-w-[16ch] text-balance font-display text-4xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-4xl">
+                        antes de subir pra baixo do titulo da secao.
+                        w-fit (nao mx-auto: aqui o bloco e alinhado a
+                        esquerda, nao centralizado): encolhe a largura do
+                        wrapper pro texto do rotulo, entao a linha abaixo
+                        (w-full DESTE wrapper) casa com "Update N.0" em vez de
+                        esticar pela coluna toda — mesma ideia da versao
+                        mobile e das linhas sob os titulos de secao. */}
+                    <div className="w-fit">
+                      <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                        Update {index + 1}.0
+                      </p>
+                      <div aria-hidden className="mt-1.5 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+                    </div>
+                    <h3 className="mt-2 max-w-[16ch] text-balance font-display text-4xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-4xl">
                       {item.title}
                     </h3>
                     <p className="mt-5 max-w-[38ch] text-base leading-relaxed text-white/55 laptop:mt-4">
@@ -815,44 +838,52 @@ export default function Roadmap() {
                 achatar a proporcao e o que baixa a imagem sem estreitar a
                 grade. As tres fotos sao paisagem, entao cortar um pouco da
                 altura nao come nada do assunto delas. */}
-            <div
-              ref={imageRef}
-              className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] laptop:aspect-[16/11]"
-            >
+            {/* wrapper w-full: precisa dele porque agora ha DOIS filhos em
+                fluxo normal (a imagem e a linha abaixo dela) dentro de um pai
+                flex (items-center/justify-center) — sem essa caixa, os dois
+                ficariam lado a lado na linha em vez de imagem-em-cima,
+                linha-embaixo. */}
+            <div className="w-full">
               <div
-                className="absolute inset-0 transition-transform duration-700 ease-in-out"
-                style={{ transform: `translateY(-${active * 100}%)` }}
+                ref={imageRef}
+                className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] laptop:aspect-[16/11]"
               >
-                {items.map((item, index) => (
-                  <div key={item.title} className="relative h-full w-full">
-                    {/* next/image + `unoptimized`: mesmo padrao de
-                        Showcase.tsx — os arquivos ja SAO .webp comprimidos
-                        (as fontes .png tinham 1,4-1,7MB CADA; virar webp
-                        derrubou os tres juntos de 4,45MB pra 270KB), entao
-                        passar de novo pelo otimizador do Next so recomprimiria
-                        algo ja comprimido. O que se ganha aqui em relacao ao
-                        <img> cru e `sizes`, que evita o navegador baixar mais
-                        pixel do que a coluna realmente mostra.
+                <div
+                  className="absolute inset-0 transition-transform duration-700 ease-in-out"
+                  style={{ transform: `translateY(-${active * 100}%)` }}
+                >
+                  {items.map((item, index) => (
+                    <div key={item.title} className="relative h-full w-full">
+                      {/* next/image + `unoptimized`: mesmo padrao de
+                          Showcase.tsx — os arquivos ja SAO .webp comprimidos
+                          (as fontes .png tinham 1,4-1,7MB CADA; virar webp
+                          derrubou os tres juntos de 4,45MB pra 270KB), entao
+                          passar de novo pelo otimizador do Next so recomprimiria
+                          algo ja comprimido. O que se ganha aqui em relacao ao
+                          <img> cru e `sizes`, que evita o navegador baixar mais
+                          pixel do que a coluna realmente mostra.
 
-                        loading: so o primeiro item e "eager". Os outros dois
-                        so aparecem depois que o carrossel gira, entao adiar
-                        eles tira ~180KB do caminho critico de quem so passa
-                        rolando pela secao. */}
-                    <Image
-                      src={item.image}
-                      alt=""
-                      aria-hidden
-                      fill
-                      unoptimized
-                      sizes="(min-width: 1800px) 750px, (min-width: 768px) 45vw, 0px"
-                      loading={index === 0 ? "eager" : "lazy"}
-                      draggable={false}
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
+                          loading: so o primeiro item e "eager". Os outros dois
+                          so aparecem depois que o carrossel gira, entao adiar
+                          eles tira ~180KB do caminho critico de quem so passa
+                          rolando pela secao. */}
+                      <Image
+                        src={item.image}
+                        alt=""
+                        aria-hidden
+                        fill
+                        unoptimized
+                        sizes="(min-width: 1800px) 750px, (min-width: 768px) 45vw, 0px"
+                        loading={index === 0 ? "eager" : "lazy"}
+                        draggable={false}
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
               </div>
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
+              <div aria-hidden className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
             </div>
           </div>
         </div>

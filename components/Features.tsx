@@ -2651,10 +2651,16 @@ export default function Features() {
               volta de 524px de largura, bem antes dos 1024px onde o padding
               muda — o salto que a segunda formula corrigia nunca chega a
               acontecer. */}
-          <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.025em] text-[#FAFAFA] laptop:text-[2.625rem]">
-            Ele age de verdade.
-          </h2>
-          <p className="mx-auto mt-6 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-5">
+          {/* wrapper inline-block: ver comentario identico em Organization.tsx
+              — encolhe pra largura do texto, entao a linha (w-full deste
+              wrapper) casa com a frase do titulo em qualquer largura. */}
+          <div className="inline-block">
+            <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.025em] text-[#FAFAFA] laptop:text-[2.625rem]">
+              Ele age de verdade
+            </h2>
+            <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
+          </div>
+          <p className="mx-auto mt-3 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
             Escolha uma capacidade e veja o Jarvis em ação.
           </p>
         </motion.div>

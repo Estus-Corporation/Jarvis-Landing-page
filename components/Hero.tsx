@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
@@ -80,6 +81,10 @@ const HERO_PHRASES = [
 
 export default function Hero() {
   const reduce = useReducedMotionSafe();
+  // So pras particulas de fundo (ver comentario grande la embaixo, perto do
+  // <Particles>) — a esfera e os pontinhos de LED continuam rodando sempre,
+  // mesmo em maquina fraca.
+  const lowPower = useLowPowerDevice();
   // O teto acompanha a largura da coluna do orb, alargada logo abaixo no grid.
   // A caixa desenhada e (size + 144) por causa do padding dos aneis, entao o
   // limite util da coluna de ~640px e 496. O hook ainda corta por altura de
@@ -174,13 +179,16 @@ export default function Hero() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-[5] h-96 bg-gradient-to-b from-ink-950 via-ink-950 to-transparent lg:hidden"
       />
-      {/* Particulas desligadas so por quem pede menos movimento: e um loop de
-          canvas continuo, sem quadro parado equivalente, entao a saida
-          honesta e nao rodar (mesmo padrao do JarvisOrb `paused`). Rodam
-          sempre em modo fraco de proposito — sao a identidade visual da
-          Hero, e o modo fraco hoje so mexe num punhado de coisas estruturais
-          (ver use-low-power.tsx). */}
-      {!reduce && (
+      {/* Particulas: loop de canvas continuo, sem quadro parado equivalente,
+          entao a saida honesta e nao rodar (mesmo padrao do JarvisOrb
+          `paused`) — tanto pra quem pede menos movimento quanto pra maquina
+          fraca (lowPower). Revisado: antes rodavam sempre em modo fraco de
+          proposito, por serem "identidade visual da Hero" — revertido depois
+          de um relato de hardware fraco DE VERDADE (GPU movel Mali-G52,
+          ~30fps medidos na Hero com o proprio ?fps=1 do site). A ESFERA
+          continua rodando sempre — e ela quem carrega a identidade; as
+          particulas sao so o ambiente atras dela. */}
+      {!reduce && !lowPower && (
         <Particles
           color="#ffffff"
           quantity={90}

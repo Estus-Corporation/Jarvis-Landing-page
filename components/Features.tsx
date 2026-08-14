@@ -2699,17 +2699,16 @@ export default function Features() {
                   // celular mostrando so o item atual. Quem troca la e o
                   // arrasto (e os pontos, logo abaixo do botao).
                   //
-                  // lowPower: `glow-ring--active` NAO entra. Ela liga a
-                  // animacao continua do anel (conic-gradient repintando a
-                  // cada frame, ver globals.css) pelo tempo INTEIRO que a
-                  // capacidade fica selecionada — que no celular e o tempo
-                  // todo, bem debaixo do carrossel que se arrasta. Medido com
-                  // CPU throttled: essa e a unica animacao continua e SEM
-                  // gatilho de hover que sobrava na secao. Em maquina fraca
-                  // o botao fica com a borda acesa (isActive), so sem girar.
+                  // glow-ring--active liga a animacao continua do anel
+                  // (conic-gradient repintando a cada frame) pelo tempo
+                  // INTEIRO que a capacidade fica selecionada — no celular,
+                  // o tempo todo. Em maquina fraca ela e desligada via CSS
+                  // (`html.low-power .glow-ring::before`, ver globals.css),
+                  // entao nao precisa de condicional aqui: o botao so perde
+                  // o giro, nunca a borda acesa.
                   className={`glow-ring group relative flex items-center gap-4 overflow-hidden rounded-card border px-5 py-4 text-left transition-colors duration-300 laptop:py-3 ${
                     isActive
-                      ? `border-white bg-[#FAFAFA] ${lowPower ? "" : "glow-ring--active"}`
+                      ? "glow-ring--active border-white bg-[#FAFAFA]"
                       : "hidden border-white/[0.08] bg-ink-900/60 hover:border-white/20 hover:bg-ink-800/60 lg:flex"
                   }`}
                 >

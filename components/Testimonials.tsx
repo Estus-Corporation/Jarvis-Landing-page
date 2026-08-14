@@ -17,6 +17,7 @@ import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { cn } from "@/lib/utils";
 import {
   Quotes,
@@ -161,6 +162,12 @@ function RotatingTrust({ reduce }: { reduce: boolean }) {
 
 export default function Testimonials() {
   const reduce = useReducedMotionSafe();
+  // Maquina fraca: as esteiras (Marquee) do carrossel de depoimentos param,
+  // congeladas onde estavam (ver `paused` em 3d-testimonials.tsx) — sao 8
+  // faixas de CSS animation continua (6 de fundo no palco do desktop + 2 no
+  // fundo compacto do celular) rodando o tempo inteiro que a secao esta na
+  // tela.
+  const lowPower = useLowPowerDevice();
 
   return (
     <section
@@ -243,17 +250,17 @@ export default function Testimonials() {
               ou na altura da secao pede refazer essa conta. */}
           <div className="absolute inset-y-0 left-0 flex w-[46vw] items-center overflow-hidden pl-[3vw]">
             <div className="flex flex-row items-center gap-5">
-              <Marquee vertical repeat={3} className="[--duration:40s]">
+              <Marquee vertical repeat={3} paused={lowPower} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
-              <Marquee vertical reverse repeat={3} className="[--duration:40s]">
+              <Marquee vertical reverse repeat={3} paused={lowPower} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
-              <Marquee vertical repeat={3} className="[--duration:40s]">
+              <Marquee vertical repeat={3} paused={lowPower} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
@@ -268,17 +275,17 @@ export default function Testimonials() {
               relacao a imagem do centro. */}
           <div className="absolute inset-y-0 right-0 flex w-[46vw] items-center justify-end overflow-hidden pr-[3vw]">
             <div className="flex flex-row items-center gap-5">
-              <Marquee vertical repeat={3} className="[--duration:40s]">
+              <Marquee vertical repeat={3} paused={lowPower} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
-              <Marquee vertical reverse repeat={3} className="[--duration:40s]">
+              <Marquee vertical reverse repeat={3} paused={lowPower} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
               </Marquee>
-              <Marquee vertical repeat={3} className="[--duration:40s]">
+              <Marquee vertical repeat={3} paused={lowPower} className="[--duration:40s]">
                 {testimonials.map((item, i) => (
                   <TestimonialCard key={i} item={item} />
                 ))}
@@ -362,12 +369,12 @@ export default function Testimonials() {
           aria-hidden
           className="absolute inset-0 flex justify-center gap-3 opacity-[0.45]"
         >
-          <Marquee vertical repeat={3} className="[--duration:26s] [--gap:0.75rem]">
+          <Marquee vertical repeat={3} paused={lowPower} className="[--duration:26s] [--gap:0.75rem]">
             {testimonials.map((item, i) => (
               <TestimonialCard key={i} item={item} compact />
             ))}
           </Marquee>
-          <Marquee vertical reverse repeat={3} className="[--duration:26s] [--gap:0.75rem]">
+          <Marquee vertical reverse repeat={3} paused={lowPower} className="[--duration:26s] [--gap:0.75rem]">
             {testimonials.map((item, i) => (
               <TestimonialCard key={i} item={item} compact />
             ))}

@@ -17,6 +17,14 @@ interface MarqueeProps extends ComponentPropsWithoutRef<"div"> {
    */
   pauseOnHover?: boolean;
   /**
+   * Whether to pause the animation unconditionally (e.g. low-power mode).
+   * Freezes it mid-frame via animation-play-state, not display:none — the
+   * repeated tracks stay exactly where the animation left them instead of
+   * jumping back to their start position.
+   * @default false
+   */
+  paused?: boolean;
+  /**
    * Content to be displayed in the marquee
    */
   children: React.ReactNode;
@@ -48,6 +56,7 @@ export function Marquee({
   className,
   reverse = false,
   pauseOnHover = false,
+  paused = false,
   children,
   vertical = false,
   repeat = 4,
@@ -90,13 +99,21 @@ export function Marquee({
                   pauseOnHover && "group-hover:[animation-play-state:paused]",
                   reverse && "[animation-direction:reverse]"
                 )}
+                // `paused` via style, nao classe: `.animate-marquee-vertical`
+                // usa o shorthand `animation`, que reseta animation-play-state
+                // pro default — e no CSS gerado essa regra vem DEPOIS da
+                // classe `[animation-play-state:paused]` no arquivo, entao
+                // ela sempre ganhava (medido: ficava "running" com paused=true).
+                // Estilo inline tem prioridade maxima e nao depende da ordem
+                // das regras no stylesheet.
+                style={paused ? { animationPlayState: "paused" } : undefined}
               >
                 {children}
               </div>
             ))}
           </>
         ),
-        [repeat, children, vertical, pauseOnHover, reverse]
+        [repeat, children, vertical, pauseOnHover, paused, reverse]
       )}
     </div>
   );

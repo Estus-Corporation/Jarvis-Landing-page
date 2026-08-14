@@ -43,32 +43,47 @@ html {
 }
 
 /* Maquina fraca (classe posta no <html> por components/ui/use-low-power.tsx).
-   Escopo bem estreito de proposito: so o que e caro e realmente opcional
-   (o vidro fosco do header/cartoes). As animacoes da pagina — Hero, esfera,
-   botoes, cartoes de depoimento, os pinguinhos de LED, tudo — continuam
-   rodando aqui SEMPRE, mesmo em modo fraco. Ver o historico grande em
-   use-low-power.tsx: uma versao anterior matava toda `animation` da pagina
-   nesse modo, e foi revertida depois de testes reais mostrarem que a maioria
-   das maquinas roda a pagina completa sem dificuldade — o caso que motivou
+   Historico: uma versao inicial matava toda `animation` da pagina nesse modo
+   e foi revertida depois de testes reais mostrarem que a maioria das
+   maquinas roda a pagina completa sem dificuldade — o caso que motivou
    aquilo era o navegador (Firefox renderizando por software), nao o peso da
-   pagina, e apagar a identidade visual pra resolver um problema de outro
-   lugar era exagero.
+   pagina. Dai o escopo ficou estreito por um tempo (so backdrop-filter).
+   Revisado de novo em 2026 com um relato de hardware fraco DE VERDADE (GPU
+   Mali-G52 movel, aceleracao ligada, ~30fps na Hero e ~36fps em Capacidades
+   medidos com o proprio `?fps=1` do site) — dessa vez o problema E peso de
+   pagina, entao o escopo cresceu: Hero (particulas de fundo), o anel
+   giratorio de borda (glow-ring, usado em Organizacao e Capacidades) e o
+   carrossel de depoimentos tambem desligam agora. A esfera da Hero e os
+   pontinhos de LED continuam rodando sempre — ver comentario em cada
+   consumidor pra saber exatamente o que cada um corta.
 
-   backdrop-filter e o caso classico que sobrou: esta espalhado em classe do
-   Tailwind por meia duzia de arquivos (header, cartoes, legendas...), e e
-   caro de um jeito que nao aparece num perfil de JS — quem paga e o
-   compositor. Como o que esta ATRAS do elemento muda a cada frame enquanto a
-   pagina rola, o navegador precisa recortar o fundo e re-borrar tudo de
-   novo, sempre; em video integrado isso sozinho ja segura o frame.
-
-   O `background` de cada um desses elementos continua de pe (sao todos
-   translucidos sobre um fundo quase preto), entao o que se perde e o vidro
-   fosco — nao o contraste do texto. */
+   backdrop-filter: esta espalhado em classe do Tailwind por meia duzia de
+   arquivos (header, cartoes, legendas...), e e caro de um jeito que nao
+   aparece num perfil de JS — quem paga e o compositor. Como o que esta ATRAS
+   do elemento muda a cada frame enquanto a pagina rola, o navegador precisa
+   recortar o fundo e re-borrar tudo de novo, sempre; em GPU fraca isso
+   sozinho ja segura o frame. O `background` de cada elemento continua de pe
+   (sao todos translucidos sobre um fundo quase preto), entao o que se perde
+   e o vidro fosco — nao o contraste do texto. */
 html.low-power *,
 html.low-power *::before,
 html.low-power *::after {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* glow-ring: o anel de borda giratorio anima uma custom property registrada
+   via @property (conic-gradient), o que forca REPAINT a cada frame — nao e
+   so compositor, como transform/opacity seriam. Normalmente so liga em
+   hover/foco/estado ativo (ver a regra logo abaixo desta, sem `.low-power`),
+   mas em touchscreen um toque pode deixar `:hover`/`:focus-within` PRESOS
+   (o navegador nao tem mouse pra "sair" do elemento depois), o que acendia
+   o anel sem ninguem pedir e sem nenhum jeito de apagar sozinho. Em maquina
+   fraca a borda fica sempre apagada — sem excecao, sem depender de estado —
+   e os cartoes continuam com a borda simples de sempre por baixo. */
+html.low-power .glow-ring::before {
+  animation: none !important;
+  opacity: 0 !important;
 }
 
 body {

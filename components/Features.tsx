@@ -14,7 +14,7 @@ import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
   Keyboard,
-  TextAa,
+  Eye,
   SkipBack,
   SkipForward,
   Pause,
@@ -24,7 +24,6 @@ import {
   X,
   MagnifyingGlass,
   Microphone,
-  ArrowDown,
   FolderSimple,
   GitBranch,
   GitCommit,
@@ -58,6 +57,9 @@ import {
   Paperclip,
   Camera,
   Star,
+  Play,
+  ThumbsUp,
+  ShareFat,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
@@ -92,7 +94,8 @@ type Kind =
   | "chrome"
   | "windows"
   | "type"
-  | "screen";
+  | "screen"
+  | "youtube";
 
 type Cap = {
   id: string;
@@ -193,16 +196,18 @@ const CAPS: Cap[] = [
     kind: "whatsapp",
   },
   {
-    id: "git",
-    tab: "Git",
-    hint: "Clona repositórios e executa comandos Git",
-    brand: "/brands/git.svg",
-    command: "Jarvis, clona esse repositório e sobe minhas alterações.",
-    reply: "Prontinho, subi tudo pro GitHub em 3 commits.",
-    // a cena do Git e a mais longa das sete: o terminal digita 3 comandos e
-    // sobe o push antes de a resposta fazer sentido (GIT_END, ~4,2s).
-    replyDelay: 4.4,
-    kind: "git",
+    id: "youtube",
+    tab: "YouTube",
+    hint: "Procura e toca o vídeo que você pedir",
+    brand: "/brands/youtube.svg",
+    command: "Jarvis, procura um tutorial de violão no YouTube e toca o primeiro vídeo.",
+    reply: "Encontrei um tutorial ótimo e já coloquei pra tocar.",
+    // a cena troca da lista de resultados pro video tocando em YOUTUBE_PLAY_AT
+    // (1,9s, ver mais abaixo) — a resposta cai logo depois, com o video ja
+    // rodando (nao espera a barra de progresso encher, mesmo padrao do
+    // Spotify: a acao "comecou" e o suficiente pra resposta fazer sentido).
+    replyDelay: 2.6,
+    kind: "youtube",
   },
   {
     id: "chrome",
@@ -227,6 +232,18 @@ const CAPS: Cap[] = [
     kind: "windows",
   },
   {
+    id: "git",
+    tab: "Git",
+    hint: "Clona repositórios e executa comandos Git",
+    brand: "/brands/git.svg",
+    command: "Jarvis, clona esse repositório e sobe minhas alterações.",
+    reply: "Prontinho, subi tudo pro GitHub em 3 commits.",
+    // a cena do Git e a mais longa das oito: o terminal digita 3 comandos e
+    // sobe o push antes de a resposta fazer sentido (GIT_END, ~4,2s).
+    replyDelay: 4.4,
+    kind: "git",
+  },
+  {
     id: "type",
     tab: "Digita por você",
     hint: "Escreve no campo que você selecionar",
@@ -243,15 +260,13 @@ const CAPS: Cap[] = [
     id: "screen",
     tab: "Leitura de tela",
     hint: "Observa e analisa o que está na sua tela",
-    icon: TextAa,
+    icon: Eye,
     command: "Jarvis, o que esse gráfico na tela está mostrando?",
     reply: "Achei um erro na linha 42: falta multiplicar pela quantidade.",
     replyDelay: 1.6,
     kind: "screen",
   },
 ];
-
-const AUTOPLAY_MS = 7000;
 
 // Velocidade de digitacao do pedido do usuario (1o ato) — mesma familia da
 // GIT_CHAR (comandos digitados no terminal), so que mais lenta: aqui e uma
@@ -266,60 +281,174 @@ const COMMAND_CHAR_MS = 28;
 const SWIPE_DISTANCE = 56; // px percorridos
 const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
 
-// ESPIADA DO PROXIMO CARTAO (mesma ideia do carrossel de Organization.tsx): um
-// pedaco da proxima janela fica parado na borda direita o tempo todo. E o que
-// diz "isto arrasta" sem depender de o visitante chegar na hora certa de ver
-// uma animacao — e, junto com a barra de progresso mais abaixo, o que faz a
-// tira ler como carrossel em vez de um cartao que troca de conteudo sozinho.
-//
-// A tira aqui e FULL-BLEED (`-mx-6 px-6` na janela de recorte): ela sangra por
-// baixo do respiro lateral da secao, entao a espiada visivel = respiro (24px)
-// + o quanto o cartao cede - o vao. E dai que vem quase toda ela, e o motivo e
-// o cartao: as maquetes do console (fila do Spotify, terminal do Git, conversa
-// do WhatsApp) ja sao apertadas no celular, e cada pixel de largura que some
-// delas custa mais do que a espiada ganha — medido: com o cartao cedendo 36px,
-// o nome da playlist do Spotify caia de "Foco P…" pra "Fo…" e o "TOCANDO
-// AGORA" quebrava em duas linhas. Sangrando pro respiro, o cartao cede so 20px
-// e mesmo assim aparecem 32px do vizinho.
-//
-// Sobra de troco: com o vao (16px) menor que o respiro (24px), nas paradas do
-// meio aparecem 8px do cartao ANTERIOR na borda esquerda. Nao e sobra
-// indesejada, e a mesma frase do outro lado ("da pra voltar"), so que dita
-// mais baixo — e nas duas pontas a conta fecha simetrica: no primeiro cartao
-// nao ha nada a esquerda, no ultimo sao os mesmos 28px espiando de la.
-//
-// O vao (SLIDE_GAP) e o mesmo `gap-4`/16px do carrossel de Organization.tsx —
-// as duas secoes tem sete/tres cartoes na mesma pagina, e diferencas sutis de
-// espacamento entre elas leem como inconsistencia mesmo sem o visitante saber
-// nomear o porque. SLIDE_INSET fica de fora dessa equivalencia de proposito
-// (mede quanto o CARTAO cede, nao o vao entre eles), entao subir o vao aqui
-// so encurta um pouco a espiada (32px -> 28px), sem apertar mais a maquete.
-//
-// Os dois vivem tambem no CSS da tira (`w-[calc(100%-1.25rem)]` e `gap-4`) pra
-// ela ja nascer na proporcao certa antes de qualquer medicao — o JS so calcula
-// ONDE cada parada fica, nunca o tamanho.
-const SLIDE_INSET = 20; // px que o cartao cede pro vizinho (= 1.25rem)
+// SEM espiada de vizinho (pedido do usuario — antes um pedaco do proximo
+// cartao ficava parado na borda direita o tempo todo, mesma ideia do
+// carrossel de Organization.tsx). O cartao ativo deixava sempre uma leve
+// sensacao de "puxado pra esquerda" (a espiada so aparecia na direita, e o
+// primeiro cartao — o estado inicial da pagina — nao tinha vizinho
+// espiando na esquerda pra compensar). Agora cada cartao ocupa a janela de
+// recorte inteira e fica sempre centralizado, sem ceder largura nenhuma
+// pro vizinho — mesmo padrao "sem peek" que o carrossel de Updates
+// (Roadmap.tsx) ja usa.
 const SLIDE_GAP = 16; // px de vao entre cartoes (= gap-4, igual Organization.tsx)
 
-// ---- Icone do botao: logo do app (svg de marca, sempre em branco sobre o
-// chip escuro) ou icone Phosphor da capacidade (herda a cor do chip via
-// currentColor). ---------------------------------------------------------
-function CapGlyph({ cap }: { cap: Cap }) {
+// ---- Icone do botao: logo do app (svg de marca) ou icone Phosphor da
+// capacidade (herda a cor do chip via currentColor, entao nao precisa de
+// `dark` — so o `size` importa pra ele).
+// `dark`: as logos de marca sao arquivos de UMA cor so, entao "branco" tem
+// que ser forcado via filtro CSS (brightness-0 depois invert), nao da pra
+// pintar como currentColor. Por padrao (dark=false) ficam brancas — o caso
+// de sempre, cor clara sobre chip/botao escuro. So quando `dark` e true
+// (botao com fundo BRANCO, ver isActive em CapButton) o invert sai e a logo
+// fica preta (so o brightness-0, sem inverter de volta) — sem isso ela
+// ficava branca-sobre-branco, ilegivel, no botao selecionado.
+// `size`: em px, controla os dois formatos (Phosphor usa a prop nativa;
+// a logo de marca usa width/height + style, ja que Tailwind nao gera
+// classes de tamanho arbitrario a partir de uma variavel em runtime). */
+function CapGlyph({
+  cap,
+  size = 24,
+  dark = false,
+}: {
+  cap: Cap;
+  size?: number;
+  dark?: boolean;
+}) {
   if (cap.brand) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={cap.brand}
         alt=""
-        width={24}
-        height={24}
+        width={size}
+        height={size}
         aria-hidden
-        className="h-6 w-6 brightness-0 invert"
+        style={{ width: size, height: size }}
+        className={`shrink-0 brightness-0 ${dark ? "" : "invert"}`}
       />
     );
   }
   const Glyph = cap.icon!;
-  return <Glyph size={24} weight="light" aria-hidden />;
+  return <Glyph size={size} weight="light" aria-hidden />;
+}
+
+// ---- Botao SO ICONE de capacidade, SEMPRE redondo — o nome aparece do
+// LADO de fora no hover, o botao em si nunca muda de forma (pedido do
+// usuario: a versao anterior fazia o proprio botao crescer/virar pilula
+// pra caber o nome dentro dele; agora o circulo fica intacto e o nome e
+// uma peca a parte, flutuando ao lado). Usado nas DUAS colunas do desktop
+// (ver Features(), mais abaixo), que flanqueiam o console dos dois lados.
+// O celular continua com o desenho rico original (icone + nome + frase,
+// sempre visivel), escrito direto em Features() pra UM botao so — nao usa
+// este componente.
+//
+// MECANICA do hover:
+//   1. O NOME e um <span> `position: absolute`, colado do lado de fora do
+//      botao (`left-full`/`right-full`, ver `side`), com opacity 0 e um
+//      pequeno deslocamento em repouso — no hover (`group-hover`, o grupo
+//      e o wrapper) ele desliza pro lugar e some o deslocamento, uma
+//      entrada com uma sensacao de "saindo de tras do botao".
+//      `position: absolute` de proposito: NAO participa do layout (ao
+//      contrario da versao anterior, que mudava o `max-width` do proprio
+//      botao — um valor que afeta o fluxo/grid) — entao nao ha risco de
+//      empurrar a coluna ou o cartao do console, nao importa o quao
+//      comprido o nome seja.
+//   2. `side` decide de qual lado o nome nasce (`left-full` pra direita,
+//      `right-full` pra esquerda) — a mesma logica de sempre: esquerda
+//      mostra o nome pra esquerda (longe do console), direita pra direita.
+function CapButton({
+  cap,
+  isActive,
+  onClick,
+  side,
+}: {
+  cap: Cap;
+  isActive: boolean;
+  onClick: () => void;
+  side: "left" | "right";
+}) {
+  return (
+    // wrapper `group relative inline-flex`: `group` pro nome (mais abaixo)
+    // reagir ao hover de QUALQUER coisa dentro (o botao). inline-flex:
+    // encolhe exatamente pro tamanho do botao, que agora e FIXO (w-24,
+    // nunca muda) — o wrapper nunca precisa recalcular nada.
+    <div className="group relative inline-flex shrink-0">
+      {isActive && (
+        <>
+          {/* Raios de luz ESTATICOS (cap-rays, ver globals.css) — halo tipo
+              sol, somado ao anel pulsante (cap-pulse, logo abaixo).
+              <span> PROPRIO, fora do botao: o botao nao tem mais
+              overflow-hidden (nao precisa mais esconder nome nenhum), mas
+              o raio ainda precisa ficar fora dele pra nao ser limitado
+              pelo tamanho fixo do botao (-inset-6 e bem maior). */}
+          <span
+            aria-hidden
+            className="cap-rays pointer-events-none absolute -inset-6 rounded-full"
+          />
+          {/* Anel PULSANTE (cap-pulse): <span> separado dos raios acima —
+              a animacao CSS dele anima box-shadow em cada frame, entao
+              dividir em elementos diferentes evita que uma propriedade
+              atropele a outra no mesmo elemento. */}
+          <span
+            aria-hidden
+            className="cap-pulse pointer-events-none absolute inset-0 rounded-full"
+          />
+        </>
+      )}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={isActive}
+        aria-label={cap.tab}
+        // SEM glow-ring (pedido do usuario): o anel girando deixava um
+        // "detalhe branco" visivel nas laterais do circulo — mesma reclamacao
+        // e mesma solucao dos cartoes de Organizacao (ver comentario la). A
+        // borda estatica (branca no ativo, translucida com hover:border no
+        // resto) ja basta pra marcar o botao, sem precisar de anel animado.
+        // h-24/w-24 (nao mais max-w-24): largura FIXA agora, nunca muda —
+        // o botao fica sempre um circulo perfeito, hover ou nao (pedido do
+        // usuario). O nome saiu pra um <span> a parte, ver mais abaixo.
+        className={`relative z-10 flex h-24 w-24 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ${
+          isActive
+            ? "border-white bg-[#FAFAFA]"
+            : "border-white/[0.08] bg-ink-900/60 hover:border-white/20 hover:bg-ink-800/60"
+        }`}
+      >
+        <span
+          aria-hidden
+          className={`flex shrink-0 items-center justify-center transition-colors duration-300 ${
+            isActive ? "text-ink-950" : "text-white/55 group-hover:text-white/80"
+          }`}
+        >
+          {/* dark={isActive}: no botao selecionado (fundo branco) a logo de
+              marca precisa ficar PRETA — pedido do usuario. Sem isso ela
+              continuava branca (filtro fixo de CapGlyph) sobre um fundo
+              branco, ilegivel. Os icones Phosphor (Keyboard/Eye) ja seguiam a
+              cor do <span> acima via currentColor e nao precisavam do
+              ajuste, mas o prop nao afeta esse caminho. */}
+          <CapGlyph cap={cap} size={48} dark={isActive} />
+        </span>
+      </button>
+
+      {/* Nome, FORA do botao — aparece deslizando + esmaecendo no hover, SO
+          o texto, sem pilula/cartao ao redor (pedido do usuario: nao
+          precisa de moldura, so a escrita mesmo).
+          top-1/2 -translate-y-1/2: centralizado na altura do botao.
+          `pointer-events-none`: e so um rotulo, nao deve interceptar o
+          mouse (senao "sair do hover" ao entrar no rotulo apagaria ele
+          mesmo, um flicker). z-20: por cima de tudo (raios, pulso, botao). */}
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute top-1/2 z-20 -translate-y-1/2 whitespace-nowrap font-display text-sm font-semibold text-white/90 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100 ${
+          side === "right"
+            ? "left-full ml-4 -translate-x-1 group-hover:translate-x-0"
+            : "right-full mr-4 translate-x-1 group-hover:translate-x-0"
+        }`}
+      >
+        {cap.tab}
+      </span>
+    </div>
+  );
 }
 
 // ---- Marca de 4 pontos do Jarvis (mesma do header/footer), em miniatura:
@@ -356,15 +485,21 @@ function ThinkingDots() {
   );
 }
 
-// ---- Corpo do cartao "Jarvis": so texto puro. Quem decide se mostra ISTO
-// ou os pontinhos de ThinkingDots e o CHAMADOR (ver ConsoleWindow e o bloco
-// solto do celular, em Features()) — as duas coisas trocam o layout do
-// cartao inteiro (sem avatar/rotulo enquanto pensa, ver comentario la), nao
-// so o texto por dentro dele, entao a decisao subiu pro pai. -------------
-function JarvisReply({ text }: { text: string }) {
+// ---- Corpo do cartao "Jarvis": texto digitado letra a letra, MESMA
+// animacao do pedido do usuario (ver `commandChars`/cursor no 1o ato, em
+// ConsoleWindow) — pedido do usuario. `chars` vem de `replyChars`, que
+// tambem so mora em Features() (a decisao de QUANDO mostrar isto ou os
+// pontinhos de ThinkingDots continua no chamador, ver comentario la). O
+// cursor pisca so enquanto ainda falta digitar; ao terminar, some sozinho
+// (mesma logica do `typed` do pedido). -------------------------------------
+function JarvisReply({ text, chars }: { text: string; chars: number }) {
+  const typed = chars >= text.length;
   return (
     <p className="line-clamp-2 text-[0.95rem] leading-snug text-white/90 sm:text-xl laptop:text-base">
-      {text}
+      {text.slice(0, chars)}
+      {!typed && (
+        <span className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse bg-white/70 align-middle" />
+      )}
     </p>
   );
 }
@@ -1178,7 +1313,7 @@ function GitViz({ lowPower }: { lowPower: boolean }) {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950">
       {/* cabecalho do repositorio */}
-      <div className="flex items-center gap-2.5 border-b border-white/[0.08] bg-white/[0.02] px-4 py-2.5">
+      <div className="flex shrink-0 items-center gap-2.5 border-b border-white/[0.08] bg-white/[0.02] px-4 py-2">
         <FolderSimple size={15} weight="fill" aria-hidden className="shrink-0 text-white/35" />
         <span className="text-xs text-white/70">projeto</span>
         <span className="flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/55">
@@ -1237,9 +1372,14 @@ function GitViz({ lowPower }: { lowPower: boolean }) {
         </div>
       </div>
 
-      {/* ---- o terminal, agora ocupando a largura inteira ---- */}
-      <div className="flex min-h-0 flex-[1.35] flex-col border-b border-white/[0.08]">
-        <div className="flex items-center gap-2 border-b border-white/[0.06] bg-white/[0.02] px-4 py-2">
+      {/* ---- o terminal, agora ocupando a largura inteira ----
+          flex-[1.6] (era 1.35): pedido do usuario foi encolher os paineis
+          de baixo (Alteracoes/Historico) pra caber TUDO na altura do
+          cartao — a fatia que sobra vai pro terminal, que e onde moram os
+          comandos (o "codigo" do Git), reduzindo o risco dele cortar linha
+          por falta de espaco. */}
+      <div className="flex min-h-0 flex-[1.6] flex-col border-b border-white/[0.08]">
+        <div className="flex shrink-0 items-center gap-2 border-b border-white/[0.06] bg-white/[0.02] px-4 py-1.5">
           <span className="flex gap-1.5" aria-hidden>
             <span className="h-2 w-2 rounded-full bg-white/15" />
             <span className="h-2 w-2 rounded-full bg-white/15" />
@@ -1251,7 +1391,7 @@ function GitViz({ lowPower }: { lowPower: boolean }) {
           </span>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-1 overflow-hidden px-4 py-3 font-mono text-[11.5px] leading-snug">
+        <div className="min-h-0 flex-1 space-y-1 overflow-hidden px-4 py-2.5 font-mono text-[11.5px] leading-snug">
           {GIT_SCRIPT.slice(0, step).map((entry, i) => {
             if (entry.kind === "cmd") return <GitTyped key={i} text={entry.text} />;
             if (entry.kind === "bar") return <GitBar key={i} text={entry.text} />;
@@ -1297,10 +1437,14 @@ function GitViz({ lowPower }: { lowPower: boolean }) {
           nome do commit truncar). O terminal acima ja narra a historia
           inteira (os 3 comandos, incluindo o push); o footer da janela (mais
           abaixo) tambem resume "3 commits hoje" — entao cortar Histórico no
-          celular nao perde informacao nova, so a redundancia visual. */}
-      <div className="flex min-h-0 flex-1">
-        <div className="flex w-full shrink-0 flex-col overflow-hidden px-4 py-3 sm:w-1/2 sm:border-r sm:border-white/[0.06]">
-          <p className="mb-2 flex items-center gap-1.5 text-[9px] uppercase tracking-[0.14em] text-white/25">
+          celular nao perde informacao nova, so a redundancia visual.
+          flex-[0.85] (era 1, o padrao): pedido do usuario foi encolher
+          justo esta faixa — py-3 virou py-2, mb-2 virou mb-1.5 — pra abrir
+          espaco pro terminal acima (ver flex-[1.6] la em cima) sem cortar
+          nenhuma linha dos dois paineis. */}
+      <div className="flex min-h-0 flex-[0.85]">
+        <div className="flex w-full shrink-0 flex-col overflow-hidden px-4 py-2 sm:w-1/2 sm:border-r sm:border-white/[0.06]">
+          <p className="mb-1.5 flex items-center gap-1.5 text-[9px] uppercase tracking-[0.14em] text-white/25">
             Alterações
             <motion.span
               initial={false}
@@ -1310,7 +1454,7 @@ function GitViz({ lowPower }: { lowPower: boolean }) {
               {staged ? GIT_FILES.length : 0}
             </motion.span>
           </p>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {GIT_FILES.map((f, i) => (
               <motion.div
                 key={f.name}
@@ -1344,8 +1488,8 @@ function GitViz({ lowPower }: { lowPower: boolean }) {
             parecer Git, e nao uma lista qualquer. O commit de cima so nasce
             quando o terminal termina o commit de verdade. hidden no celular
             — ver comentario grande no painel "Alterações", ao lado. */}
-        <div className="hidden min-w-0 flex-1 overflow-hidden px-4 py-3 sm:block">
-          <p className="mb-2 text-[9px] uppercase tracking-[0.14em] text-white/25">
+        <div className="hidden min-w-0 flex-1 overflow-hidden px-4 py-2 sm:block">
+          <p className="mb-1.5 text-[9px] uppercase tracking-[0.14em] text-white/25">
             Histórico
           </p>
           <div className="relative pl-1">
@@ -1367,7 +1511,7 @@ function GitViz({ lowPower }: { lowPower: boolean }) {
                   duration: 0.35,
                   ease: [0.16, 1, 0.3, 1],
                 }}
-                className="relative flex gap-2.5 pb-2.5"
+                className="relative flex gap-2.5 pb-2"
               >
                 <span
                   className={`relative z-10 mt-[3px] h-[7px] w-[7px] shrink-0 rounded-full ring-4 ring-ink-950 ${
@@ -1393,7 +1537,7 @@ function GitViz({ lowPower }: { lowPower: boolean }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-t border-white/[0.08] bg-white/[0.02] px-4 py-2.5 text-[11px] text-white/40">
+      <div className="flex shrink-0 items-center gap-2 border-t border-white/[0.08] bg-white/[0.02] px-4 py-2 text-[11px] text-white/40">
         <GitCommit size={13} aria-hidden />3 commits hoje
         <span className="text-white/20">·</span>
         <span className="font-mono text-white/60">+47</span>
@@ -1645,15 +1789,18 @@ function ChromeViz() {
 }
 
 // ---- Windows --------------------------------------------------------------
-// A versao anterior contava o "abre e fecha programas" por escrito: dois chips
-// de status e um terminal. Esta conta por IMAGEM — e uma area de trabalho de
-// verdade, com janelas que somem e nascem na sua frente e uma barra de tarefas
-// embaixo onde a luzinha de "rodando" apaga num app e acende no outro. O
-// terminal continua ali, mas como mais uma janela na mesa, nao como a prova.
+// A conta e por IMAGEM, de proposito, sem nenhum comando escrito — e uma
+// area de trabalho de verdade, com janelas que somem e nascem na sua frente
+// e uma barra de tarefas embaixo onde a luzinha de "rodando" apaga num app e
+// acende no outro. A versao anterior tinha um terminal (PowerShell) com os
+// comandos digitados como "prova" — saiu de vez (pedido do usuario): nem
+// todo visitante entende `Stop-Process -Name spotify`, e a cena virava uma
+// aula de linha de comando em vez de so mostrar "ele fecha e abre um app".
+// As janelas (WinWindow, mais abaixo) ja contam essa historia sozinhas —
+// icone, nome, conteudo fake por dentro, "fechado" escrito por extenso.
 
 const WIN_CLOSE_AT = 1.1; // a janela do Spotify some
 const WIN_OPEN_AT = 2.0; // a do Chrome nasce
-const WIN_END_AT = 2.5;
 
 // Barra de tarefas: seis apps. Os dois do comando trocam de estado; os outros
 // quatro ficam ali parados de propósito — sao eles que dizem "podia ser
@@ -1719,35 +1866,29 @@ function WinWindow({
         >
           {name}
         </span>
-        {/* botoes de minimizar/maximizar/fechar somem no celular — so a
-            partir de sm: (ver comentario grande abaixo sobre o pre-visualizar
-            do conteudo tambem sumir la). No lugar deles, so no fechado, um
-            "fechado" ainda mais compacto (sem o X, que ja repete o mesmo
-            "x" da janela ao lado). */}
+        {/* botoes de minimizar/maximizar/fechar: SEMPRE visiveis agora (nao
+            mais so a partir de sm:) — o terminal/PowerShell saiu de vez da
+            demo (pedido do usuario: nem todo mundo entende comando, e a
+            cena tinha virado a prova em vez de so as janelas), entao sobrou
+            altura de sobra tambem no celular pra janela mostrar tudo. */}
         {live ? (
-          <span className="hidden shrink-0 items-center gap-2 text-white/30 sm:flex" aria-hidden>
+          <span className="flex shrink-0 items-center gap-2 text-white/30" aria-hidden>
             <span className="h-px w-2 bg-current" />
             <span className="h-2 w-2 border border-current" />
             <X size={9} weight="bold" />
           </span>
         ) : (
           <span className="flex shrink-0 items-center gap-1 text-[9px] uppercase tracking-[0.1em] text-white/35">
-            <X size={9} weight="bold" aria-hidden className="hidden sm:block" />
+            <X size={9} weight="bold" aria-hidden />
             fechado
           </span>
         )}
       </div>
 
       {/* pre-visualizar o CONTEUDO da janela (as barrinhas fake, o
-          equalizador...) so a partir de sm:. No celular a janela vira um
-          chip compacto — so a barra de titulo acima, com icone + nome +
-          estado — porque o miolo (skeleton de conteudo) e decorativo, nao
-          informa nada de novo, e era exatamente o que sobrava sem espaco:
-          nome do app truncando pra 1-2 letras e os botoes da janela se
-          sobrepondo. Sobrar altura aqui tambem da mais folga pro PowerShell
-          logo abaixo, que e a janela com informacao de verdade (os comandos
-          digitados). */}
-      <div className="relative hidden min-h-0 flex-1 p-3 sm:block">
+          equalizador...): SEMPRE visivel agora, em qualquer tela — ver
+          comentario acima. */}
+      <div className="relative min-h-0 flex-1 p-3">
         <AnimatePresence mode="wait">
           {live ? (
             <motion.div
@@ -1780,13 +1921,11 @@ function WinWindow({
 function WindowsViz() {
   const [closed, setClosed] = useState(false);
   const [opened, setOpened] = useState(false);
-  const [ended, setEnded] = useState(false);
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setClosed(true), WIN_CLOSE_AT * 1000),
       setTimeout(() => setOpened(true), WIN_OPEN_AT * 1000),
-      setTimeout(() => setEnded(true), WIN_END_AT * 1000),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -1815,103 +1954,43 @@ function WindowsViz() {
       </div>
 
       {/* ---- a mesa: duas janelas trocando de estado ----
-          flex-[0.35] no celular (era 1.1 fixo): as duas janelas viraram
-          chips compactos so de titulo (ver WinWindow), entao nao precisam
-          mais da mesma fatia de altura que precisavam com o conteudo
-          visivel — o que sobra vai pro PowerShell logo abaixo, que e onde
-          mora a informacao de verdade (os comandos digitados) e que antes
-          ficava quase todo cortado. */}
+          O PowerShell que morava aqui embaixo saiu de vez (pedido do
+          usuario): comandos digitados sao "coisa de codigo", e nem todo
+          visitante entende o que "Stop-Process -Name spotify" quer dizer —
+          a cena tinha virado a PROVA em vez de so as janelas abrindo e
+          fechando, que ja contam a historia sozinhas (icone claro, nome do
+          app, conteudo fake por dentro, "fechado" escrito por extenso). Sem
+          o terminal disputando altura, as duas janelas agora ocupam o
+          espaco INTEIRO (flex-1 fixo, sem fracao — nao precisa mais de
+          breakpoint proprio pro celular). */}
       <div
-        className="relative flex min-h-0 flex-1 flex-col gap-3 p-4"
+        className="relative flex min-h-0 flex-1 gap-3 p-4"
         style={{
           backgroundImage:
             "radial-gradient(ellipse 80% 70% at 50% 0%, rgba(255,255,255,0.05), transparent 70%)",
         }}
       >
-        <div className="flex min-h-0 flex-[0.35] gap-3 sm:flex-[1.1]">
-          <WinWindow brand="/brands/spotify.svg" name="Spotify" live={!closed}>
-            <div className="flex h-full items-center gap-2.5">
-              <span className="h-9 w-9 shrink-0 rounded bg-white/[0.08]" aria-hidden />
-              <span className="min-w-0 flex-1 space-y-1.5" aria-hidden>
-                <span className="block h-2 w-3/4 rounded-full bg-white/[0.16]" />
-                <span className="block h-2 w-1/2 rounded-full bg-white/[0.08]" />
-              </span>
-              <EqBars className="shrink-0" />
-            </div>
-          </WinWindow>
-
-          <WinWindow brand="/brands/google-chrome.svg" name="Chrome" live={opened}>
-            <div className="flex h-full flex-col gap-2" aria-hidden>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-14 rounded-t bg-white/[0.1]" />
-                <span className="h-2.5 w-8 rounded-t bg-white/[0.04]" />
-              </span>
-              <span className="block h-3.5 w-full rounded-full bg-white/[0.06]" />
-              <span className="block h-2 w-2/3 rounded-full bg-white/[0.1]" />
-            </div>
-          </WinWindow>
-        </div>
-
-        {/* o PowerShell e so mais uma janela na mesa */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-chip border border-white/[0.14] bg-ink-800">
-          <div className="flex items-center gap-2 border-b border-white/[0.08] bg-white/[0.03] px-3 py-1.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brands/powershell.svg"
-              alt=""
-              width={12}
-              height={12}
-              aria-hidden
-              className="h-3 w-3 shrink-0 brightness-0 invert opacity-70"
-            />
-            <span className="text-[10px] text-white/50">Windows PowerShell</span>
+        <WinWindow brand="/brands/spotify.svg" name="Spotify" live={!closed}>
+          <div className="flex h-full items-center gap-2.5">
+            <span className="h-9 w-9 shrink-0 rounded bg-white/[0.08]" aria-hidden />
+            <span className="min-w-0 flex-1 space-y-1.5" aria-hidden>
+              <span className="block h-2 w-3/4 rounded-full bg-white/[0.16]" />
+              <span className="block h-2 w-1/2 rounded-full bg-white/[0.08]" />
+            </span>
+            <EqBars className="shrink-0" />
           </div>
-          <div className="min-h-0 flex-1 space-y-1 overflow-hidden px-3 py-2 font-mono text-[11.5px] leading-snug">
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.35 }}
-              className="text-white/85"
-            >
-              <span className="text-white/35">PS&gt; </span>Stop-Process -Name spotify
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: WIN_CLOSE_AT + 0.1 }}
-              className="text-white/35"
-            >
-              Spotify encerrado.
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: WIN_CLOSE_AT + 0.35 }}
-              className="text-white/85"
-            >
-              <span className="text-white/35">PS&gt; </span>Start-Process chrome
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: WIN_OPEN_AT + 0.1 }}
-              className="text-white/35"
-            >
-              Chrome aberto.
-            </motion.p>
-            {ended && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
-                className="text-white/85"
-              >
-                <span className="text-white/35">PS&gt; </span>
-                <span className="caret-blink inline-block h-3 w-[6px] translate-y-[1px] bg-white/80" />
-              </motion.p>
-            )}
+        </WinWindow>
+
+        <WinWindow brand="/brands/google-chrome.svg" name="Chrome" live={opened}>
+          <div className="flex h-full flex-col gap-2" aria-hidden>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-14 rounded-t bg-white/[0.1]" />
+              <span className="h-2.5 w-8 rounded-t bg-white/[0.04]" />
+            </span>
+            <span className="block h-3.5 w-full rounded-full bg-white/[0.06]" />
+            <span className="block h-2 w-2/3 rounded-full bg-white/[0.1]" />
           </div>
-        </div>
+        </WinWindow>
       </div>
 
       {/* ---- barra de tarefas ---- */}
@@ -2121,6 +2200,285 @@ function ScreenViz() {
   );
 }
 
+// ---- YouTube ----------------------------------------------------------------
+// A cena e uma TROCA DE TELA so, mais simples que Windows/WhatsApp (que tem
+// varias fases encadeadas): comeca na lista de resultados da busca (a
+// pergunta ja chega digitada na barra) e, em YOUTUBE_PLAY_AT, vira o video
+// tocando — mesmo espirito da pagina do Google em ChromeViz (reveal
+// escalonado), so que com uma troca de estado no meio.
+//
+// Os dois LAYOUTS (grade de resultados, video + "a seguir") foram refeitos
+// pra CARTAO LARGO (pedido do usuario: a versao anterior empilhava tudo
+// numa coluna so, pensada pra uma janela mais quadrada — nesta secao,
+// bem mais larga que alta agora, um video 16:9 esticado pra largura
+// INTEIRA ficava exagerado, ocupando quase toda a altura sozinho e
+// espremendo titulo/canal/acoes lá embaixo). Agora os dois usam o espaco
+// LARGO de verdade: grade de 3 colunas nos resultados, e video + coluna "a
+// seguir" lado a lado no player — o mesmo formato do YouTube de verdade.
+const YOUTUBE_QUERY = "tutorial de violão pra iniciantes";
+
+// 5 resultados agora (eram 3) — pedido do usuario foi mostrar mais videos
+// na coluna "A seguir" do player (que sobrava vazia com so 2). Os mesmos 5
+// alimentam a grade de resultados tambem (vira 2 linhas de 3, a ultima com
+// so 2 — nenhum numero magico duplicado entre as duas telas).
+const YOUTUBE_RESULTS = [
+  {
+    title: "Violão para iniciantes — aula 1 completa",
+    channel: "Aprenda Violão",
+    meta: "1,2 mi visualizações · há 2 anos",
+    duration: "18:42",
+  },
+  {
+    title: "Como afinar seu violão em 3 passos",
+    channel: "Música Fácil",
+    meta: "480 mil visualizações · há 1 ano",
+    duration: "6:15",
+  },
+  {
+    title: "5 primeiros acordes que todo mundo aprende",
+    channel: "Violão Descomplicado",
+    meta: "2,8 mi visualizações · há 3 anos",
+    duration: "11:03",
+  },
+  {
+    title: "Escalas básicas pra destravar os dedos",
+    channel: "Toque Fácil",
+    meta: "620 mil visualizações · há 8 meses",
+    duration: "9:27",
+  },
+  {
+    title: "Como trocar de acorde sem travar o ritmo",
+    channel: "Violão em 10 Minutos",
+    meta: "1,5 mi visualizações · há 1 ano",
+    duration: "7:52",
+  },
+];
+
+const YOUTUBE_PLAY_AT = 1.9; // segundos ate trocar da lista pro video tocando
+const YOUTUBE_PROGRESS_S = 3; // segundos que a barra do player leva pra encher
+
+// Miniatura decorativa: sem asset de video de verdade (nenhuma das demos usa
+// screenshot externo pra conteudo que mudaria a cada gravacao), um retangulo
+// com degrade sutil + botao de play centralizado faz as vezes — mesma
+// linguagem dos blocos solidos que as outras sete demos usam no lugar de
+// fotos que nao existem.
+// `w-full aspect-video` por padrao (usado na grade de resultados e na fila
+// "a seguir", onde a altura sobra e o 16:9 de verdade cabe sem risco).
+// `fill`: pro video GRANDE do player, que troca aspect-video por
+// `h-full w-full` — nesse card, bem mais largo que alto, um 16:9 preso a
+// LARGURA (que e generosa) ficava mais alto do que a coluna tinha altura
+// disponivel, e cortava o titulo/canal/acoes logo abaixo (bug reportado
+// pelo usuario). Com `fill`, quem manda no tamanho e o pai (ver YoutubeViz,
+// mais abaixo: video em `flex-1 min-h-0`, texto em `shrink-0` — o texto
+// SEMPRE cabe inteiro, e o video usa so o que sobrar).
+function VideoThumb({
+  iconSize = 16,
+  fill = false,
+}: {
+  iconSize?: number;
+  fill?: boolean;
+}) {
+  return (
+    <div
+      className={`relative w-full shrink-0 overflow-hidden rounded-md bg-ink-800 ${
+        fill ? "h-full" : "aspect-video"
+      }`}
+      aria-hidden
+    >
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02) 60%)",
+        }}
+      />
+      <span className="absolute inset-0 flex items-center justify-center">
+        <span
+          className="flex items-center justify-center rounded-full bg-white/90 text-ink-950"
+          style={{ height: iconSize * 1.8, width: iconSize * 1.8 }}
+        >
+          <Play size={iconSize} weight="fill" />
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function YoutubeViz() {
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPlaying(true), YOUTUBE_PLAY_AT * 1000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const [first, ...rest] = YOUTUBE_RESULTS;
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-ink-950">
+      {/* topo: logo + barra de busca, ja com a pergunta preenchida (o
+          "digitar" fica so no 1o ato, fora da janela — aqui a busca ja
+          chega pronta, mesmo padrao do campo de busca em ChromeViz). */}
+      <div className="flex items-center gap-3 border-b border-white/[0.08] bg-white/[0.02] px-4 py-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brands/youtube.svg"
+          alt=""
+          width={18}
+          height={18}
+          aria-hidden
+          className="h-[18px] w-[18px] shrink-0"
+        />
+        <span className="hidden font-display text-sm font-semibold tracking-[-0.02em] text-white/85 sm:inline">
+          YouTube
+        </span>
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1.5 text-xs text-white/75">
+          <span className="min-w-0 flex-1 truncate">{YOUTUBE_QUERY}</span>
+          <MagnifyingGlass
+            size={12}
+            weight="bold"
+            aria-hidden
+            className="shrink-0 text-white/40"
+          />
+        </div>
+      </div>
+
+      <div className="relative flex-1 overflow-hidden">
+        <AnimatePresence mode="wait">
+          {!playing ? (
+            // ---- resultados: GRADE de 3 colunas, cada resultado um cartao
+            // vertical (miniatura em cima, texto embaixo) — o formato real
+            // de busca do YouTube, e o que usa a largura toda sem esticar
+            // so um cartao horizontal cada vez mais vazio pro lado direito.
+            <motion.div
+              key="results"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0 grid grid-cols-3 gap-4 overflow-hidden p-4"
+            >
+              {YOUTUBE_RESULTS.map((r, i) => (
+                <motion.div
+                  key={r.title}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 + i * 0.14, duration: 0.3 }}
+                  className="min-w-0"
+                >
+                  <div className="relative">
+                    <VideoThumb />
+                    <span className="absolute bottom-1 right-1 rounded bg-ink-950/85 px-1 py-px text-[9px] text-white/80">
+                      {r.duration}
+                    </span>
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-[13px] leading-snug text-white/90">
+                    {r.title}
+                  </p>
+                  <p className="mt-1 truncate text-[11px] text-white/40">
+                    {r.channel}
+                  </p>
+                  <p className="truncate text-[10px] text-white/30">{r.meta}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            // ---- player: video + "a seguir" LADO A LADO, igual a pagina
+            // real de video do YouTube — o video fica no formato 16:9 dele
+            // (nao esticado pra virar quase quadrado numa janela larga), e
+            // a coluna da direita preenche o resto do espaco em vez de
+            // sobrar vazio.
+            <motion.div
+              key="player"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.35 }}
+              className="absolute inset-0 grid grid-cols-[1.6fr_1fr] gap-4 overflow-hidden p-4"
+            >
+              <div className="flex min-w-0 flex-col gap-3">
+                {/* min-h-0 + flex-1: o video usa SO o que sobra depois do
+                    bloco de texto abaixo (que e shrink-0, ver comentario
+                    la) — nunca o contrario. E o que garante que o
+                    titulo/canal/acoes nunca sejam cortados, nao importa a
+                    proporcao do cartao. */}
+                <div className="relative min-h-0 flex-1">
+                  <VideoThumb iconSize={22} fill />
+                  <div
+                    className="absolute inset-x-0 bottom-0 h-1 bg-white/15"
+                    aria-hidden
+                  >
+                    <motion.div
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: YOUTUBE_PROGRESS_S, ease: "linear" }}
+                      className="h-full bg-white"
+                    />
+                  </div>
+                </div>
+                {/* shrink-0: este bloco reserva a altura que precisa
+                    (titulo + canal + acoes) e NUNCA cede espaco pro video
+                    — ver comentario acima. */}
+                <div className="shrink-0 space-y-2.5">
+                  <p className="line-clamp-1 text-[13px] font-medium leading-snug text-white/90">
+                    {first.title}
+                  </p>
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white/70">
+                      AV
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-[11px] text-white/55">
+                      {first.channel}
+                    </span>
+                    <span className="shrink-0 rounded-full border border-white/20 px-2.5 py-1 text-[10px] text-white/60">
+                      Inscrever-se
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-[11px] text-white/35">
+                    <span className="flex items-center gap-1.5">
+                      <ThumbsUp size={13} aria-hidden />
+                      2,1 mil
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <ShareFat size={13} aria-hidden />
+                      Compartilhar
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* "a seguir": os outros quatro resultados, agora como fila
+                  de sugestoes — preenche a coluna da direita com mais
+                  videos de verdade em vez de sobrar vazio (pedido do
+                  usuario). overflow-y-auto: se algum dia nao couberem
+                  todos, rola em vez de estourar o cartao. */}
+              <div className="flex min-w-0 flex-col gap-3 overflow-y-auto">
+                <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/30">
+                  A seguir
+                </p>
+                {rest.map((r) => (
+                  <div key={r.title} className="flex shrink-0 gap-2.5">
+                    <div className="w-24 shrink-0">
+                      <VideoThumb iconSize={10} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-[11px] leading-snug text-white/85">
+                        {r.title}
+                      </p>
+                      <p className="mt-1 truncate text-[10px] text-white/35">
+                        {r.channel}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 function ConsoleBody({
   cap,
   device,
@@ -2150,6 +2508,8 @@ function ConsoleBody({
       return <WordViz />;
     case "screen":
       return <ScreenViz />;
+    case "youtube":
+      return <YoutubeViz />;
   }
 }
 
@@ -2176,8 +2536,6 @@ function ConsoleWindow({
   live,
   command,
   commandChars,
-  showReply,
-  reply,
   sceneKey,
   reduce,
   lowPower,
@@ -2188,8 +2546,6 @@ function ConsoleWindow({
   live: boolean;
   command: string;
   commandChars: number;
-  showReply: boolean;
-  reply: string;
   sceneKey: string;
   reduce: boolean;
   lowPower: boolean;
@@ -2213,23 +2569,33 @@ function ConsoleWindow({
     // mudando de forma a cada troca de capacidade. Altura fixa +
     // overflow-hidden fecham essa porta: por maior que o conteudo de dentro
     // queira ficar, a caixa nunca muda de tamanho — o que nao couber e
-    // cortado, nao empurrado. (No celular isso vale dobrado: com as sete
+    // cortado, nao empurrado. (No celular isso vale dobrado: com as oito
     // janelas lado a lado na tira, alturas diferentes fariam a secao pular de
-    // tamanho no meio do arrasto.) Os 1o/3o atos abaixo reservam 2 linhas
-    // fixas pelo mesmo motivo (ver comentario la).
+    // tamanho no meio do arrasto.) O 1o ato abaixo reserva 2 linhas fixas
+    // pelo mesmo motivo (ver comentario la).
     // 500px (era 540): reduzido de leve depois que a barra de titulo saiu
     // (ver comentario abaixo) — sobra menos altura morta no fundo do
     // cartao. sm:/lg:/laptop: reduzidos na mesma proporcao (~40px).
     // Sem a barra de titulo "Jarvis Console... ativo" (pedido do usuario):
     // os tres pontinhos + rotulo + indicador "ativo" sairam, e o corpo
-    // (1o/2o/3o atos) agora comeca direto no topo do cartao.
+    // (1o/2o atos) agora comeca direto no topo do cartao.
     // bg-ink-700: mesma cor dos cartoes de widget (Showcase.tsx/Organization.tsx)
     // — pedido do usuario pra unificar as familias de cartao do site.
-    // 470px (era 500): reduzido de leve de novo — como os 1o/3o atos tem
-    // altura FIXA (h-14 de conteudo + padding, independente da altura do
-    // cartao), todo esse corte sai do 2o ato (a tela da demo, flex-1, o
-    // unico que sobra o que falta), sem mexer nos cartoes de usuario/Jarvis.
-    <div className="glow-ring relative flex h-[470px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-700 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[550px] lg:h-[610px] laptop:h-[530px]">
+    // 470px (era 500): reduzido de leve de novo — o 1o ato tem altura FIXA
+    // (h-14 de conteudo + padding, independente da altura do cartao), entao
+    // todo esse corte sai do 2o ato (a tela da demo, flex-1, o unico que
+    // sobra o que falta).
+    // O 3o ato (a resposta do Jarvis) SAIU da janela de vez — pedido do
+    // usuario: agora e sempre um bloco solto ABAIXO do cartao, em qualquer
+    // tela (ver o bloco logo apos a tira, em Features()), nao so no celular
+    // como antes.
+    // 420/500/560/480 (era 480/560/620/540): pedido do usuario foi encolher
+    // de leve nessa rodada — a resposta do Jarvis (bloco solto logo abaixo
+    // do cartao, ver Features()) estava saindo do enquadramento numa tela
+    // comum, e o cartao ficou mais LARGO nesta mesma leva de mudancas (ver
+    // max-w-7xl/grid-cols mais abaixo), entao da pra ceder um pouco de
+    // altura sem o console parecer menor.
+    <div className="glow-ring relative flex h-[420px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-700 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[500px] lg:h-[560px] laptop:h-[480px]">
 
       {/* corpo. Os dois cartoes de fala usam o mesmo esqueleto de UMA
           linha — avatar, rotulo, divisor e frase lado a lado. O rotulo
@@ -2332,54 +2698,6 @@ function ConsoleWindow({
           </AnimatePresence>
         </div>
 
-        {/* 3o ato — a resposta. Fica SEMPRE visivel agora (pedido do
-            usuario: nao pode mais so aparecer no final). Enquanto a demo do
-            meio ainda toca (showReply false), o cartao mostra SO os
-            pontinhos de "pensando" (ThinkingDots), centralizados — sem
-            avatar, rotulo nem divisor, que so aparecem quando a resposta de
-            fato chega (pedido do usuario: o icone do Jarvis nao deve
-            aparecer antes disso). A troca de um layout pro outro e DIRETA,
-            sem fade/slide. Mais clara que o cartao do usuario de proposito:
-            e a "voz" do produto. */}
-        <div
-          // hidden abaixo de lg: no celular a resposta do Jarvis saiu do
-          // cartao (pedido do usuario) e virou um bloco proprio, FORA da
-          // janela do console — ver o bloco `order-3 lg:hidden` logo depois
-          // da tira de carrosseis, em Features(). Aqui dentro ela continua
-          // existindo (e reservando altura) so pro desktop, onde os 3 atos
-          // moram juntos na mesma janela.
-          // justify-center: so tem efeito quando o conteudo NAO enche a
-          // largura (os pontinhos, mais abaixo) — com a linha completa
-          // (avatar+rotulo+texto), o `flex-1` do texto ja ocupa todo o
-          // espaco livre, entao o justify-center nao muda nada ali.
-          className="hidden items-center justify-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3 lg:flex"
-        >
-          {showReply ? (
-            <>
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
-                <JarvisMark />
-              </span>
-              <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
-                Jarvis
-              </span>
-              <span
-                aria-hidden
-                className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
-              />
-              {/* mesma reserva fixa de 2 linhas do 1o ato, mesmo motivo:
-                  ver comentario grande na janela do console. */}
-              <div className="flex h-14 min-w-0 flex-1 items-center">
-                <JarvisReply text={reply} />
-              </div>
-            </>
-          ) : (
-            // h-14: mesma altura do estado com texto (acima), pra trocar de
-            // um pro outro sem o cartao mudar de tamanho.
-            <div className="flex h-14 items-center justify-center">
-              <ThinkingDots />
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -2446,9 +2764,10 @@ export default function Features() {
   // carrosseis na mesma pagina, e inventar duas fisicas diferentes pro mesmo
   // gesto e o tipo de detalhe que o dedo percebe antes da cabeca.
 
-  // Largura da JANELA DE RECORTE (nao a do cartao — o cartao e essa largura
-  // menos o SLIDE_INSET). Medida, e nao calculada de vw, porque ela muda
-  // tambem quando o respiro da secao muda de degrau.
+  // Largura da JANELA DE RECORTE — o cartao usa essa largura INTEIRA agora
+  // (sem espiada, ver comentario grande la em cima). Medida, e nao
+  // calculada de vw, porque ela muda tambem quando o respiro da secao
+  // muda de degrau.
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [trackWidth, setTrackWidth] = useState(0);
   useEffect(() => {
@@ -2466,8 +2785,16 @@ export default function Features() {
   // "somar" deslocamento em cima da posicao ja animada, sem os dois brigarem.
   const x = useMotionValue(0);
 
-  // PASSO de uma parada = largura do cartao + o vao.
-  const stride = trackWidth ? trackWidth - SLIDE_INSET + SLIDE_GAP : 0;
+  // PASSO de uma parada = largura do cartao + o vao. SEM SLIDE_INSET
+  // (pedido do usuario): o cartao parava de ceder largura pro vizinho
+  // espiar, entao o cartao ativo sempre ficava um pouco deslocado pra
+  // esquerda (a espiada so aparecia na direita) — sensacao de "nunca
+  // centralizado direito", mais visivel ainda no primeiro cartao (Spotify,
+  // o estado inicial da pagina), que nao tinha vizinho espiando na
+  // esquerda pra compensar. Agora o cartao e a largura CHEIA da janela de
+  // recorte, sempre perfeitamente centralizado — mesmo padrao "sem peek"
+  // que o carrossel de Updates (Roadmap.tsx) ja usa.
+  const stride = trackWidth ? trackWidth + SLIDE_GAP : 0;
 
   // Fim da corrida: no ultimo cartao a tira NAO para em -6*stride, senao
   // sobraria um vao morto na direita (a espiada existe pra mostrar o proximo, e
@@ -2574,11 +2901,17 @@ export default function Features() {
     reduce ? command.length : 0
   );
   const [showReply, setShowReply] = useState(reduce);
+  // Digitacao da RESPOSTA, letra a letra — mesma animacao do pedido do
+  // usuario (pedido do usuario). So comeca a andar depois que showReply
+  // vira true (ver replyTimer, mais abaixo): antes disso o cartao mostra
+  // so os pontinhos de ThinkingDots, nao faz sentido ter chars pra digitar.
+  const [replyChars, setReplyChars] = useState(reduce ? reply.length : 0);
 
   useEffect(() => {
     if (reduce) {
       setCommandChars(command.length);
       setShowReply(true);
+      setReplyChars(reply.length);
       return;
     }
     // Fora da tela no celular: nao inicia (nem continua) a cena. O cleanup
@@ -2587,19 +2920,21 @@ export default function Features() {
     // "pausa" a animacao ao sair da secao.
     if (isMobile && !inView) return;
     setShowReply(false);
+    setReplyChars(0);
     let replyTimer: ReturnType<typeof setTimeout>;
+    let replyTypingTimer: ReturnType<typeof setTimeout>;
 
-    // lowPower: pula a digitacao letra-a-letra (um setState a cada 28ms,
-    // COMMAND_CHAR_MS) — o pedido aparece pronto na hora. A demo do meio e a
-    // resposta continuam no mesmo ritmo de sempre (replyDelay normal): o que
-    // sai e so o CHURN de re-render da digitacao, nao a cena inteira, que
-    // ainda vale a pena mostrar rodando.
+    // lowPower: pula as duas digitacoes letra-a-letra (um setState a cada
+    // 28ms, COMMAND_CHAR_MS) — pedido e resposta aparecem prontos na hora.
+    // A demo do meio continua no mesmo ritmo de sempre (replyDelay normal):
+    // o que sai e so o CHURN de re-render da digitacao, nao a cena inteira,
+    // que ainda vale a pena mostrar rodando.
     if (lowPower) {
       setCommandChars(command.length);
-      replyTimer = setTimeout(
-        () => setShowReply(true),
-        active.replyDelay * 1000
-      );
+      replyTimer = setTimeout(() => {
+        setShowReply(true);
+        setReplyChars(reply.length);
+      }, active.replyDelay * 1000);
       return () => clearTimeout(replyTimer);
     }
 
@@ -2612,18 +2947,29 @@ export default function Features() {
       if (i < command.length) {
         typingTimer = setTimeout(typeNext, COMMAND_CHAR_MS);
       } else {
-        replyTimer = setTimeout(
-          () => setShowReply(true),
-          active.replyDelay * 1000
-        );
+        replyTimer = setTimeout(() => {
+          setShowReply(true);
+          // a resposta comeca a digitar assim que aparece, no MESMO ritmo
+          // (COMMAND_CHAR_MS) do pedido do usuario.
+          let j = 0;
+          const typeReplyNext = () => {
+            j += 1;
+            setReplyChars(j);
+            if (j < reply.length) {
+              replyTypingTimer = setTimeout(typeReplyNext, COMMAND_CHAR_MS);
+            }
+          };
+          replyTypingTimer = setTimeout(typeReplyNext, COMMAND_CHAR_MS);
+        }, active.replyDelay * 1000);
       }
     };
     typingTimer = setTimeout(typeNext, COMMAND_CHAR_MS);
     return () => {
       clearTimeout(typingTimer);
       clearTimeout(replyTimer);
+      clearTimeout(replyTypingTimer);
     };
-    // command e active.replyDelay sao 100% funcao de sceneKey (mesmo
+    // command, reply e active.replyDelay sao 100% funcao de sceneKey (mesmo
     // aparelho do Spotify entra no proprio sceneKey) — reagir so a sceneKey
     // evita reiniciar a digitacao no meio quando nada realmente mudou.
     // isMobile/inView entram pra pausar/retomar no celular (ver comentario
@@ -2639,22 +2985,32 @@ export default function Features() {
   // visitante ainda navega entre capacidades pelo clique/toque, so nao anda
   // mais sozinho.
   //
-  // A permanencia e por cena, e nao fixa: cenas curtas seguem no ritmo de
-  // sempre (AUTOPLAY_MS), e as que demoram pra responder — o Git leva ~4,2s so
-  // digitando e subindo o push — ganham 1,8s de leitura depois da resposta em
-  // vez de serem cortadas no meio. Agora tambem soma o tempo de DIGITACAO do
-  // pedido (que antes nao existia como fase separada), senao a cena trocaria
-  // com a resposta ainda mal aparecida.
+  // A permanencia e SEMPRE por cena agora (pedido do usuario): sem piso
+  // fixo (era `Math.max(AUTOPLAY_MS, ...)`, 7s minimo mesmo pra cenas
+  // curtas) — o tempo e exatamente digitacao do pedido + replyDelay +
+  // digitacao da resposta + 2s de sobra depois que TUDO termina, nem mais
+  // nem menos, pra cada capacidade.
+  //
+  // O reset ao clicar manualmente (tambem pedido do usuario) ja e de graca
+  // pela propria estrutura do efeito: `activeIdx` esta nas dependencias, e
+  // tanto o autoplay (setActiveIdx aqui embaixo) quanto o clique manual nos
+  // botoes (CapButton, mais abaixo) mudam esse mesmo estado — qualquer um
+  // dos dois cancela o timer pendente (cleanup) e comeca a contagem de novo
+  // do zero pra capacidade atual.
   useEffect(() => {
     if (reduce || paused || manual || lowPower) return;
     // Mesma pausa por visibilidade do efeito de digitacao/resposta, acima:
     // fora da tela no celular, tambem para de avancar sozinho pra proxima
     // capacidade.
     if (isMobile && !inView) return;
-    const dwell = Math.max(
-      AUTOPLAY_MS,
-      command.length * COMMAND_CHAR_MS + active.replyDelay * 1000 + 1800
-    );
+    const dwell =
+      command.length * COMMAND_CHAR_MS +
+      active.replyDelay * 1000 +
+      // a resposta tambem digita letra a letra (mesmo ritmo do pedido) —
+      // soma esse tempo, senao o autoplay podia trocar de capacidade com a
+      // resposta ainda no meio da digitacao.
+      reply.length * COMMAND_CHAR_MS +
+      2000;
     const t = setTimeout(
       () => setActiveIdx((i) => (i + 1) % CAPS.length),
       dwell
@@ -2668,6 +3024,7 @@ export default function Features() {
     activeIdx,
     active.replyDelay,
     command,
+    reply,
     isMobile,
     inView,
   ]);
@@ -2687,7 +3044,7 @@ export default function Features() {
       // A regulagem e de UM degrau, nao de encolher tudo: as fontes ficam no
       // tamanho de tras (text-5xl no lugar do 6xl do PC, e o texto corrido
       // intacto), e quem cede de verdade sao alturas fixas e respiros.
-      className="relative overflow-hidden bg-ink-900 px-6 pb-12 pt-14 sm:pb-16 sm:pt-20 lg:px-10 laptop:pb-12 laptop:pt-14 wide:px-16"
+      className="relative overflow-hidden bg-ink-900 px-6 pb-28 pt-10 sm:pb-32 sm:pt-16 lg:px-10 laptop:pb-24 laptop:pt-11 wide:px-16"
     >
       {/* halo suave atras do console */}
       <div
@@ -2695,7 +3052,11 @@ export default function Features() {
         className="pointer-events-none absolute right-0 top-1/3 h-[460px] w-[620px] translate-x-1/4 rounded-full bg-white/[0.04] blur-[140px]"
       />
 
-      <div className="relative mx-auto max-w-6xl wide:max-w-shell">
+      {/* max-w-7xl (nao mais 6xl): pedido do usuario foi alargar o cartao
+          do console — o bloco do titulo tem seu PROPRIO max-w-6xl aninhado
+          logo abaixo, entao ele nao alarga junto; so o grid (titulo +
+          colunas + console) ganha os ~128px extras. */}
+      <div className="relative mx-auto max-w-7xl wide:max-w-shell">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -2717,10 +3078,12 @@ export default function Features() {
               volta de 524px de largura, bem antes dos 1024px onde o padding
               muda — o salto que a segunda formula corrigia nunca chega a
               acontecer. */}
-          {/* wrapper inline-block: ver comentario identico em Organization.tsx
-              — encolhe pra largura do texto, entao a linha (w-full deste
-              wrapper) casa com a frase do titulo em qualquer largura. */}
-          <div className="inline-block">
+          {/* wrapper mx-auto w-fit (nao mais inline-block, ver correcao
+              identica em Organization.tsx): encolhe pra largura do texto,
+              entao a linha (w-full deste wrapper) casa com a frase do
+              titulo em qualquer largura, sem virar inline (o que deixava o
+              titulo na mesma linha do rotulo em telas largas). */}
+          <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.025em] text-[#FAFAFA] laptop:text-[2.625rem]">
               Ele age de verdade
             </h2>
@@ -2747,182 +3110,234 @@ export default function Features() {
           // pilha junto seria uma segunda coisa se mexendo em cima da
           // primeira. O que responde ao dedo fora do cartao agora e o polegar
           // da barra de progresso, que anda no mesmo compasso.
-          className="mt-10 grid grid-cols-1 gap-4 sm:mt-14 lg:grid-cols-[0.9fr_1.35fr] lg:gap-5 laptop:mt-9"
+          //
+          // minmax(0, Nfr) nas 3 colunas (nao so `Nfr` puro): esse era o bug
+          // reportado — passar o mouse nos botoes de nome mais comprido
+          // ("Leitura de tela", "Digita por você") empurrava o cartao do
+          // meio pro lado. `Nfr` sozinho equivale a `minmax(auto, Nfr)`, e
+          // esse "auto" deixa o tamanho MINIMO da coluna seguir o conteudo
+          // — durante a transicao de `max-width` do CapButton (que cresce
+          // pra mostrar o nome), o grid recalculava a coluna mais larga pra
+          // caber o botao expandido, e as outras duas colunas (fr) cediam
+          // espaco, deslocando tudo. `minmax(0, Nfr)` trava o minimo em
+          // zero: a coluna nunca cresce por causa do conteudo, so pela
+          // fracao mesmo — o botao no hover passa a vazar visualmente por
+          // cima do vizinho (se precisar), em vez de empurrar o layout.
+          className="mt-7 grid grid-cols-1 gap-4 sm:mt-9 lg:grid-cols-[minmax(0,0.35fr)_minmax(0,2.3fr)_minmax(0,0.35fr)] lg:items-center lg:gap-8 laptop:mt-6"
         >
-          {/* Coluna esquerda: seletor de capacidades. Sao 7 botoes, e e a
-              altura DELES que define a linha do grid — no notebook, 7x74px
-              mais os 6 vaos de 10px dao 578px, e o console do lado se ajusta
-              a essa medida (ver comentario na demo, mais abaixo).
-              order-1 no celular: la a pilha vira UM botao so, e ele fica
-              ACIMA do cartao (pedido do usuario) — o botao passa a
-              apresentar a capacidade antes de mostrar a cena dela, em vez de
-              legendar depois. No desktop o order volta a ser o do DOM. */}
-          <div className="order-1 flex flex-col gap-2.5 lg:order-none">
-            {CAPS.map((cap, i) => {
-              const isActive = i === activeIdx;
+          {/* Celular: UM botao so (o da capacidade ativa), desenho rico
+              original (icone + nome + frase de apoio). Acima do cartao
+              (pedido do usuario) — o botao apresenta a capacidade antes de
+              mostrar a cena dela. Sai de cena no desktop (lg:hidden): la a
+              selecao vira as duas colunas compactas dos lados do console,
+              logo abaixo — ver CapButton. */}
+          <div className="order-1 flex flex-col gap-2.5 lg:hidden">
+            {(() => {
+              const cap = CAPS[activeIdx];
               return (
                 <button
-                  key={cap.id}
                   type="button"
-                  onClick={() => setActiveIdx(i)}
-                  aria-pressed={isActive}
-                  // `hidden lg:flex` nos inativos: no celular sobra UM botao
-                  // — o da capacidade em cena. Nao e uma segunda lista de
-                  // botoes escondida atras de um menu; e a mesma lista, com o
-                  // celular mostrando so o item atual. Quem troca la e o
-                  // arrasto (e os pontos, logo abaixo do botao).
-                  //
-                  // glow-ring--active liga a animacao continua do anel
-                  // (conic-gradient repintando a cada frame) pelo tempo
-                  // INTEIRO que a capacidade fica selecionada — no celular,
-                  // o tempo todo. Em maquina fraca ela e desligada via CSS
-                  // (`html.low-power .glow-ring::before`, ver globals.css),
-                  // entao nao precisa de condicional aqui: o botao so perde
-                  // o giro, nunca a borda acesa.
-                  className={`glow-ring group relative flex items-center gap-4 overflow-hidden rounded-card border px-5 py-4 text-left transition-colors duration-300 laptop:py-3 ${
-                    isActive
-                      ? "glow-ring--active border-white bg-[#FAFAFA]"
-                      : "hidden border-white/[0.08] bg-ink-900/60 hover:border-white/20 hover:bg-ink-800/60 lg:flex"
-                  }`}
+                  aria-pressed
+                  className="glow-ring glow-ring--active group relative flex items-center gap-4 overflow-hidden rounded-card border border-white bg-[#FAFAFA] px-5 py-4 text-left transition-colors duration-300"
                 >
-                  <span
-                    aria-hidden
-                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-chip border transition-colors duration-300 laptop:h-12 laptop:w-12 ${
-                      isActive
-                        ? "border-ink-950 bg-ink-950 text-white"
-                        : "border-white/[0.1] text-white/55 group-hover:text-white/80"
-                    }`}
-                  >
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-chip border border-ink-950 bg-ink-950 text-white">
                     <CapGlyph cap={cap} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span
-                      className={`block font-display text-[0.95rem] font-semibold tracking-[-0.01em] transition-colors duration-300 ${
-                        isActive ? "text-ink-950" : "text-white/75"
-                      }`}
-                    >
+                    <span className="block font-display text-[0.95rem] font-semibold tracking-[-0.01em] text-ink-950">
                       {cap.tab}
                     </span>
-                    <span
-                      className={`mt-0.5 block truncate text-xs transition-colors duration-300 ${
-                        isActive ? "text-ink-950/80" : "text-white/40"
-                      }`}
-                    >
+                    <span className="mt-0.5 block truncate text-xs text-ink-950/80">
                       {cap.hint}
                     </span>
                   </span>
-                  {isActive && (
-                    <span
-                      className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ink-950"
-                      aria-hidden
-                    />
-                  )}
+                  <span
+                    className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ink-950"
+                    aria-hidden
+                  />
                 </button>
               );
-            })}
+            })()}
           </div>
 
-          {/* Coluna direita: a TIRA com as sete janelas do console.
+          {/* Desktop: coluna ESQUERDA com as 4 primeiras capacidades — SO
+              icone (ver CapButton): o botao vira uma pilula redonda de
+              ~44px, sem nome visivel, ate o mouse passar por cima. No
+              hover ela se expande revelando o nome, sempre pro lado de FORA
+              (longe do console) — aqui, pra ESQUERDA, ver `side="left"`.
+              items-end alinha cada botao pela borda DIREITA da coluna (a
+              mais perto do console): e o que ancora o icone sempre no
+              mesmo lugar e faz o nome crescer pra esquerda, dentro do
+              espaco que a propria coluna ja reserva (sem invadir a secao
+              vizinha nem depender de z-index/overflow). */}
+          {/* lg:-translate-y-8: os botoes ficam centralizados na altura do
+              cartao (herdado do lg:items-center do grid), mas o cartao
+              agora e mais "pesado" em cima (o pedido do usuario, primeiro
+              ato) do que embaixo — pedido do usuario foi subir a coluna
+              pra alinhar melhor com essa linha, sem abandonar a
+              centralizacao de base. Transform nao mexe no layout/grid
+              (ao contrario de margin), entao nao reabre o bug de
+              hover empurrando o cartao (ver comentario grande no grid,
+              acima). */}
+          <div className="hidden lg:order-none lg:flex lg:flex-col lg:items-end lg:gap-8 lg:-translate-y-8">
+            {CAPS.slice(0, 4).map((cap, i) => (
+              <CapButton
+                key={cap.id}
+                cap={cap}
+                isActive={i === activeIdx}
+                onClick={() => setActiveIdx(i)}
+                side="left"
+              />
+            ))}
+          </div>
 
-              No desktop ela nao existe como tira — o `lg:block` desfaz o flex
-              e as seis janelas fora de cena saem por `lg:hidden`, entao sobra
-              exatamente o que sempre houve ali: uma janela, na segunda coluna
-              do grid.
+          {/* Coluna do MEIO: a tira com as oito janelas do console + a
+              resposta do Jarvis logo abaixo dela (ver o bloco `Resposta do
+              Jarvis`, mais adiante) — as duas moram dentro do MESMO wrapper
+              (`flex flex-col`) pra funcionar como um grid item so: e ele
+              quem carrega `order-2 lg:order-none` agora (antes era a tira
+              sozinha). No celular, como esse wrapper e um unico item na
+              pilha, a resposta ja nasce imediatamente apos a tira, sem
+              precisar de um order proprio — o mesmo lugar que ocupava
+              quando ainda vivia num bloco solto separado. */}
+          <div className="order-2 flex flex-col gap-4 lg:order-none">
+            {/* No desktop a tira nao existe como tira — o `lg:block` desfaz
+                o flex e as sete janelas fora de cena saem por `lg:hidden`,
+                entao sobra exatamente o que sempre houve ali: uma janela,
+                na coluna do meio do grid.
 
-              No celular e um carrossel de verdade. A janela de recorte sangra
-              pra fora do respiro da secao (-mx-6 px-6) porque e dai que sai
-              quase toda a espiada do vizinho sem o cartao ter que encolher
-              (ver SLIDE_INSET/SLIDE_GAP la em cima): o pedaco do proximo
-              cartao ocupa o respiro que ja estava vazio, e some cortado na
-              borda da tela em vez de num vao no meio do nada.
+                No celular e um carrossel de verdade, SEM espiada de
+                vizinho (ver comentario grande em SLIDE_GAP, la em cima) —
+                cada cartao ocupa a janela de recorte inteira e fica sempre
+                centralizado. A janela ainda sangra pra fora do respiro da
+                secao (-mx-6 px-6) so pra ficar consistente com o resto da
+                pagina, nao por causa de espiada nenhuma.
 
-              O arrasto mora AQUI, na tira, e nao no bloco inteiro: e o cartao
-              que anda com o dedo. */}
-          <div
-            ref={viewportRef}
-            className="order-2 -mx-6 overflow-hidden px-6 lg:order-none lg:mx-0 lg:overflow-visible lg:px-0"
-          >
-            <motion.div
-              drag={isMobile ? "x" : false}
-              dragConstraints={{ left: minX, right: 0 }}
-              dragElastic={0.15}
-              dragMomentum={false}
-              onDragStart={() => setManual(true)}
-              onDragEnd={handleDragEnd}
-              style={{ x }}
-              className="flex cursor-grab gap-4 will-change-transform active:cursor-grabbing lg:block lg:cursor-auto lg:active:cursor-auto"
+                O arrasto mora AQUI, na tira, e nao no bloco inteiro: e o
+                cartao que anda com o dedo. */}
+            <div
+              ref={viewportRef}
+              className="-mx-6 overflow-hidden px-6 lg:mx-0 lg:overflow-visible lg:px-0"
             >
-              {CAPS.map((cap, i) => {
-                const isLive = i === activeIdx;
-                return (
-                  // Sem shrink-0 o flex espremeria as sete pra caber na tira,
-                  // e nao sobraria vizinho pra espiar. aria-hidden nas seis
-                  // paradas: pra quem le a pagina com leitor de tela, a secao
-                  // continua tendo UM console (o da capacidade em cena) — a
-                  // navegacao entre elas e a barra de progresso logo abaixo,
-                  // que e tablist de verdade.
-                  <div
-                    key={cap.id}
-                    aria-hidden={!isLive}
-                    className={`w-[calc(100%-1.25rem)] shrink-0 lg:w-full ${
-                      isLive ? "" : "lg:hidden"
-                    }`}
-                  >
-                    <ConsoleWindow
-                      cap={cap}
-                      live={isLive}
-                      // Fora de cena a janela mostra o pedido VAZIO (zero
-                      // caracteres digitados), que e exatamente o estado em
-                      // que a cena ao vivo comeca — por isso a troca no fim
-                      // do gesto nao tem pulo: o cartao que chegou ja estava
-                      // desenhado assim, e so passa a digitar.
-                      command={isLive ? command : cap.command}
-                      commandChars={isLive ? commandChars : 0}
-                      showReply={isLive ? showReply : false}
-                      reply={isLive ? reply : cap.reply}
-                      sceneKey={sceneKey}
-                      reduce={reduce}
-                      lowPower={lowPower}
-                      device={device}
-                      onDevice={setDevice}
-                    />
+              <motion.div
+                drag={isMobile ? "x" : false}
+                dragConstraints={{ left: minX, right: 0 }}
+                dragElastic={0.15}
+                dragMomentum={false}
+                onDragStart={() => setManual(true)}
+                onDragEnd={handleDragEnd}
+                style={{ x }}
+                className="flex cursor-grab gap-4 will-change-transform active:cursor-grabbing lg:block lg:cursor-auto lg:active:cursor-auto"
+              >
+                {CAPS.map((cap, i) => {
+                  const isLive = i === activeIdx;
+                  return (
+                    // Sem shrink-0 o flex espremeria as oito pra caber na
+                    // tira. w-full (nao mais w-[calc(100%-1.25rem)]): sem
+                    // espiada de vizinho, o cartao ocupa a janela de
+                    // recorte inteira e fica sempre centralizado (pedido do
+                    // usuario, ver comentario grande no `stride`, acima).
+                    // aria-hidden nas sete paradas fora de cena: pra quem le
+                    // a pagina com leitor de tela, a secao continua tendo UM
+                    // console (o da capacidade em cena) — a navegacao entre
+                    // elas e a barra de progresso logo abaixo, que e
+                    // tablist de verdade.
+                    <div
+                      key={cap.id}
+                      aria-hidden={!isLive}
+                      className={`w-full shrink-0 ${isLive ? "" : "lg:hidden"}`}
+                    >
+                      <ConsoleWindow
+                        cap={cap}
+                        live={isLive}
+                        // Fora de cena a janela mostra o pedido VAZIO (zero
+                        // caracteres digitados), que e exatamente o estado
+                        // em que a cena ao vivo comeca — por isso a troca no
+                        // fim do gesto nao tem pulo: o cartao que chegou ja
+                        // estava desenhado assim, e so passa a digitar.
+                        command={isLive ? command : cap.command}
+                        commandChars={isLive ? commandChars : 0}
+                        sceneKey={sceneKey}
+                        reduce={reduce}
+                        lowPower={lowPower}
+                        device={device}
+                        onDevice={setDevice}
+                      />
+                    </div>
+                  );
+                })}
+              </motion.div>
+            </div>
+
+            {/* Resposta do Jarvis, FORA do cartao — em QUALQUER tela agora
+                (pedido do usuario: antes so no celular, o desktop ainda
+                escondia a resposta dentro da janela do console). Mesmo
+                desenho de sempre (avatar em anel, rotulo, texto), como peca
+                solta logo abaixo do console. SEMPRE visivel: enquanto
+                showReply e false, so os pontinhos de "pensando" aparecem,
+                centralizados — sem avatar/rotulo, que so entram quando a
+                resposta chega de fato. Troca direta, sem fade/slide.
+                mx-3.5 sm:mx-5: mesmo respiro do `corpo` do console (ver
+                ConsoleWindow, p-3.5 sm:p-5) — sem essa margem o cartao da
+                resposta esticava borda a borda com a janela do console,
+                mais LARGO que o cartao do usuario (que vive recuado por
+                dentro desse padding). Com a margem igual, os dois cartoes
+                (usuario e Jarvis) ficam exatamente com a mesma largura,
+                pedido do usuario.
+                O resto da classe (gap/padding/o w-16+text-[11px] do rotulo,
+                logo abaixo) agora copia LITERALMENTE o 1o ato (o cartao do
+                usuario, em ConsoleWindow) — antes so tinha px-3.5 py-3 fixo
+                (sem os saltos sm:/laptop: que o do usuario tem), entao o
+                icone/rotulo/inicio do texto dos dois cartoes nao batiam
+                exatamente na mesma posicao horizontal em todo breakpoint
+                (pedido do usuario: alinhar os dois). */}
+            <div className="mx-3.5 flex items-center gap-2.5 justify-center rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:mx-5 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
+              {showReply ? (
+                <>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
+                    <JarvisMark />
+                  </span>
+                  <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
+                    Jarvis
+                  </span>
+                  <span
+                    aria-hidden
+                    className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
+                  />
+                  <div className="flex h-14 min-w-0 flex-1 items-center">
+                    <JarvisReply text={reply} chars={replyChars} />
                   </div>
-                );
-              })}
-            </motion.div>
+                </>
+              ) : (
+                <div className="flex h-14 items-center justify-center">
+                  <ThinkingDots />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Resposta do Jarvis, FORA do cartao — so no celular (lg:hidden;
-              no desktop ela mora dentro da janela do console, ver o 3o ato
-              em ConsoleWindow). Mesmo desenho do bloco que saiu de dentro do
-              cartao (avatar em anel, rotulo, texto), so que como peca solta
-              abaixo dele. SEMPRE visivel (pedido do usuario: nao pode mais
-              aparecer so no final). Enquanto showReply e false, so os
-              pontinhos de "pensando" aparecem, centralizados — sem
-              avatar/rotulo, que so entram quando a resposta chega de
-              verdade (pedido do usuario). Troca direta, sem fade/slide. */}
-          <div className="order-3 flex items-center justify-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 lg:hidden">
-            {showReply ? (
-              <>
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
-                  <JarvisMark />
-                </span>
-                <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block">
-                  Jarvis
-                </span>
-                <span
-                  aria-hidden
-                  className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
+          {/* Desktop: coluna DIREITA com as 4 ultimas capacidades — mesmo
+              CapButton compacto da esquerda, so que ancorado pela borda
+              ESQUERDA (items-start: a mais perto do console) e o nome
+              crescendo pra DIREITA no hover (`side="right"`), espelhando a
+              coluna esquerda. So existe em DOM depois da coluna do meio,
+              entao com `lg:order-none` (todos os tres viram order:0 no
+              desktop) a ordem de empate cai pra posicao no DOM: esquerda,
+              meio, direita — exatamente as 3 colunas do grid, nessa
+              sequencia. */}
+          <div className="hidden lg:order-none lg:flex lg:flex-col lg:items-start lg:gap-8 lg:-translate-y-8">
+            {CAPS.slice(4, 8).map((cap, i) => {
+              const idx = i + 4;
+              return (
+                <CapButton
+                  key={cap.id}
+                  cap={cap}
+                  isActive={idx === activeIdx}
+                  onClick={() => setActiveIdx(idx)}
+                  side="right"
                 />
-                <div className="flex h-14 min-w-0 flex-1 items-center">
-                  <JarvisReply text={reply} />
-                </div>
-              </>
-            ) : (
-              <div className="flex h-14 items-center justify-center">
-                <ThinkingDots />
-              </div>
-            )}
+              );
+            })}
           </div>
 
           {/* BARRA DE PROGRESSO (no lugar dos pontinhos que moravam aqui):
@@ -2977,25 +3392,6 @@ export default function Features() {
           </div>
         </motion.div>
 
-        {/* Ponte para a secao seguinte — hoje a da dashboard. Aponta sempre
-            pra secao IMEDIATAMENTE abaixo: uma seta que pula uma secao inteira
-            confunde mais do que ajuda. */}
-        <motion.a
-          href="#interface"
-          initial={reduce ? false : { opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, amount: 0.8 }}
-          transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="group mt-14 flex items-center justify-center gap-2 text-sm font-medium text-white/45 transition-colors duration-300 hover:text-white/85 laptop:mt-9"
-        >
-          Veja a dashboard por dentro
-          <ArrowDown
-            size={15}
-            weight="bold"
-            aria-hidden
-            className="transition-transform duration-300 group-hover:translate-y-0.5"
-          />
-        </motion.a>
       </div>
     </section>
   );

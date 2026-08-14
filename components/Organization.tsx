@@ -167,8 +167,12 @@ function FeatureCardBody({
           palco ink-950, sao outra superficie, e mexer neles ia junto tirar o
           contraste que faz a maquete ler como app. */}
       <Card
+        // Sem glow-ring (pedido do usuario): tirou o anel de luz girando na
+        // borda no hover destes 3 cartoes. O hover:border-white/25 dos dois
+        // apagados continua — e so uma troca de cor (transition-colors),
+        // nao uma animacao em loop.
         className={cn(
-          "glow-ring group overflow-hidden bg-ink-700 transition-colors duration-300",
+          "group overflow-hidden bg-ink-700 transition-colors duration-300",
           // O cartao em destaque tem a borda clara SEMPRE, sem depender de
           // hover — mesma gramatica de destaque do cartao Anual em Precos —, e
           // com 2px no lugar de 1: `border-2` sobrescreve o `border` que vem do
@@ -956,7 +960,15 @@ export default function Organization() {
               titulo (h2 e whitespace-nowrap), entao a linha abaixo (w-full
               DESTE wrapper, nao da secao) fica sempre do mesmo tamanho da
               frase, em qualquer largura de tela — sem numero de px fixo. */}
-          <div className="inline-block">
+          {/* mx-auto w-fit (nao mais inline-block): inline-block deixava
+              este bloco na mesma LINHA do SectionEyebrow (que e um <span>
+              inline) sempre que a largura sobrasse — visivel so no desktop,
+              onde a coluna e larga o bastante pros dois caberem lado a lado
+              (bug reportado pelo usuario). w-fit encolhe pro texto do
+              titulo igual o inline-block fazia, mas continua um bloco de
+              verdade (quebra linha sempre); mx-auto centraliza esse bloco,
+              ja que ele nao e mais 100% da largura do pai. */}
+          <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
               Tudo em um lugar
             </h2>

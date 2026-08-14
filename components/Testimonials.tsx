@@ -201,10 +201,12 @@ export default function Testimonials() {
               (que e o que causava estouro logo apos o breakpoint). */}
           {/* Mesma formula de fonte de Roadmap.tsx ("Próximas atualizações")
               — ver comentario identico em Showcase.tsx. */}
-          {/* wrapper inline-block: ver comentario identico em Organization.tsx
-              — encolhe pra largura do texto, entao a linha (w-full deste
-              wrapper) casa com a frase do titulo em qualquer largura. */}
-          <div className="inline-block">
+          {/* wrapper mx-auto w-fit (nao mais inline-block, ver correcao
+              identica em Organization.tsx): encolhe pra largura do texto,
+              entao a linha (w-full deste wrapper) casa com a frase do
+              titulo em qualquer largura, sem virar inline (o que deixava o
+              titulo na mesma linha do rotulo em telas largas). */}
+          <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
               Quem usa, recomenda
             </h2>

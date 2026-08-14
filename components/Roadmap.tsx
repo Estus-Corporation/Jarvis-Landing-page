@@ -110,7 +110,7 @@ const AUTOPLAY_MS = 6000;
 // cartao chegando", nao mais que isso.
 const ROADMAP_SWIPE_DISTANCE = 56; // px percorridos
 const ROADMAP_SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
-const ROADMAP_GAP = 16; // px de vao entre cartoes, so visivel arrastando (= gap-4)
+const ROADMAP_GAP = 32; // px de vao entre cartoes, so visivel arrastando (= gap-8, pedido do usuario — era 16/gap-4)
 
 // Fundo IDENTICO ao de Integracoes.tsx ("Tudo gira em torno do Jarvis."):
 // mesma grade, mesma mascara, mesma linha de brilho no topo.
@@ -553,10 +553,12 @@ export default function Roadmap() {
           {/* Fonte fluida: titulo curto, entao a formula trava em 48px bem
               antes mesmo do fim do celular — aqui e mais pra ficar
               consistente com as outras secoes do que por necessidade real. */}
-          {/* wrapper inline-block: ver comentario identico em Organization.tsx
-              — encolhe pra largura do texto, entao a linha (w-full deste
-              wrapper) casa com a frase do titulo em qualquer largura. */}
-          <div className="inline-block">
+          {/* wrapper mx-auto w-fit (nao mais inline-block, ver correcao
+              identica em Organization.tsx): encolhe pra largura do texto,
+              entao a linha (w-full deste wrapper) casa com a frase do
+              titulo em qualquer largura, sem virar inline (o que deixava o
+              titulo na mesma linha do rotulo em telas largas). */}
+          <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
               Próximas atualizações
             </h2>
@@ -579,7 +581,17 @@ export default function Roadmap() {
             (fora do cartao, ja que vale pro roadmap inteiro) a barra de
             progresso e o CTA. */}
         <div className="mt-10 md:hidden">
-          <div ref={mobileViewportRef} className="overflow-hidden">
+          {/* px-4: o viewport tinha overflow-hidden ENCOSTADO na borda do
+              cartao (zero folga), entao a luz externa da imagem (o halo
+              branco, ver shadow dela mais abaixo) nunca tinha espaco pra
+              se espalhar — era cortada no mesmo instante em que nascia,
+              nos dois lados (pedido do usuario foi tirar esse corte). Com
+              padding aqui, o `overflow-hidden` passa a recortar 16px ALEM
+              da borda do cartao (o `contentRect` que mede a largura pro
+              calculo do arrasto ja desconta esse padding sozinho, entao o
+              carrossel continua parando no lugar certo sem nenhuma conta
+              manual). */}
+          <div ref={mobileViewportRef} className="overflow-hidden px-4">
             <motion.div
               drag={isMobileCarousel ? "x" : false}
               dragConstraints={{ left: mobileMinX, right: 0 }}
@@ -588,7 +600,7 @@ export default function Roadmap() {
               onDragStart={() => setManual(true)}
               onDragEnd={handleMobileDragEnd}
               style={{ x: mobileX }}
-              className="flex cursor-grab items-start gap-4 will-change-transform active:cursor-grabbing"
+              className="flex cursor-grab items-start gap-8 will-change-transform active:cursor-grabbing"
             >
               {items.map((item, index) => (
                 // w-full: cada cartao e uma tela inteira, sem espiada do
@@ -623,7 +635,10 @@ export default function Roadmap() {
                   >
                     {item.title}
                   </h3>
-                  <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+                  {/* shadow com duas camadas, mesma dupla do desktop
+                      (pedido do usuario): halo branco parado por fora da
+                      moldura + a sombra de profundidade que ja existia. */}
+                  <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-card border border-white/[0.1] shadow-[0_0_56px_-14px_rgba(255,255,255,0.35),0_30px_80px_-20px_rgba(0,0,0,0.7)]">
                     <Image
                       src={item.image}
                       alt=""
@@ -644,10 +659,10 @@ export default function Roadmap() {
                       altura tanto pela fonte menor quanto por caber mais
                       caracteres por linha, sobrando mais espaco pra imagem
                       acima ler como o elemento principal do cartao. */}
-                  <p className="mt-4 text-sm leading-relaxed text-white/55">
+                  <p className="mt-4 text-center text-sm leading-relaxed text-white/55">
                     {item.bodyMobile ?? item.bodyCompact ?? item.body}
                   </p>
-                  <p className="mt-3 text-sm italic leading-relaxed text-white/65">
+                  <p className="mt-3 text-center text-sm italic leading-relaxed text-white/65">
                     “{item.quote}”
                   </p>
                 </div>
@@ -873,9 +888,15 @@ export default function Roadmap() {
                 ficariam lado a lado na linha em vez de imagem-em-cima,
                 linha-embaixo. */}
             <div className="w-full">
+              {/* shadow com DUAS camadas agora — a mesma dupla de
+                  Showcase.tsx ("Uma dashboard viva"), pedido do usuario: um
+                  halo branco parado por fora da moldura (a primeira,
+                  0_0_56px) + a sombra de profundidade que ja existia aqui
+                  (a segunda). So no desktop (este bloco inteiro e
+                  `hidden md:flex`, nunca aparece no celular). */}
               <div
                 ref={imageRef}
-                className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] laptop:aspect-[16/11]"
+                className="relative aspect-[4/3] w-full overflow-hidden rounded-card border border-white/[0.1] shadow-[0_0_56px_-14px_rgba(255,255,255,0.35),0_30px_80px_-20px_rgba(0,0,0,0.7)] laptop:aspect-[16/11]"
               >
                 <div
                   className="absolute inset-0 transition-transform duration-700 ease-in-out"

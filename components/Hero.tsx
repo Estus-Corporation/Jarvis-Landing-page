@@ -202,7 +202,12 @@ export default function Hero() {
           esfera+legenda) um pouco para a direita dentro do mesmo max-w-shell,
           sem mudar a largura total do bloco: sobra mais vazio a esquerda do
           que a direita, na proporcao pedida. */}
-      <div className="relative z-[2] mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-14 lg:grid-cols-[0.95fr_1.15fr] lg:gap-8 lg:pl-10 xl:pl-16 wide:max-w-shell">
+      {/* gap-10 no celular (era gap-14): pedido do usuario foi aproximar o
+          bloco titulo+descricao da legenda que fica embaixo da esfera —
+          no mobile a ordem empilhada e esfera+legenda (order-1) PRIMEIRO,
+          titulo+descricao (order-2) DEPOIS, entao esse gap e exatamente a
+          distancia entre os dois. lg:gap-8 no desktop, intacto. */}
+      <div className="relative z-[2] mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-[0.95fr_1.15fr] lg:gap-8 lg:pl-10 xl:pl-16 wide:max-w-shell">
         <div className="order-2 lg:order-1">
           {/* Revelacao palavra a palavra: o titulo se monta como uma frase
               sendo dita, em vez de aparecer inteiro de uma vez. */}
@@ -231,7 +236,9 @@ export default function Hero() {
             initial={reduce ? false : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.42, ease: [0.16, 1, 0.3, 1] }}
-            className="mx-auto mt-6 max-w-[46ch] text-center text-lg font-light leading-relaxed text-white/60 lg:mx-0 lg:text-left"
+            // mt-5 no celular (era mt-6, pedido do usuario), lg:mt-6
+            // devolve o valor original no desktop.
+            className="mx-auto mt-5 max-w-[46ch] text-center text-lg font-light leading-relaxed text-white/60 lg:mx-0 lg:mt-6 lg:text-left"
           >
             Um assistente de voz que vive no seu Windows. Controla o navegador,
             abre programas e roda comandos de terminal.
@@ -320,10 +327,15 @@ export default function Hero() {
               calcula uma esfera maior de verdade. O excesso que passa da
               tela fica dentro do halo/glow borrado (jarvis-sphere.tsx), que
               ja esmaece antes da borda — o overflow-hidden do <section> nao
-              corta uma quina reta. Desktop intacto (lg:w-full lg:mx-0). */}
+              corta uma quina reta. Desktop intacto (lg:w-full lg:mx-0).
+              w-[calc(100%+3rem)] / mx-[-1.5rem] (era +5rem/-2.5rem):
+              reduzido de leve — pedido do usuario foi encolher a esfera um
+              pouco no celular. Menos sangria = menos largura pro
+              useOrbSize calcular = esfera levemente menor, mesmo
+              mecanismo, so com um numero menor. */}
           <div
             ref={containerRef}
-            className="mx-[-2.5rem] flex w-[calc(100%+5rem)] justify-center lg:mx-0 lg:w-full"
+            className="mx-[-1.5rem] flex w-[calc(100%+3rem)] justify-center lg:mx-0 lg:w-full"
           >
             <div className="relative inline-block">
               {/* `paused` so por "reduzir movimento": desenha um quadro e

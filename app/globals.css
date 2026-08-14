@@ -372,6 +372,96 @@ body {
   animation: thinking-dot 1.4s ease-in-out infinite;
 }
 
+/* Pulso do botao de capacidade SELECIONADO (Features.tsx, CapButton): um
+   anel branco que nasce colado na borda e se espalha desaparecendo, tipo
+   onda — pedido do usuario, pra deixar claro que aquele botao branco e um
+   ESTADO (selecionado), nao a cor normal dele. box-shadow, nao transform:
+   nao muda o tamanho real do botao (evita mexer no layout/grid vizinho),
+   so pinta um halo que cresce por fora.
+   Revisado de novo (era 14px/0.6/1.8s/ease-out, depois 22px/0.45/2.8s ida-
+   e-volta): pedido do usuario foi tirar a volta — antes o keyframe ia de
+   0% (pequeno, opaco) a 50% (grande, transparente) e VOLTAVA pra 0% de
+   forma animada, um "respirar" continuo. Agora sao so DOIS estados (0% e
+   100%, sem parada no meio): o anel se espalha uma vez so, e quando o loop
+   reinicia ele volta pro inicio DIRETO (sem interpolar a volta) — mesmo
+   truque do .core-ping ja existente no site (ver acima). So "expulsa",
+   nunca "recolhe" visivelmente.
+   Revisado mais uma vez (pedido do usuario: "nao tao marcado", "discreto",
+   "com mais blur em vez de marcado na linha"): o `spread` (o 3o valor,
+   22px) sozinho desenha uma LINHA de borda nitida (blur-radius, o 2o
+   valor, sempre foi 0) — um circulo fino e definido crescendo, daí o
+   aspecto "marcado" que o usuario nao queria. Agora o blur-radius cresce
+   MUITO mais (24px) que o spread (6px, so o suficiente pra dar corpo): o
+   halo fica difuso o tempo todo, sem nunca formar um contorno definido.
+   Opacidade inicial: 0.4 → 0.6 → 0.9 → 1 (teto, ja nao da mais pra
+   aumentar so por ai). Pedido do usuario foi "mais ainda" de novo — dessa
+   vez o blur e o spread tambem cresceram (28px/9px, eram 24px/6px), pra
+   dar mais presenca ja que a opacidade bateu no limite. */
+@keyframes cap-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 1);
+  }
+  100% {
+    box-shadow: 0 0 28px 9px rgba(255, 255, 255, 0);
+  }
+}
+
+.cap-pulse {
+  animation: cap-pulse 2.8s ease-in-out infinite;
+}
+
+/* Raios de luz do botao de capacidade ATIVO (Features.tsx, CapButton):
+   pedido do usuario foi trocar o halo simples (um blur redondo) por um
+   leque de raios finos, tipo sol/estrela, que se espalham do circulo pra
+   fora. repeating-conic-gradient desenha as fatias finas alternadas
+   (clara/transparente) — e o mesmo mecanismo do .glow-ring (que tambem usa
+   conic-gradient), so que aqui SEM girar (estatico, de proposito: o site
+   ja tirou o anel giratorio por reclamacao de "detalhe branco" nas
+   laterais; aqui e um efeito NOVO e maior, ficar parado evita competir
+   com o pulso — cap-pulse, acima — que ja e o elemento animado da vez).
+   A mascara radial e o que faz ler como raios "saindo" do centro em vez de
+   uma rosquinha solida: apaga o miolo (onde o proprio botao ja cobre) e a
+   ponta de fora (onde os raios iam terminar em corte reto).
+   Revisado de novo (pedido do usuario: "um pouquinho mais longe", "mais
+   realista" e "levemente mais aparente"):
+     - alcance: a parada externa da mascara subiu de 62% pra 70% (o span
+       tambem cresceu, -inset-5 pra -inset-6, ver Features.tsx).
+     - realismo: a segunda camada (os raios finos/fracos) agora nasce de um
+       angulo OFFSET (`from 4deg`) em vez de partir do mesmo 0deg da
+       camada principal — alinhados, os dois conjuntos liam como UM padrao
+       so, mecanico demais; deslocados, os raios finos caem ENTRE os
+       largos de forma irregular, mais perto de como luz de verdade se
+       espalha (feixes que nao sao todos igualmente espacados).
+     - mais aparente: opacidade dos dois conjuntos subiu (0.55→0.68 no
+       principal, 0.22→0.32 no fino). */
+.cap-rays {
+  background:
+    repeating-conic-gradient(
+      transparent 0deg,
+      rgba(255, 255, 255, 0.68) 1.2deg,
+      transparent 2.4deg 20deg
+    ),
+    repeating-conic-gradient(
+      from 4deg,
+      transparent 0deg,
+      rgba(255, 255, 255, 0.32) 0.6deg,
+      transparent 1.2deg 10deg
+    );
+  filter: blur(1.5px);
+  -webkit-mask-image: radial-gradient(
+    circle,
+    transparent 38%,
+    black 48%,
+    transparent 70%
+  );
+  mask-image: radial-gradient(
+    circle,
+    transparent 38%,
+    black 48%,
+    transparent 70%
+  );
+}
+
 /* Cursor piscando do terminal simulado. */
 @keyframes caret-blink {
   0%,

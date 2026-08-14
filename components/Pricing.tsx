@@ -62,7 +62,8 @@ const plans = [
     subtitle: "Para começar sem compromisso",
     price: "R$ 79",
     period: "/mês",
-    billingNote: "Preço de lançamento, depois R$ 139,90 · -44%",
+    normalPrice: "R$ 139,90",
+    discountPercent: "-44%",
     highlights: [
       "Comece hoje, sem burocracia",
       "Ideal pra testar antes de decidir",
@@ -78,7 +79,8 @@ const plans = [
     subtitle: "Para quem já decidiu usar todo dia",
     price: "R$ 650",
     period: "/ano",
-    billingNote: "Preço de lançamento, depois R$ 987 · -34%",
+    normalPrice: "R$ 987",
+    discountPercent: "-34%",
     highlights: [
       "Equivale a R$ 54,17 por mês",
       "Pague uma vez, esqueça o resto do ano",
@@ -201,15 +203,34 @@ function PlanCard({
         </h3>
         <p className="mt-1 text-sm text-white/45">{plan.subtitle}</p>
 
-        <div className="mt-5 flex items-baseline gap-1.5">
-          <Price
-            value={plan.price}
-            className="font-mono text-4xl font-semibold tracking-tight text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]"
-          />
-          <span className="text-sm text-white/45">{plan.period}</span>
+        {/* Desconto EXPLICITO, pedido do usuario: antes era uma linha de
+            texto pequena e apagada (text-xs text-white/40) — "de/por" batido
+            no olho so se a pessoa parasse pra ler. Agora sao duas pistas
+            visuais fortes lado a lado com o preco grande: o selo solido
+            (mesma superficie de maximo contraste da pilula "Mais popular",
+            a unica cor "forte" que o sistema monocromatico permite) E o
+            preco antigo riscado — a leitura "de X por Y" fica clara so de
+            bater o olho, sem precisar ler a frase toda. */}
+        <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+          <div className="flex items-baseline gap-1.5">
+            <Price
+              value={plan.price}
+              className="font-mono text-4xl font-semibold tracking-tight text-[#FAFAFA] sm:text-5xl laptop:text-[2.625rem]"
+            />
+            <span className="text-sm text-white/45">{plan.period}</span>
+          </div>
+          {/* shadow: mesmo halo suave dos CTAs solidos do site (Hero,
+              "Quero ser notificado!"...) — pedido do usuario pra deixar o
+              selo "levemente" mais apelativo, sem sair do preto-e-branco. */}
+          <span className="inline-flex shrink-0 items-center rounded-full bg-[#FAFAFA] px-2.5 py-1 text-xs font-bold tracking-tight text-ink-950 shadow-[0_6px_18px_-6px_rgba(255,255,255,0.55)]">
+            {plan.discountPercent}
+          </span>
         </div>
-        <p className="mt-1.5 text-xs leading-relaxed text-white/40">
-          {plan.billingNote}
+        <p className="mt-2 flex items-center gap-1.5 text-xs leading-relaxed text-white/40">
+          <span className="font-mono text-white/40 line-through">
+            {plan.normalPrice}
+          </span>
+          Preço de lançamento
         </p>
 
         {/* Preenche o vao que sobrava entre a nota de preco e o botao.
@@ -451,10 +472,12 @@ export default function Pricing() {
               usar." (23 caracteres) estourava a caixa em telas estreitas
               nesse tamanho (medido: ate 44px de overflow a 414px) — encurtado
               pra caber igual aos demais. */}
-          {/* wrapper inline-block: ver comentario identico em Organization.tsx
-              — encolhe pra largura do texto, entao a linha (w-full deste
-              wrapper) casa com a frase do titulo em qualquer largura. */}
-          <div className="inline-block">
+          {/* wrapper mx-auto w-fit (nao mais inline-block, ver correcao
+              identica em Organization.tsx): encolhe pra largura do texto,
+              entao a linha (w-full deste wrapper) casa com a frase do
+              titulo em qualquer largura, sem virar inline (o que deixava o
+              titulo na mesma linha do rotulo em telas largas). */}
+          <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
               Escolha seu plano
             </h2>

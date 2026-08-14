@@ -68,7 +68,7 @@ const WIDGETS: Widget[] = [
   {
     icon: Clock,
     title: "Relógio",
-    note: "A hora local, sempre visível.",
+    note: "A hora local, sempre bem visível.",
   },
   {
     icon: GameController,
@@ -292,10 +292,12 @@ export default function Showcase() {
               formula (e nao so o resultado num ponto) precisa ser igual —
               caso contrario cada titulo volta a ter seu proprio tamanho em
               alguma largura de tela. */}
-          {/* wrapper inline-block: ver comentario identico em Organization.tsx
-              — encolhe pra largura do texto, entao a linha (w-full deste
-              wrapper) casa com a frase do titulo em qualquer largura. */}
-          <div className="inline-block">
+          {/* wrapper mx-auto w-fit (nao mais inline-block, ver correcao
+              identica em Organization.tsx): encolhe pra largura do texto,
+              entao a linha (w-full deste wrapper) casa com a frase do
+              titulo em qualquer largura, sem virar inline (o que deixava o
+              titulo na mesma linha do rotulo em telas largas). */}
+          <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
               Uma dashboard viva
             </h2>
@@ -427,7 +429,13 @@ export default function Showcase() {
 
           {/* Divisor rotulado: separa a imagem da legenda dela sem precisar de
               uma caixa. Sem ele os itens encostariam direto no rodape da
-              janela e leriam como parte da propria captura de tela. */}
+              janela e leriam como parte da propria captura de tela.
+              "Widgets" agora usa a MESMA pilula (borda + fundo) do rotulo
+              "Interface" la em cima (pedido do usuario) — o texto solto
+              virou uma pilula com borda, igual a outra. Nao reaproveita o
+              componente SectionEyebrow em si (que e usado em toda a pagina
+              COM o led-dot piscando) porque aqui o pedido foi sem a bolinha
+              — so o mesmo desenho de pilula, escrito na mao. */}
           <motion.div
             initial={reduce ? false : { opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -436,18 +444,28 @@ export default function Showcase() {
             className="mt-14 flex items-center gap-5 laptop:mt-10"
           >
             <span className="h-px flex-1 bg-white/[0.18]" aria-hidden />
-            <span className="text-xs font-medium uppercase tracking-[0.18em] text-white/65">
-              Widgets
+            <span className="inline-flex items-center rounded-full border border-white/[0.1] bg-white/[0.03] px-3.5 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+              {/* translate-x-px: move so o TEXTO 1px pra direita — a pilula
+                  (borda/fundo do <span> pai) fica exatamente onde estava. */}
+              <span className="inline-block translate-x-px">Widgets</span>
             </span>
             <span className="h-px flex-1 bg-white/[0.18]" aria-hidden />
           </motion.div>
 
-          {/* Desktop (lg+): lista simples, como sempre foi — icone a
-              esquerda, titulo e nota empilhados a direita. Sem moldura de
-              cartao: numa fileira so de 4 num container ja com bordas
-              (a janela acima), um cartao por item seria moldura dentro de
-              moldura. */}
-          <div className="mt-10 hidden lg:grid lg:grid-cols-4 lg:gap-x-8 lg:gap-y-9 laptop:mt-8 laptop:gap-y-7">
+          {/* Desktop (lg+): os 4 widgets dentro de UM cartao so agora
+              (pedido do usuario — testou um cartao por item antes e nao
+              gostou; a versao final e um unico cartao, mesma cor de fundo
+              dos cartoes de widget do celular, com os 4 divididos por
+              linhas verticais finas em vez de quatro molduras separadas).
+              lg:-mx-8: pedido do usuario foi deixar o cartao mais LARGO —
+              sangra 32px de cada lado pra fora do container de 1080px/860px
+              que ele divide com a janela do app (ver comentario grande la
+              em cima, no pai: aquele teto existe pra imagem 16/9 nao ficar
+              alta demais, mas nao precisa valer pro cartao de widgets, que
+              nao tem essa restricao de proporcao). 64px de sangria total
+              ainda cabe dentro do max-w-6xl (1152px) da secao inteira nas
+              duas faixas (1080+64=1144 e 860+64=924). */}
+          <div className="mt-10 hidden rounded-card border border-white/[0.1] bg-[#151519] p-7 lg:-mx-8 lg:grid lg:grid-cols-4 lg:divide-x lg:divide-white/[0.08] laptop:mt-8 laptop:p-6">
             {WIDGETS.map((w, i) => (
               <motion.div
                 key={w.title}
@@ -457,7 +475,12 @@ export default function Showcase() {
                 // Escalonado por indice: a 0.06s de intervalo os itens entram
                 // como uma onda, nao como uma fila.
                 transition={{ duration: 0.5, ease: EASE, delay: i * 0.06 }}
-                className="flex items-start gap-4"
+                // px-6 (nao mais gap no grid pai): reserva o respiro dos
+                // dois lados de CADA linha divisoria de forma simetrica —
+                // gap + divide-x juntos deixariam a linha colada num dos
+                // lados. first/last:0 pra nao somar padding extra em cima
+                // do p-7/p-6 do cartao, nas pontas.
+                className="flex items-start gap-4 px-6 first:pl-0 last:pr-0"
               >
                 <RingIcon icon={w.icon} />
                 <div className="min-w-0">
@@ -496,15 +519,13 @@ export default function Showcase() {
               {WIDGETS.map((w) => (
                 <div
                   key={w.title}
-                  // bg-ink-700: pedido do usuario foi clarear um pouco mais,
-                  // quase a cor da caixa de resposta do Jarvis nos cartoes de
-                  // Capacidades (ConsoleWindow bg-ink-800/70 + a propria
-                  // caixa bg-white/[0.05] — medido o pixel renderizado:
-                  // ~rgb(30,30,32) / #1E1E20). ink-700 (#1C1C21, "cartao
-                  // destacado" na escala — ver tailwind.config.ts) e o token
-                  // mais proximo ja existente, entao reaproveitar em vez de
-                  // criar uma cor solta.
-                  className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-ink-700 p-5 text-center"
+                  // bg-[#151519]: mais um pouquinho mais escuro (era
+                  // #18181C) — pedido do usuario, so pra este cartao
+                  // (widgets, mobile). Fora da escala de proposito (mesmo
+                  // raciocinio do bg-[#111114] em Organization.tsx): o
+                  // ajuste pedido e mais fino do que o degrau inteiro ate
+                  // ink-800 (#141417), que escureceria demais.
+                  className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-[#151519] p-5 text-center"
                 >
                   <RingIcon icon={w.icon} size="lg" className="mx-auto" />
                   <div>

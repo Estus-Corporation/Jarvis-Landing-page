@@ -524,7 +524,7 @@ export default function Pricing() {
                 dragMomentum={false}
                 onDragEnd={handleDragEnd}
                 style={{ x }}
-                className="flex cursor-grab items-start gap-4 active:cursor-grabbing"
+                className="flex cursor-grab items-start gap-4 will-change-transform active:cursor-grabbing"
               >
                 {plans.map((plan, i) => (
                   // 1.25rem = 20px = SLIDE_INSET, o mesmo numero de

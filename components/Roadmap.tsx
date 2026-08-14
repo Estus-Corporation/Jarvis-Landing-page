@@ -553,7 +553,7 @@ export default function Roadmap() {
               onDragStart={() => setManual(true)}
               onDragEnd={handleMobileDragEnd}
               style={{ x: mobileX }}
-              className="flex cursor-grab items-start gap-4 active:cursor-grabbing"
+              className="flex cursor-grab items-start gap-4 will-change-transform active:cursor-grabbing"
             >
               {items.map((item, index) => (
                 // w-full: cada cartao e uma tela inteira, sem espiada do

@@ -1041,7 +1041,7 @@ export default function Organization() {
               dragMomentum={false}
               onDragEnd={handleDragEnd}
               style={{ x }}
-              className="flex cursor-grab items-start gap-4 active:cursor-grabbing"
+              className="flex cursor-grab items-start gap-4 will-change-transform active:cursor-grabbing"
             >
               {CARDS.map((card, i) => (
                 <div

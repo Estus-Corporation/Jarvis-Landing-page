@@ -2698,9 +2698,18 @@ export default function Features() {
                   // botoes escondida atras de um menu; e a mesma lista, com o
                   // celular mostrando so o item atual. Quem troca la e o
                   // arrasto (e os pontos, logo abaixo do botao).
+                  //
+                  // lowPower: `glow-ring--active` NAO entra. Ela liga a
+                  // animacao continua do anel (conic-gradient repintando a
+                  // cada frame, ver globals.css) pelo tempo INTEIRO que a
+                  // capacidade fica selecionada — que no celular e o tempo
+                  // todo, bem debaixo do carrossel que se arrasta. Medido com
+                  // CPU throttled: essa e a unica animacao continua e SEM
+                  // gatilho de hover que sobrava na secao. Em maquina fraca
+                  // o botao fica com a borda acesa (isActive), so sem girar.
                   className={`glow-ring group relative flex items-center gap-4 overflow-hidden rounded-card border px-5 py-4 text-left transition-colors duration-300 laptop:py-3 ${
                     isActive
-                      ? "glow-ring--active border-white bg-[#FAFAFA]"
+                      ? `border-white bg-[#FAFAFA] ${lowPower ? "" : "glow-ring--active"}`
                       : "hidden border-white/[0.08] bg-ink-900/60 hover:border-white/20 hover:bg-ink-800/60 lg:flex"
                   }`}
                 >
@@ -2769,7 +2778,7 @@ export default function Features() {
               onDragStart={() => setManual(true)}
               onDragEnd={handleDragEnd}
               style={{ x }}
-              className="flex cursor-grab gap-4 active:cursor-grabbing lg:block lg:cursor-auto lg:active:cursor-auto"
+              className="flex cursor-grab gap-4 will-change-transform active:cursor-grabbing lg:block lg:cursor-auto lg:active:cursor-auto"
             >
               {CAPS.map((cap, i) => {
                 const isLive = i === activeIdx;

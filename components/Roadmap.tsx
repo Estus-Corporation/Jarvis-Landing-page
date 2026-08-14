@@ -57,7 +57,7 @@ const items: RoadmapItem[] = [
   {
     icon: DeviceMobile,
     step: "01",
-    title: "Jarvis no seu bolso",
+    title: "App Mobile",
     body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Pergunte algo, peça uma tarefa ou só acompanhe o que ele está fazendo — tudo pelo mesmo Jarvis, agora no seu bolso. Notificações chegam na hora certa, e o histórico da conversa segue com você entre o computador e o celular, sem perder o fio.",
     bodyMobile:
       "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Notificações chegam na hora certa, e a conversa segue com você entre os dois aparelhos.",
@@ -67,7 +67,7 @@ const items: RoadmapItem[] = [
   {
     icon: House,
     step: "02",
-    title: "Sua casa, por voz",
+    title: "Integração IoT",
     body: "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Chegou e já quer tudo do jeito certo? Basta pedir, e ele ajusta a casa inteira antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra quando sair — um comando só, e cada cômodo responde do jeito que você combinou.",
     bodyCompact:
       "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Peça, e ele ajusta tudo antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra saída — um comando só, e cada cômodo responde do jeito certo.",
@@ -79,7 +79,7 @@ const items: RoadmapItem[] = [
   {
     icon: Car,
     step: "03",
-    title: "Jarvis no painel do seu carro",
+    title: "App Multimídia",
     body: "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. No trânsito ou na estrada, é só falar: ele entende o pedido e cuida do resto enquanto você guia. Ele também avisa sobre trânsito na rota, sugere um caminho melhor e lê as mensagens em voz alta, sem você precisar olhar pra tela.",
     bodyCompact:
       "Integrado à multimídia do carro. Rota, mensagem, playlist — peça sem tirar as mãos do volante. Ele avisa sobre trânsito na rota, sugere um caminho melhor e lê as mensagens em voz alta, sem você precisar olhar pra tela.",
@@ -534,7 +534,7 @@ export default function Roadmap() {
             <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
           </div>
           <p className="mx-auto mt-3 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
-            O computador é só o começo.
+            O computador é só o começo. As atualizações estão a caminho.
           </p>
           {/* Nada de controle aqui embaixo no desktop (md+): setas e
               tracinhos foram todos pra coluna vertical na esquerda do
@@ -594,7 +594,7 @@ export default function Roadmap() {
                   >
                     {item.title}
                   </h3>
-                  <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+                  <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-card border border-white/[0.1] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
                     <Image
                       src={item.image}
                       alt=""

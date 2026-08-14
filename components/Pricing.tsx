@@ -594,7 +594,7 @@ export default function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.6 }}
           transition={{ duration: 0.5, delay: reduce ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 flex translate-y-1 items-center justify-center gap-2 text-center text-sm text-white/55"
+          className="mt-6 flex translate-y-1 items-center justify-center gap-2 text-center text-xs text-white/55 sm:text-sm"
         >
           <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
           Garantia de 7 dias: não gostou, devolvemos 100%.

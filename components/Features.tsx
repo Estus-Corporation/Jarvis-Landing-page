@@ -10,6 +10,7 @@ import {
   type PanInfo,
 } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
   Keyboard,
@@ -394,9 +395,11 @@ function EqBars({ className = "" }: { className?: string }) {
 function SpotifyViz({
   device,
   onDevice,
+  lowPower,
 }: {
   device: DeviceId;
   onDevice: (id: DeviceId) => void;
+  lowPower: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const current = findDevice(device);
@@ -521,7 +524,13 @@ function SpotifyViz({
             aria-hidden
           >
             <div
-              className="relative h-full w-full animate-spin rounded-full border border-white/[0.12]"
+              // lowPower: disco para de girar — maquina fraca ja tem uma
+              // demo inteira rodando (motion, timers), e um giro continuo de
+              // 9s que ninguem esta cronometrando e o primeiro candidato a
+              // sair (ver useLowPowerDevice em Features()).
+              className={`relative h-full w-full rounded-full border border-white/[0.12] ${
+                lowPower ? "" : "animate-spin"
+              }`}
               style={{
                 animationDuration: "9s",
                 background:
@@ -1129,7 +1138,7 @@ function GitBar({ text }: { text: string }) {
   );
 }
 
-function GitViz() {
+function GitViz({ lowPower }: { lowPower: boolean }) {
   // quantas entradas do roteiro ja entraram em cena
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
@@ -1195,7 +1204,9 @@ function GitViz() {
                   size={11}
                   weight="bold"
                   aria-hidden
-                  className="animate-spin"
+                  // lowPower: para de girar — mesmo raciocinio do disco do
+                  // Spotify, ver comentario la.
+                  className={lowPower ? "" : "animate-spin"}
                   style={{ animationDuration: "1.6s" }}
                 />
                 trabalhando
@@ -2093,18 +2104,23 @@ function ConsoleBody({
   cap,
   device,
   onDevice,
+  lowPower,
 }: {
   cap: Cap;
   device: DeviceId;
   onDevice: (id: DeviceId) => void;
+  // So Spotify (o disco) e Git (o spinner de "trabalhando") usam isto — as
+  // outras cinco demos nao tem nenhuma animacao CONTINUA (infinita) pra
+  // desligar, so sequencias de um tiro so que ja terminam sozinhas.
+  lowPower: boolean;
 }) {
   switch (cap.kind) {
     case "spotify":
-      return <SpotifyViz device={device} onDevice={onDevice} />;
+      return <SpotifyViz device={device} onDevice={onDevice} lowPower={lowPower} />;
     case "whatsapp":
       return <WhatsAppViz />;
     case "git":
-      return <GitViz />;
+      return <GitViz lowPower={lowPower} />;
     case "chrome":
       return <ChromeViz />;
     case "windows":
@@ -2143,6 +2159,7 @@ function ConsoleWindow({
   reply,
   sceneKey,
   reduce,
+  lowPower,
   device,
   onDevice,
 }: {
@@ -2154,6 +2171,7 @@ function ConsoleWindow({
   reply: string;
   sceneKey: string;
   reduce: boolean;
+  lowPower: boolean;
   device: DeviceId;
   onDevice: (id: DeviceId) => void;
 }) {
@@ -2219,7 +2237,9 @@ function ConsoleWindow({
         {/* 1o ato — o pedido, sem truncar, pra ler numa boa */}
         <div className="flex items-center gap-2.5 rounded-chip border border-white/[0.08] bg-ink-950/60 px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
           <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.04]">
-            {live && (
+            {/* lowPower: sem o anel pulsante — mesmo raciocinio do disco do
+                Spotify e do spinner do Git (ver comentarios la). */}
+            {live && !lowPower && (
               <span
                 aria-hidden
                 className="core-ping absolute inset-0 rounded-full border border-white/20"
@@ -2300,7 +2320,7 @@ function ConsoleWindow({
                 transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 className="absolute inset-0"
               >
-                <ConsoleBody cap={cap} device={device} onDevice={onDevice} />
+                <ConsoleBody cap={cap} device={device} onDevice={onDevice} lowPower={lowPower} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -2345,6 +2365,14 @@ function ConsoleWindow({
 
 export default function Features() {
   const reduce = useReducedMotionSafe();
+  // Modo fraco: pausa o autoplay entre capacidades (fica so no clique/toque),
+  // pula a digitacao letra-a-letra do pedido (ver useEffect logo abaixo) e
+  // desliga as duas animacoes CONTINUAS que as demos tem (disco do Spotify,
+  // spinner "trabalhando" do Git, anel do microfone) — repassado ate
+  // ConsoleWindow/ConsoleBody/SpotifyViz/GitViz. Ao contrario de `reduce`
+  // (preferencia do visitante), isto e por CAPACIDADE medida — ver
+  // use-low-power.tsx pra como a medicao funciona.
+  const lowPower = useLowPowerDevice();
   const [activeIdx, setActiveIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   // No celular nao existe hover, entao o "assumi o controle" que pausa o
@@ -2510,10 +2538,25 @@ export default function Features() {
       setShowReply(true);
       return;
     }
-    setCommandChars(0);
     setShowReply(false);
-    let typingTimer: ReturnType<typeof setTimeout>;
     let replyTimer: ReturnType<typeof setTimeout>;
+
+    // lowPower: pula a digitacao letra-a-letra (um setState a cada 28ms,
+    // COMMAND_CHAR_MS) — o pedido aparece pronto na hora. A demo do meio e a
+    // resposta continuam no mesmo ritmo de sempre (replyDelay normal): o que
+    // sai e so o CHURN de re-render da digitacao, nao a cena inteira, que
+    // ainda vale a pena mostrar rodando.
+    if (lowPower) {
+      setCommandChars(command.length);
+      replyTimer = setTimeout(
+        () => setShowReply(true),
+        active.replyDelay * 1000
+      );
+      return () => clearTimeout(replyTimer);
+    }
+
+    setCommandChars(0);
+    let typingTimer: ReturnType<typeof setTimeout>;
     let i = 0;
     const typeNext = () => {
       i += 1;
@@ -2536,10 +2579,14 @@ export default function Features() {
     // aparelho do Spotify entra no proprio sceneKey) — reagir so a sceneKey
     // evita reiniciar a digitacao no meio quando nada realmente mudou.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sceneKey, reduce]);
+  }, [sceneKey, reduce, lowPower]);
 
   // Auto-play: percorre as capacidades sozinho, como uma demo rodando. Para
-  // no hover/foco (o visitante assumiu o controle) e em reduced-motion.
+  // no hover/foco (o visitante assumiu o controle), em reduced-motion e em
+  // maquina fraca (lowPower) — la a troca automatica so soma timers/rerenders
+  // por cima de uma demo que ja e o suficiente pra maquina aguentar; o
+  // visitante ainda navega entre capacidades pelo clique/toque, so nao anda
+  // mais sozinho.
   //
   // A permanencia e por cena, e nao fixa: cenas curtas seguem no ritmo de
   // sempre (AUTOPLAY_MS), e as que demoram pra responder — o Git leva ~4,2s so
@@ -2548,7 +2595,7 @@ export default function Features() {
   // pedido (que antes nao existia como fase separada), senao a cena trocaria
   // com a resposta ainda mal aparecida.
   useEffect(() => {
-    if (reduce || paused || manual) return;
+    if (reduce || paused || manual || lowPower) return;
     const dwell = Math.max(
       AUTOPLAY_MS,
       command.length * COMMAND_CHAR_MS + active.replyDelay * 1000 + 1800
@@ -2558,7 +2605,7 @@ export default function Features() {
       dwell
     );
     return () => clearTimeout(t);
-  }, [reduce, paused, manual, activeIdx, active.replyDelay, command]);
+  }, [reduce, paused, manual, lowPower, activeIdx, active.replyDelay, command]);
 
   return (
     <section
@@ -2754,6 +2801,7 @@ export default function Features() {
                       reply={isLive ? reply : cap.reply}
                       sceneKey={sceneKey}
                       reduce={reduce}
+                      lowPower={lowPower}
                       device={device}
                       onDevice={setDevice}
                     />

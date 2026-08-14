@@ -273,7 +273,7 @@ export default function Hero() {
             initial={reduce ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.62, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4"
+            className="mt-9 flex flex-wrap items-center justify-center gap-x-7 gap-y-4 lg:justify-start"
           >
             {TRUST_SIGNALS.map(({ icon: Glyph, title, subtitle }, i) => (
               <React.Fragment key={title}>
@@ -308,7 +308,23 @@ export default function Hero() {
           // direita dentro da propria coluna, sem tocar a coluna do texto.
           className="order-1 flex flex-col items-center lg:order-2 lg:ml-6 xl:ml-10"
         >
-          <div ref={containerRef} className="flex w-full justify-center">
+          {/* w-[calc(100%+5rem)] + mx-[-2.5rem]: o bleed anterior usava so
+              margem negativa em cima de `w-full` (width:100%), que NAO
+              funciona — width em porcentagem e fixo em relacao ao pai,
+              margem negativa so desloca a caixa, nao aumenta ela (por isso a
+              esfera nao estava crescendo). Aqui a largura e somada
+              EXPLICITAMENTE (100% + 5rem) e a margem negativa (metade disso,
+              2.5rem de cada lado) so recentraliza a caixa maior no mesmo
+              eixo — assim o containerRef realmente fica ~80px mais largo
+              abaixo de lg, e useOrbSize (que le a largura DESTE elemento)
+              calcula uma esfera maior de verdade. O excesso que passa da
+              tela fica dentro do halo/glow borrado (jarvis-sphere.tsx), que
+              ja esmaece antes da borda — o overflow-hidden do <section> nao
+              corta uma quina reta. Desktop intacto (lg:w-full lg:mx-0). */}
+          <div
+            ref={containerRef}
+            className="mx-[-2.5rem] flex w-[calc(100%+5rem)] justify-center lg:mx-0 lg:w-full"
+          >
             <div className="relative inline-block">
               {/* `paused` so por "reduzir movimento": desenha um quadro e
                   para (ver jarvis-sphere.tsx). Continua girando em modo

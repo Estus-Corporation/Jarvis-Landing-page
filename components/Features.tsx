@@ -2414,6 +2414,27 @@ export default function Features() {
   // Tailwind pra o comportamento nunca desencontrar do layout.
   const isMobile = useMediaQuery("(max-width: 1023px)");
 
+  // Visibilidade da secao no celular: a animacao inteira (digitacao, demo,
+  // resposta, avanco automatico entre capacidades) so deve tocar enquanto
+  // "Ele age de verdade" esta de fato na tela — comeca quando o visitante
+  // rola ate ela e pausa se ele sair, em vez de ficar rodando escondida no
+  // fundo da pagina (gastando timers/re-render a toa e deixando a cena num
+  // ponto aleatorio do ciclo quando a pessoa finalmente chega nela). So
+  // importa no celular (ver `isMobile` acima, usado nos dois useEffect mais
+  // abaixo): no desktop o hover ja da controle de pausa (`paused`).
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const active = CAPS[activeIdx];
 
   // ---- Carrossel do celular ----------------------------------------------
@@ -2560,6 +2581,11 @@ export default function Features() {
       setShowReply(true);
       return;
     }
+    // Fora da tela no celular: nao inicia (nem continua) a cena. O cleanup
+    // da execucao anterior deste efeito (que roda automaticamente quando
+    // `inView` muda) ja cancela qualquer timer pendente — e isso que
+    // "pausa" a animacao ao sair da secao.
+    if (isMobile && !inView) return;
     setShowReply(false);
     let replyTimer: ReturnType<typeof setTimeout>;
 
@@ -2600,8 +2626,11 @@ export default function Features() {
     // command e active.replyDelay sao 100% funcao de sceneKey (mesmo
     // aparelho do Spotify entra no proprio sceneKey) — reagir so a sceneKey
     // evita reiniciar a digitacao no meio quando nada realmente mudou.
+    // isMobile/inView entram pra pausar/retomar no celular (ver comentario
+    // acima) — em desktop `isMobile` e sempre false e o efeito nunca reage
+    // a `inView`, entao o comportamento de la fica identico a antes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sceneKey, reduce, lowPower]);
+  }, [sceneKey, reduce, lowPower, isMobile, inView]);
 
   // Auto-play: percorre as capacidades sozinho, como uma demo rodando. Para
   // no hover/foco (o visitante assumiu o controle), em reduced-motion e em
@@ -2618,6 +2647,10 @@ export default function Features() {
   // com a resposta ainda mal aparecida.
   useEffect(() => {
     if (reduce || paused || manual || lowPower) return;
+    // Mesma pausa por visibilidade do efeito de digitacao/resposta, acima:
+    // fora da tela no celular, tambem para de avancar sozinho pra proxima
+    // capacidade.
+    if (isMobile && !inView) return;
     const dwell = Math.max(
       AUTOPLAY_MS,
       command.length * COMMAND_CHAR_MS + active.replyDelay * 1000 + 1800
@@ -2627,11 +2660,22 @@ export default function Features() {
       dwell
     );
     return () => clearTimeout(t);
-  }, [reduce, paused, manual, lowPower, activeIdx, active.replyDelay, command]);
+  }, [
+    reduce,
+    paused,
+    manual,
+    lowPower,
+    activeIdx,
+    active.replyDelay,
+    command,
+    isMobile,
+    inView,
+  ]);
 
   return (
     <section
       id="recursos"
+      ref={sectionRef}
       // pb curto de proposito: o link "Veja tudo que ele ja conecta" e uma
       // ponte pra secao seguinte, entao ele precisa ficar perto dela — com o
       // pb-28/36 antigo o link ficava boiando no meio de um vao enorme.

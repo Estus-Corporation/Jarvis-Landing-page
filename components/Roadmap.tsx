@@ -67,7 +67,7 @@ const items: RoadmapItem[] = [
   {
     icon: House,
     step: "02",
-    title: "Integração IoT",
+    title: "Dispositivos Smart",
     body: "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Chegou e já quer tudo do jeito certo? Basta pedir, e ele ajusta a casa inteira antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra quando sair — um comando só, e cada cômodo responde do jeito que você combinou.",
     bodyCompact:
       "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Peça, e ele ajusta tudo antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra saída — um comando só, e cada cômodo responde do jeito certo.",
@@ -274,6 +274,30 @@ export default function Roadmap() {
   // carrossel mobile liga isto, e ligado ele desliga o autoplay de vez.
   const [manual, setManual] = useState(false);
 
+  // abaixo de md a secao vira o carrossel de arrastar (ver mais abaixo) —
+  // subido pra ca (era declarado so la embaixo) porque o autoplay, logo a
+  // seguir, tambem precisa saber se esta no celular.
+  const isMobileCarousel = useMediaQuery("(max-width: 767px)");
+
+  // Visibilidade da secao no celular: mesmo mecanismo de Features.tsx ("Ele
+  // age de verdade") — o autoplay so deve tocar enquanto "Updates" esta de
+  // fato na tela. Comeca quando o visitante rola ate ela e pausa se ele sair,
+  // em vez de ficar avancando sozinha escondida no fundo da pagina. So
+  // importa no celular: no desktop o hover ja da controle de pausa (`paused`,
+  // acima).
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Altura do item ativo: a coluna esquerda se ajusta a ela (os itens ficam
   // sobrepostos em absolute, so o ativo visivel), pra o botao ficar sempre
   // colado no conteudo sem vao nem sobreposicao.
@@ -368,11 +392,15 @@ export default function Roadmap() {
   // hover/foco (nao incomoda quem esta lendo) e com "reduzir movimento".
   useEffect(() => {
     if (reduce || paused || manual) return;
+    // Fora da tela no celular: nao avanca sozinha. O cleanup da execucao
+    // anterior deste efeito (que roda automaticamente quando `inView` muda)
+    // ja cancela o interval pendente — e isso que "pausa" ao sair da secao.
+    if (isMobileCarousel && !inView) return;
     const id = setInterval(() => {
       setActive((prev) => (prev + 1) % items.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [active, reduce, paused, manual]);
+  }, [active, reduce, paused, manual, isMobileCarousel, inView]);
 
   const goTo = (index: number) => {
     setActive(((index % items.length) + items.length) % items.length);
@@ -387,7 +415,7 @@ export default function Roadmap() {
   // Reusa o MESMO `active` do carrossel de desktop (nao um indice proprio):
   // os dois sao a mesma "posicao no roadmap", so a pele muda com a largura
   // da tela, entao virar de tablet pra celular no meio nunca perde o lugar.
-  const isMobileCarousel = useMediaQuery("(max-width: 767px)");
+  // (isMobileCarousel foi movido pra cima, perto do autoplay — ver la.)
 
   // Altura do TITULO, empatada entre os 3 cartoes do carrossel mobile. Sem
   // isso, cada `h3` quebra no numero de linhas que o proprio texto pedir
@@ -498,6 +526,7 @@ export default function Roadmap() {
   return (
     <section
       id="futuro"
+      ref={sectionRef}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}

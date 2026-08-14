@@ -223,8 +223,9 @@ function FeatureCardBody({
                 // container inteiro so existe abaixo de `lg`, ver `lg:hidden`
                 // em Organization()) — por isso nao precisa de prefixo `lg:`
                 // nem `laptop:` aqui, so `sm:` pra telas entre 640-1023px.
-                // 275->305, 295->325: ~30px mais alto, a pedido do usuario.
-                "h-[305px] sm:h-[325px]"
+                // 275->305, 295->325: ~30px mais alto. 305->325, 325->345:
+                // mais ~20px, a pedido do usuario (de novo).
+                "h-[325px] sm:h-[345px]"
               : // Grade de desktop (cartoes Agenda/Lembretes): valor original,
                 // intacto.
                 "h-[275px] sm:h-[295px] laptop:h-[230px]"

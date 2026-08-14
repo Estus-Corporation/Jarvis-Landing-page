@@ -382,7 +382,7 @@ export default function Testimonials() {
         {/* fundo: dois carrosseis retos, um do lado do outro */}
         <div
           aria-hidden
-          className="absolute inset-0 flex justify-center gap-3 opacity-[0.45]"
+          className="absolute inset-0 flex justify-center gap-3 opacity-[0.55]"
         >
           <Marquee vertical repeat={3} paused={lowPower} className="[--duration:26s] [--gap:0.75rem]">
             {testimonials.map((item, i) => (

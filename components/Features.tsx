@@ -336,10 +336,31 @@ function JarvisMark() {
   );
 }
 
-// ---- Corpo do cartao "Jarvis": so texto puro. A caixa inteira (avatar,
-// rotulo, texto) fica escondida ate a demo do meio terminar de tocar — quem
-// decide QUANDO revelar e o pai (showReply), nao mais um timer proprio daqui
-// com pontinhos de "pensando": ver comentario no corpo de Features(). -------
+// ---- "Pensando": 3 pontinhos que piscam UM DE CADA VEZ (delay escalonado
+// na mesma animacao CSS, ver .thinking-dot em globals.css), enquanto a
+// resposta do Jarvis ainda nao chegou. Ocupa o cartao antes de showReply
+// virar true — o cartao de resposta agora fica SEMPRE visivel (pedido do
+// usuario: nao pode mais aparecer "por ultimo"), entao precisa de algo pra
+// mostrar enquanto espera a vez dele, em vez de ficar vazio ou escondido.
+function ThinkingDots() {
+  return (
+    <span className="inline-flex items-center gap-1.5" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="thinking-dot h-1.5 w-1.5 rounded-full bg-white/70"
+          style={{ animationDelay: `${i * 0.2}s` }}
+        />
+      ))}
+    </span>
+  );
+}
+
+// ---- Corpo do cartao "Jarvis": so texto puro. Quem decide se mostra ISTO
+// ou os pontinhos de ThinkingDots e o CHAMADOR (ver ConsoleWindow e o bloco
+// solto do celular, em Features()) — as duas coisas trocam o layout do
+// cartao inteiro (sem avatar/rotulo enquanto pensa, ver comentario la), nao
+// so o texto por dentro dele, entao a decisao subiu pro pai. -------------
 function JarvisReply({ text }: { text: string }) {
   return (
     <p className="line-clamp-2 text-[0.95rem] leading-snug text-white/90 sm:text-xl laptop:text-base">
@@ -2196,34 +2217,19 @@ function ConsoleWindow({
     // janelas lado a lado na tira, alturas diferentes fariam a secao pular de
     // tamanho no meio do arrasto.) Os 1o/3o atos abaixo reservam 2 linhas
     // fixas pelo mesmo motivo (ver comentario la).
-    // 540px (era 500): folga extra pras versoes mobile das demos (ver
-    // SpotifyViz/GitViz/ChromeViz/WindowsViz) terem um pouco mais de altura
-    // pra respirar sem espremer o conteudo real. sm:/lg:/laptop: intactos.
-    <div className="glow-ring relative flex h-[540px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-800/70 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[620px] lg:h-[680px] laptop:h-[600px]">
-      {/* barra de titulo */}
-      <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3.5">
-        <span className="flex gap-1.5" aria-hidden>
-          <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
-        </span>
-        <span className="ml-1 font-display text-xs font-semibold uppercase tracking-[0.15em] text-white/45">
-          Jarvis Console
-        </span>
-        <span className="ml-auto flex items-center gap-2 text-xs text-white/40">
-          {/* fora de cena o LED e so o miolo, parado: mesmo tamanho e mesmo
-              lugar, sem o halo pulsando (ver `live` no topo). */}
-          {live ? (
-            <span className="led-dot" aria-hidden />
-          ) : (
-            <span
-              aria-hidden
-              className="inline-flex h-1.5 w-1.5 rounded-full bg-white/70"
-            />
-          )}
-          ativo
-        </span>
-      </div>
+    // 500px (era 540): reduzido de leve depois que a barra de titulo saiu
+    // (ver comentario abaixo) — sobra menos altura morta no fundo do
+    // cartao. sm:/lg:/laptop: reduzidos na mesma proporcao (~40px).
+    // Sem a barra de titulo "Jarvis Console... ativo" (pedido do usuario):
+    // os tres pontinhos + rotulo + indicador "ativo" sairam, e o corpo
+    // (1o/2o/3o atos) agora comeca direto no topo do cartao.
+    // bg-ink-700: mesma cor dos cartoes de widget (Showcase.tsx/Organization.tsx)
+    // — pedido do usuario pra unificar as familias de cartao do site.
+    // 470px (era 500): reduzido de leve de novo — como os 1o/3o atos tem
+    // altura FIXA (h-14 de conteudo + padding, independente da altura do
+    // cartao), todo esse corte sai do 2o ato (a tela da demo, flex-1, o
+    // unico que sobra o que falta), sem mexer nos cartoes de usuario/Jarvis.
+    <div className="glow-ring relative flex h-[470px] flex-col overflow-hidden rounded-card border border-white/[0.12] bg-ink-700 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.9)] sm:h-[550px] lg:h-[610px] laptop:h-[530px]">
 
       {/* corpo. Os dois cartoes de fala usam o mesmo esqueleto de UMA
           linha — avatar, rotulo, divisor e frase lado a lado. O rotulo
@@ -2326,38 +2332,54 @@ function ConsoleWindow({
           </AnimatePresence>
         </div>
 
-        {/* 3o ato — a resposta. So aparece (showReply) depois que a demo
-            do meio termina de tocar — a caixa inteira fica de opacidade
-            0 ate la, NAO desmontada: se ela sumisse do fluxo, a demo
-            logo acima (flex-1) esticaria pra ocupar o espaco vazio e
-            encolheria de novo quando a resposta chegasse, um solavanco
-            de layout. Com opacidade 0 o espaco fica reservado o tempo
-            todo e ela so surge (fade + leve subida). Mais clara que o
-            cartao do usuario de proposito: e a "voz" do produto, o fim
-            da historia. */}
-        <motion.div
-          initial={false}
-          animate={{ opacity: showReply ? 1 : 0, y: showReply ? 0 : 8 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          aria-hidden={!showReply}
-          className="flex items-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3"
+        {/* 3o ato — a resposta. Fica SEMPRE visivel agora (pedido do
+            usuario: nao pode mais so aparecer no final). Enquanto a demo do
+            meio ainda toca (showReply false), o cartao mostra SO os
+            pontinhos de "pensando" (ThinkingDots), centralizados — sem
+            avatar, rotulo nem divisor, que so aparecem quando a resposta de
+            fato chega (pedido do usuario: o icone do Jarvis nao deve
+            aparecer antes disso). A troca de um layout pro outro e DIRETA,
+            sem fade/slide. Mais clara que o cartao do usuario de proposito:
+            e a "voz" do produto. */}
+        <div
+          // hidden abaixo de lg: no celular a resposta do Jarvis saiu do
+          // cartao (pedido do usuario) e virou um bloco proprio, FORA da
+          // janela do console — ver o bloco `order-3 lg:hidden` logo depois
+          // da tira de carrosseis, em Features(). Aqui dentro ela continua
+          // existindo (e reservando altura) so pro desktop, onde os 3 atos
+          // moram juntos na mesma janela.
+          // justify-center: so tem efeito quando o conteudo NAO enche a
+          // largura (os pontinhos, mais abaixo) — com a linha completa
+          // (avatar+rotulo+texto), o `flex-1` do texto ja ocupa todo o
+          // espaco livre, entao o justify-center nao muda nada ali.
+          className="hidden items-center justify-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3 lg:flex"
         >
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
-            <JarvisMark />
-          </span>
-          <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
-            Jarvis
-          </span>
-          <span
-            aria-hidden
-            className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
-          />
-          {/* mesma reserva fixa de 2 linhas do 1o ato, mesmo motivo:
-              ver comentario grande na janela do console. */}
-          <div className="flex h-14 min-w-0 flex-1 items-center">
-            <JarvisReply text={reply} />
-          </div>
-        </motion.div>
+          {showReply ? (
+            <>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
+                <JarvisMark />
+              </span>
+              <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
+                Jarvis
+              </span>
+              <span
+                aria-hidden
+                className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
+              />
+              {/* mesma reserva fixa de 2 linhas do 1o ato, mesmo motivo:
+                  ver comentario grande na janela do console. */}
+              <div className="flex h-14 min-w-0 flex-1 items-center">
+                <JarvisReply text={reply} />
+              </div>
+            </>
+          ) : (
+            // h-14: mesma altura do estado com texto (acima), pra trocar de
+            // um pro outro sem o cartao mudar de tamanho.
+            <div className="flex h-14 items-center justify-center">
+              <ThinkingDots />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -2687,10 +2709,11 @@ export default function Features() {
               altura DELES que define a linha do grid — no notebook, 7x74px
               mais os 6 vaos de 10px dao 578px, e o console do lado se ajusta
               a essa medida (ver comentario na demo, mais abaixo).
-              order-2 no celular: la a pilha vira UM botao so, e ele fica
-              ABAIXO do cartao (o cartao e o assunto; o botao e a legenda de
-              onde voce esta). No desktop o order volta a ser o do DOM. */}
-          <div className="order-2 flex flex-col gap-2.5 lg:order-none">
+              order-1 no celular: la a pilha vira UM botao so, e ele fica
+              ACIMA do cartao (pedido do usuario) — o botao passa a
+              apresentar a capacidade antes de mostrar a cena dela, em vez de
+              legendar depois. No desktop o order volta a ser o do DOM. */}
+          <div className="order-1 flex flex-col gap-2.5 lg:order-none">
             {CAPS.map((cap, i) => {
               const isActive = i === activeIdx;
               return (
@@ -2773,7 +2796,7 @@ export default function Features() {
               que anda com o dedo. */}
           <div
             ref={viewportRef}
-            className="order-1 -mx-6 overflow-hidden px-6 lg:order-none lg:mx-0 lg:overflow-visible lg:px-0"
+            className="order-2 -mx-6 overflow-hidden px-6 lg:order-none lg:mx-0 lg:overflow-visible lg:px-0"
           >
             <motion.div
               drag={isMobile ? "x" : false}
@@ -2825,6 +2848,39 @@ export default function Features() {
             </motion.div>
           </div>
 
+          {/* Resposta do Jarvis, FORA do cartao — so no celular (lg:hidden;
+              no desktop ela mora dentro da janela do console, ver o 3o ato
+              em ConsoleWindow). Mesmo desenho do bloco que saiu de dentro do
+              cartao (avatar em anel, rotulo, texto), so que como peca solta
+              abaixo dele. SEMPRE visivel (pedido do usuario: nao pode mais
+              aparecer so no final). Enquanto showReply e false, so os
+              pontinhos de "pensando" aparecem, centralizados — sem
+              avatar/rotulo, que so entram quando a resposta chega de
+              verdade (pedido do usuario). Troca direta, sem fade/slide. */}
+          <div className="order-3 flex items-center justify-center gap-2.5 rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 lg:hidden">
+            {showReply ? (
+              <>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
+                  <JarvisMark />
+                </span>
+                <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block">
+                  Jarvis
+                </span>
+                <span
+                  aria-hidden
+                  className="mx-1 hidden h-6 w-px shrink-0 bg-white/20 sm:block"
+                />
+                <div className="flex h-14 min-w-0 flex-1 items-center">
+                  <JarvisReply text={reply} />
+                </div>
+              </>
+            ) : (
+              <div className="flex h-14 items-center justify-center">
+                <ThinkingDots />
+              </div>
+            )}
+          </div>
+
           {/* BARRA DE PROGRESSO (no lugar dos pontinhos que moravam aqui):
               um trilho continuo com um polegar de 1/7 que DESLIZA junto com o
               dedo, nao um estado que troca depois de soltar. Com sete
@@ -2844,7 +2900,7 @@ export default function Features() {
               recomendados sem que o trilho precise ser grosso desse tanto, e
               os 304px de largura dividos por sete dao 43px pra cada um — a
               mesma solucao por sobreposicao do carrossel de Organization.tsx. */}
-          <div className="relative order-3 mx-auto mt-1 w-full max-w-[19rem] lg:hidden">
+          <div className="relative order-4 mx-auto mt-1 w-full max-w-[19rem] lg:hidden">
             <div
               aria-hidden
               className="h-[3px] overflow-hidden rounded-full bg-white/[0.12]"

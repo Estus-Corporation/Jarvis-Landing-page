@@ -352,6 +352,26 @@ body {
   animation-delay: var(--delay, 0s);
 }
 
+/* Pontinhos de "pensando" do cartao de resposta do Jarvis (Features.tsx,
+   ThinkingDots): cada ponto recebe um animation-delay proprio (inline, por
+   indice, mesmo padrao do wave-bar acima) pra piscar UM DE CADA VEZ em vez
+   de todos juntos. Opacidade so ate 0.25 (nao chega a sumir) — e "levemente",
+   nao um pisca-pisca forte. */
+@keyframes thinking-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.thinking-dot {
+  animation: thinking-dot 1.4s ease-in-out infinite;
+}
+
 /* Cursor piscando do terminal simulado. */
 @keyframes caret-blink {
   0%,

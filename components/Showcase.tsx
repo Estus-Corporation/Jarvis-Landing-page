@@ -490,11 +490,15 @@ export default function Showcase() {
               {WIDGETS.map((w) => (
                 <div
                   key={w.title}
-                  // bg-ink-900: mesma cor solida do fundo da secao de
-                  // Organizacao (ver `bg-ink-900` no <section> de
-                  // Organization.tsx), a pedido do usuario — o cartao passa a
-                  // ler como um recorte daquele fundo em vez de destoar dele.
-                  className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-ink-900 p-5 text-center"
+                  // bg-ink-700: pedido do usuario foi clarear um pouco mais,
+                  // quase a cor da caixa de resposta do Jarvis nos cartoes de
+                  // Capacidades (ConsoleWindow bg-ink-800/70 + a propria
+                  // caixa bg-white/[0.05] — medido o pixel renderizado:
+                  // ~rgb(30,30,32) / #1E1E20). ink-700 (#1C1C21, "cartao
+                  // destacado" na escala — ver tailwind.config.ts) e o token
+                  // mais proximo ja existente, entao reaproveitar em vez de
+                  // criar uma cor solta.
+                  className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-ink-700 p-5 text-center"
                 >
                   <RingIcon icon={w.icon} size="lg" className="mx-auto" />
                   <div>

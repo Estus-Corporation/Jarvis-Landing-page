@@ -19,13 +19,8 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
-// "Sua voz vira ação." era correto mas abstrato demais pra quem chega sem
-// contexto — "vira ação" nao diz O QUE, especificamente, acontece. Nomear o
-// Windows direto no titulo (em vez de deixar so pro subtitulo, logo abaixo)
-// da o "chao" imediato — MEU computador, de verdade — e "obedece" carrega o
-// efeito wow que "vira ação" nao tinha: e a fantasia de comandar a maquina
-// por voz, cumprida na primeira frase que a pessoa le.
-const HEADLINE = ["Fale.", "Seu", "Windows", "obedece."];
+// Texto pedido direto pelo usuario.
+const HEADLINE = ["J.A.R.V.I.S"];
 
 // Selos flutuantes ao redor da esfera: mostram, de relance, tres coisas
 // concretas que o Jarvis faz, sem exigir que a pessoa leia a secao de
@@ -211,7 +206,9 @@ export default function Hero() {
         <div className="order-2 lg:order-1">
           {/* Revelacao palavra a palavra: o titulo se monta como uma frase
               sendo dita, em vez de aparecer inteiro de uma vez. */}
-          <h1 className="mx-auto flex max-w-[15ch] flex-wrap justify-center gap-x-[0.28em] text-center font-display text-[2.75rem] font-semibold leading-[1.05] tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:mx-0 lg:justify-start lg:text-left lg:text-7xl">
+          {/* font-display (Exo 2): cara de HUD/tech, coerente com o titulo
+              agora sendo a sigla "J.A.R.V.I.S". */}
+          <h1 className="mx-auto flex max-w-[15ch] flex-wrap justify-center gap-x-[0.28em] text-center text-[2.75rem] font-display font-semibold leading-[1.05] tracking-[-0.03em] text-[#FAFAFA] sm:text-6xl lg:mx-0 lg:justify-start lg:text-left lg:text-7xl">
             {HEADLINE.map((word, i) => (
               <span key={word + i} className="overflow-hidden pb-[0.08em]">
                 <motion.span

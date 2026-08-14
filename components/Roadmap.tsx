@@ -612,9 +612,30 @@ export default function Roadmap() {
             </motion.div>
           </div>
 
+          {/* CTA uma vez so (nao por cartao): o convite vale pro roadmap
+              inteiro, nao so pro item em cena no momento. Vem ANTES da barra
+              de progresso agora (a pedido do usuario — antes a ordem era
+              barra-depois-botao) — mt-8 e o mesmo respiro que a barra tinha
+              em relacao ao carrossel logo acima. */}
+          <div className="mt-8 flex justify-center">
+            <a
+              href="#precos"
+              className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
+            >
+              Quero ser notificado!
+              <ArrowRight
+                size={17}
+                weight="bold"
+                aria-hidden
+                className="transition-transform duration-300 group-hover:translate-x-0.5"
+              />
+            </a>
+          </div>
+
           {/* Barra de progresso: mesma peca de Organization.tsx (trilho +
               polegar que segue o dedo + botoes transparentes por cima pro
-              alvo de toque, tablist real por baixo). */}
+              alvo de toque, tablist real por baixo). mt-6: o mesmo respiro
+              que o botao tinha em relacao a barra, so que invertido. */}
           <div className="relative mx-auto mt-6 w-40">
             <div
               aria-hidden
@@ -645,23 +666,6 @@ export default function Roadmap() {
                 />
               ))}
             </div>
-          </div>
-
-          {/* CTA uma vez so (nao por cartao): o convite vale pro roadmap
-              inteiro, nao so pro item em cena no momento. */}
-          <div className="mt-8 flex justify-center">
-            <a
-              href="#precos"
-              className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
-            >
-              Quero ser notificado!
-              <ArrowRight
-                size={17}
-                weight="bold"
-                aria-hidden
-                className="transition-transform duration-300 group-hover:translate-x-0.5"
-              />
-            </a>
           </div>
         </div>
 

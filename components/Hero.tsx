@@ -258,7 +258,7 @@ export default function Hero() {
                 versao com seta rejeitada antes). Sem mola e sem brilho/
                 sombra extra no hover (tambem rejeitados). */}
             <a
-              href="#precos"
+              href="#formulario"
               className="rounded-xl bg-[#FAFAFA] px-9 py-4 text-center text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] sm:w-fit sm:min-w-[280px]"
             >
               Assinar agora

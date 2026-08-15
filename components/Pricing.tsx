@@ -260,7 +260,7 @@ function PlanCard({
 
       <div>
         <a
-          href="#top"
+          href="#formulario"
           // tabIndex -1 enquanto so espiando: e o UNICO elemento focavel
           // do cartao, entao tirar ele da ordem de tab basta pra fechar o
           // cartao inteiro pra quem navega por teclado (o aria-hidden do

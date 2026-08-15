@@ -667,7 +667,7 @@ export default function Roadmap() {
               em relacao ao carrossel logo acima. */}
           <div className="mt-8 flex justify-center">
             <a
-              href="#precos"
+              href="#formulario"
               className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
             >
               Quero ser notificado!
@@ -846,7 +846,7 @@ export default function Roadmap() {
               style={{ top: buttonTop || undefined }}
             >
               <a
-                href="#precos"
+                href="#formulario"
                 className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
               >
                 Quero ser notificado!

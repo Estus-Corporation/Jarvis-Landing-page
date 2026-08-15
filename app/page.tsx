@@ -6,6 +6,7 @@ import Features from "@/components/Features";
 import Showcase from "@/components/Showcase";
 import Roadmap from "@/components/Roadmap";
 import Testimonials from "@/components/Testimonials";
+import Formulario from "@/components/Formulario";
 import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
 import Grain from "@/components/ui/grain";
@@ -88,6 +89,10 @@ export default function Home() {
           <Organization />
           <Roadmap />
           <Testimonials />
+          {/* Captura de lead ANTES de Precos: enquanto nao existe checkout, os
+              CTAs da pagina inteira (Hero, header, Futuro, Precos) desaguam
+              aqui — e quem chega ate a tabela de precos ja passou por ela. */}
+          <Formulario />
           <Pricing />
         </TracingBeam>
         <Footer />

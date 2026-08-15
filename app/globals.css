@@ -562,3 +562,15 @@ body {
 .animate-marquee-vertical {
   animation: marquee-vertical var(--duration) linear infinite;
 }
+
+/* Esteira de widgets (Showcase.tsx, mobile): rolagem nativa por baixo do
+   autoplay em JS, entao a barra de rolagem apareceria por cima dos cartoes
+   sem servir pra nada (nao ha paginas, e um loop continuo). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

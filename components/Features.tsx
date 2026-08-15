@@ -6,7 +6,6 @@ import {
   AnimatePresence,
   animate,
   useMotionValue,
-  useTransform,
   type PanInfo,
 } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
@@ -2830,36 +2829,6 @@ export default function Features() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIdx, isMobile, stride]);
 
-  // Posicao do polegar da barra de progresso, derivada direto do `x` da tira:
-  // ele acompanha o DEDO durante o arrasto, nao so o resultado depois de
-  // soltar (o clamp segura o elastico das pontas pra ele nao vazar do trilho).
-  // As paradas vem por ref porque `useTransform` so recalcula quando o `x`
-  // muda — lendo do ref a conta nunca usa uma largura velha de antes de medir
-  // ou de girar a tela.
-  //
-  // A conta e por TRECHO (parada a parada), nao uma regra de tres sobre o
-  // percurso inteiro: como a ultima parada e travada (ver minX), ela fica mais
-  // perto da anterior que as outras entre si — numa regra de tres simples o
-  // polegar chegaria torto no meio do caminho e desmentiria os sete alvos
-  // iguais logo abaixo dele.
-  //
-  // O deslocamento sai em % do PROPRIO polegar (que mede 1/7 do trilho), entao
-  // "andar uma parada" e sempre exatamente 100% — a barra nao precisa saber
-  // quantos pixels o trilho tem, e continua certa em qualquer largura de tela.
-  const stopsRef = useRef<number[]>([]);
-  stopsRef.current = CAPS.map((_, i) => posFor(i));
-  const thumbX = useTransform(x, (v) => {
-    const stops = stopsRef.current;
-    const last = stops[stops.length - 1];
-    if (!last) return "0%";
-    const pos = Math.min(0, Math.max(last, v));
-    let seg = stops.findIndex((s, i) => i > 0 && pos >= s) - 1;
-    if (seg < 0) seg = stops.length - 2;
-    const span = stops[seg + 1] - stops[seg];
-    const frac = seg + (span ? (pos - stops[seg]) / span : 0);
-    return `${frac * 100}%`;
-  });
-
   // Arrastar pra ESQUERDA avanca (o dedo empurra o cartao atual pra fora,
   // puxando o proximo), pra DIREITA volta — convencao de qualquer carrossel de
   // app, e a mesma de Organization.tsx. Nos extremos, Math.min/max trava o
@@ -3340,55 +3309,41 @@ export default function Features() {
             })}
           </div>
 
-          {/* BARRA DE PROGRESSO (no lugar dos pontinhos que moravam aqui):
-              um trilho continuo com um polegar de 1/7 que DESLIZA junto com o
-              dedo, nao um estado que troca depois de soltar. Com sete
-              capacidades os pontinhos ja estavam no limite — sete tracinhos
-              lado a lado viram enfeite, e cada alvo de toque ficava com a
-              largura de um grao de arroz. O trilho diz as mesmas duas coisas
-              (quantas existem, em qual voce esta) e mais uma que faltava
-              justamente durante o gesto: o quanto do caminho entre duas ja
-              foi andado. O deslocamento vem de `thumbX`, derivado do mesmo
-              `x` da tira, entao os dois nunca podem discordar.
-
-              Continua sendo tablist com um botao por capacidade — a barra e a
-              pele, a navegacao por toque/teclado e a mesma de antes (teclado e
-              leitor de tela nao dao swipe; um carrossel so-gesto seria
-              intocavel pra eles). Os botoes sao uma camada TRANSPARENTE por
-              cima do trilho: assim cada alvo tem os 44px de altura
-              recomendados sem que o trilho precise ser grosso desse tanto, e
-              os 304px de largura dividos por sete dao 43px pra cada um — a
-              mesma solucao por sobreposicao do carrossel de Organization.tsx. */}
-          <div className="relative order-4 mx-auto mt-1 w-full max-w-[19rem] lg:hidden">
-            <div
-              aria-hidden
-              className="h-[3px] overflow-hidden rounded-full bg-white/[0.12]"
-            >
-              <motion.span
-                style={{ x: thumbX, width: `${100 / CAPS.length}%` }}
-                className="block h-full rounded-full bg-white"
-              />
-            </div>
-            <div
-              className="absolute inset-x-0 top-1/2 flex -translate-y-1/2"
-              role="tablist"
-              aria-label="Capacidades"
-            >
-              {CAPS.map((cap, i) => (
-                <button
-                  key={cap.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={i === activeIdx}
-                  aria-label={cap.tab}
-                  onClick={() => {
-                    setManual(true);
-                    setActiveIdx(i);
-                  }}
-                  className="h-11 flex-1 cursor-pointer"
-                />
-              ))}
-            </div>
+          {/* PONTINHOS — 3a versao, mesma peca de Organization.tsx (ver o
+              comentario grande la, com a explicacao do `layoutId`). Sem
+              cartao envolvendo; a ativa vira uma pilulazinha que desliza ate
+              a posicao nova. layoutId proprio desta secao (tem que ser unico
+              na pagina inteira). */}
+          <div
+            className="order-4 mx-auto mt-1 flex w-fit items-center gap-2 lg:hidden"
+            role="tablist"
+            aria-label="Capacidades"
+          >
+            {CAPS.map((cap, i) => (
+              <button
+                key={cap.id}
+                type="button"
+                role="tab"
+                aria-selected={i === activeIdx}
+                aria-label={cap.tab}
+                onClick={() => {
+                  setManual(true);
+                  setActiveIdx(i);
+                }}
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center"
+              >
+                {i === activeIdx ? (
+                  <motion.span
+                    layoutId="features-carousel-dot"
+                    transition={{ type: "spring", stiffness: 500, damping: 34 }}
+                    aria-hidden
+                    className="h-1.5 w-5 rounded-full bg-white"
+                  />
+                ) : (
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-white/25" />
+                )}
+              </button>
+            ))}
           </div>
         </motion.div>
 

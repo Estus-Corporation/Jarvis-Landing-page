@@ -4,7 +4,6 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   motion,
   useMotionValue,
-  useTransform,
   animate,
   type PanInfo,
 } from "motion/react";
@@ -99,12 +98,6 @@ const SWIPE_VELOCITY = 380; // px/s no momento em que o dedo solta
 // nunca o tamanho.
 const SLIDE_INSET = 20; // px que o cartao cede pro vizinho (= 1.25rem)
 const GAP = 16; // px de vao entre cartoes (= gap-4)
-
-// Largura do trilho da barra de progresso, em px (o polegar e 1/CARDS.length
-// dela). Fica em JS, e nao so no CSS, porque o deslocamento do polegar e
-// calculado em pixels a partir do `x` da tira — as duas contas precisam sair
-// do MESMO numero.
-const RAIL_WIDTH = 168;
 
 // ---- Icone em anel duplo -----------------------------------------------------
 function RingIcon({ icon: Glyph }: { icon: Icon }) {
@@ -856,33 +849,6 @@ export default function Organization() {
     animate(x, posFor(idx), { type: "spring", stiffness: 380, damping: 42 });
   };
 
-  // Posicao do polegar da barra de progresso, derivada direto do `x` da tira:
-  // ele acompanha o DEDO durante o arrasto, nao so o resultado depois de
-  // soltar (o clamp segura o elastico das pontas, pra ele nao vazar do
-  // trilho). As paradas vem por ref porque `useTransform` so recalcula quando
-  // o `x` muda — lendo do ref a conta nunca usa uma largura velha de antes de
-  // medir ou de girar a tela.
-  //
-  // A conta e por TRECHO (parada a parada), nao uma regra de tres sobre o
-  // percurso inteiro: como a ultima parada e travada (ver minX), ela fica mais
-  // perto da anterior que as outras entre si — numa regra de tres simples o
-  // polegar chegaria torto no cartao do meio (~55% em vez de 50%) e a barra
-  // desmentiria os tres alvos iguais logo abaixo dela.
-  const stopsRef = useRef<number[]>([]);
-  stopsRef.current = CARDS.map((_, i) => posFor(i));
-  const thumbX = useTransform(x, (v) => {
-    const stops = stopsRef.current;
-    const last = stops[stops.length - 1];
-    const travel = RAIL_WIDTH - RAIL_WIDTH / CARDS.length;
-    if (!last) return 0;
-    const pos = Math.min(0, Math.max(last, v));
-    let seg = stops.findIndex((s, i) => i > 0 && pos >= s) - 1;
-    if (seg < 0) seg = stops.length - 2;
-    const span = stops[seg + 1] - stops[seg];
-    const frac = seg + (span ? (pos - stops[seg]) / span : 0);
-    return (frac / (stops.length - 1)) * travel;
-  });
-
   useEffect(() => {
     snapTo(activeIdx, cardWidth);
     // cardWidth entra nas deps: se a tela girar/redimensionar com o
@@ -970,7 +936,7 @@ export default function Organization() {
               ja que ele nao e mais 100% da largura do pai. */}
           <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-              Tudo em um lugar
+              Se organize melhor
             </h2>
             <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
           </div>
@@ -1093,51 +1059,47 @@ export default function Organization() {
             </motion.div>
           </div>
 
-          {/* BARRA DE PROGRESSO (no lugar dos pontinhos que moravam aqui):
-              um trilho continuo com um polegar de 1/3 que DESLIZA junto com o
-              dedo, nao um estado que troca depois de soltar. Os pontinhos
-              diziam so "voce esta no 1 de 3"; o trilho diz tambem "voce esta
-              no meio do caminho entre dois" — que e a informacao que falta
-              justamente durante o gesto, quando o cartao esta em transito.
-              O deslocamento vem de `thumbX`, derivado do mesmo `x` da tira
-              (ver la em cima), entao os dois nunca podem discordar.
-
-              Continua sendo tablist com um botao por cartao — a barra e a
-              pele, a navegacao por toque/teclado e a mesma de antes. Os
-              botoes sao uma camada TRANSPARENTE por cima do trilho: assim
-              cada alvo tem os 44px de altura recomendados sem que o trilho
-              precise ser grosso desse tanto (mesma ideia do p-5 em volta do
-              traco de 6px em Features.tsx, resolvida por sobreposicao). */}
+          {/* PONTINHOS — 3a versao (a pedido do usuario, que nao gostou nem
+              da barra de progresso original nem do cartao-pilula que veio
+              depois). Sem cartao envolvendo agora: as bolinhas ficam soltas
+              direto no fundo da secao. A ativa NAO so fica maior — ela vira
+              uma pilulazinha (h-1.5 w-5) que DESLIZA ate a posicao nova com
+              `layoutId`, o truque de "shared layout" do motion: como so um
+              elemento por vez tem esse layoutId na arvore (troca de botao pro
+              botao quando `activeIdx` muda), o motion detecta que "o mesmo"
+              elemento mudou de lugar/tamanho entre um render e outro e anima
+              o voo (posicao + largura) sozinho — nao precisa calcular
+              nenhuma posicao em pixel na mao, ao contrario da barra antiga.
+              layoutId precisa ser UNICO na pagina inteira (nao so nesta
+              secao), senao o motion tentaria "voar" a pilula desta secao ate
+              a de outra. */}
           <div
-            className="relative mx-auto mt-6"
-            style={{ width: RAIL_WIDTH }}
+            className="mx-auto mt-6 flex w-fit items-center gap-2"
+            role="tablist"
+            aria-label="Recursos de organização"
           >
-            <div
-              aria-hidden
-              className="h-[3px] overflow-hidden rounded-full bg-white/[0.12]"
-            >
-              <motion.span
-                style={{ x: thumbX, width: RAIL_WIDTH / CARDS.length }}
-                className="block h-full rounded-full bg-white"
-              />
-            </div>
-            <div
-              className="absolute inset-x-0 top-1/2 flex -translate-y-1/2"
-              role="tablist"
-              aria-label="Recursos de organização"
-            >
-              {CARDS.map((card, i) => (
-                <button
-                  key={card.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={i === activeIdx}
-                  aria-label={card.title}
-                  onClick={() => setActiveIdx(i)}
-                  className="h-11 flex-1 cursor-pointer"
-                />
-              ))}
-            </div>
+            {CARDS.map((card, i) => (
+              <button
+                key={card.id}
+                type="button"
+                role="tab"
+                aria-selected={i === activeIdx}
+                aria-label={card.title}
+                onClick={() => setActiveIdx(i)}
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center"
+              >
+                {i === activeIdx ? (
+                  <motion.span
+                    layoutId="org-carousel-dot"
+                    transition={{ type: "spring", stiffness: 500, damping: 34 }}
+                    aria-hidden
+                    className="h-1.5 w-5 rounded-full bg-white"
+                  />
+                ) : (
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-white/25" />
+                )}
+              </button>
+            ))}
           </div>
         </motion.div>
       </div>

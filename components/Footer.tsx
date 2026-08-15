@@ -158,8 +158,16 @@ export default function Footer() {
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 mx-auto max-w-6xl wide:max-w-shell"
       >
-        <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
-          <div className="col-span-2 sm:col-span-1">
+        {/* grid-cols-1 no celular (era grid-cols-2 desde o inicio, nao so a
+            partir de sm): com 2 colunas e 3 grupos de links (Produto/
+            Empresa/Legal) depois da marca, a ultima linha ficava 1-de-2 —
+            "Legal" sozinho a esquerda com uma coluna vazia do lado, torto
+            (pedido do usuario pra organizar melhor o rodape no celular).
+            Empilhado numa coluna so, cada grupo (marca + os 3) vira uma
+            linha inteira, sem sobra nenhuma. sm:grid-cols-4 continua igual:
+            o layout de desktop (marca + 3 grupos lado a lado) nao mudou. */}
+        <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-4 sm:gap-10">
+          <div>
             <a href="#top" className="flex items-center gap-2.5">
               <div className="relative flex h-5 w-5 items-center justify-center">
                 <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" />

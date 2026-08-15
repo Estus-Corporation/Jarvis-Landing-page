@@ -6,7 +6,6 @@ import {
   motion,
   animate,
   useMotionValue,
-  useTransform,
   type PanInfo,
 } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
@@ -491,20 +490,6 @@ export default function Roadmap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, isMobileCarousel, mobileStride]);
 
-  const mobileStopsRef = useRef<number[]>([]);
-  mobileStopsRef.current = items.map((_, i) => posForMobile(i));
-  const mobileThumbX = useTransform(mobileX, (v) => {
-    const stops = mobileStopsRef.current;
-    const last = stops[stops.length - 1];
-    if (!last) return "0%";
-    const pos = Math.min(0, Math.max(last, v));
-    let seg = stops.findIndex((s, i) => i > 0 && pos >= s) - 1;
-    if (seg < 0) seg = stops.length - 2;
-    const span = stops[seg + 1] - stops[seg];
-    const frac = seg + (span ? (pos - stops[seg]) / span : 0);
-    return `${frac * 100}%`;
-  });
-
   // Arrastar pra ESQUERDA avanca, pra DIREITA volta — mesma convencao dos
   // outros carrosseis. Ao contrario de `goTo` (usado pelas setas do
   // desktop), NAO da a volta nas pontas: Math.min/max trava no primeiro e
@@ -581,17 +566,22 @@ export default function Roadmap() {
             (fora do cartao, ja que vale pro roadmap inteiro) a barra de
             progresso e o CTA. */}
         <div className="mt-10 md:hidden">
-          {/* px-4: o viewport tinha overflow-hidden ENCOSTADO na borda do
+          {/* px-8: o viewport tinha overflow-hidden ENCOSTADO na borda do
               cartao (zero folga), entao a luz externa da imagem (o halo
               branco, ver shadow dela mais abaixo) nunca tinha espaco pra
-              se espalhar — era cortada no mesmo instante em que nascia,
-              nos dois lados (pedido do usuario foi tirar esse corte). Com
-              padding aqui, o `overflow-hidden` passa a recortar 16px ALEM
-              da borda do cartao (o `contentRect` que mede a largura pro
-              calculo do arrasto ja desconta esse padding sozinho, entao o
-              carrossel continua parando no lugar certo sem nenhuma conta
-              manual). */}
-          <div ref={mobileViewportRef} className="overflow-hidden px-4">
+              se espalhar — era cortada no mesmo instante em que nascia, nos
+              dois lados (pedido do usuario foi tirar esse corte). Era px-4
+              (16px) antes, mas o halo (blur 56px, spread -14px) se estende
+              uns ~14-20px pra fora da borda — perto demais dos 16px, sobrava
+              so uma margem de 0-2px e a parte mais forte do brilho (perto da
+              borda) ainda saia cortada nos dois lados (o usuario via isso
+              como "algo invisivel" comendo a luz — reportado de novo depois
+              do primeiro ajuste). Com padding aqui, o `overflow-hidden`
+              passa a recortar 32px ALEM da borda do cartao (o `contentRect`
+              que mede a largura pro calculo do arrasto ja desconta esse
+              padding sozinho, entao o carrossel continua parando no lugar
+              certo sem nenhuma conta manual). */}
+          <div ref={mobileViewportRef} className="overflow-hidden px-8">
             <motion.div
               drag={isMobileCarousel ? "x" : false}
               dragConstraints={{ left: mobileMinX, right: 0 }}
@@ -690,40 +680,42 @@ export default function Roadmap() {
             </a>
           </div>
 
-          {/* Barra de progresso: mesma peca de Organization.tsx (trilho +
-              polegar que segue o dedo + botoes transparentes por cima pro
-              alvo de toque, tablist real por baixo). mt-6: o mesmo respiro
-              que o botao tinha em relacao a barra, so que invertido. */}
-          <div className="relative mx-auto mt-6 w-40">
-            <div
-              aria-hidden
-              className="h-[3px] overflow-hidden rounded-full bg-white/[0.12]"
-            >
-              <motion.span
-                style={{ x: mobileThumbX, width: `${100 / items.length}%` }}
-                className="block h-full rounded-full bg-white"
-              />
-            </div>
-            <div
-              className="absolute inset-x-0 top-1/2 flex -translate-y-1/2"
-              role="tablist"
-              aria-label="Próximas atualizações"
-            >
-              {items.map((item, index) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  role="tab"
-                  aria-selected={index === active}
-                  aria-label={`Ir para "${item.title}"`}
-                  onClick={() => {
-                    setManual(true);
-                    setActive(index);
-                  }}
-                  className="h-11 flex-1 cursor-pointer"
-                />
-              ))}
-            </div>
+          {/* Pontinhos — 3a versao, mesma peca de Organization.tsx (ver o
+              comentario grande la, com a explicacao do `layoutId`). Sem
+              cartao envolvendo; a ativa vira uma pilulazinha que desliza ate
+              a posicao nova. mt-6: o mesmo respiro que o botao tinha em
+              relacao a barra que morava aqui, so que invertido. layoutId
+              proprio desta secao (tem que ser unico na pagina inteira). */}
+          <div
+            className="mx-auto mt-6 flex w-fit items-center gap-2"
+            role="tablist"
+            aria-label="Próximas atualizações"
+          >
+            {items.map((item, index) => (
+              <button
+                key={item.title}
+                type="button"
+                role="tab"
+                aria-selected={index === active}
+                aria-label={`Ir para "${item.title}"`}
+                onClick={() => {
+                  setManual(true);
+                  setActive(index);
+                }}
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center"
+              >
+                {index === active ? (
+                  <motion.span
+                    layoutId="roadmap-carousel-dot"
+                    transition={{ type: "spring", stiffness: 500, damping: 34 }}
+                    aria-hidden
+                    className="h-1.5 w-5 rounded-full bg-white"
+                  />
+                ) : (
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-white/25" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
 

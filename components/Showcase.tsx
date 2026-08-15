@@ -6,7 +6,6 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { useLenis } from "lenis/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
-import { Marquee } from "@/components/ui/3d-testimonials";
 import {
   CloudSun,
   MusicNotes,
@@ -36,20 +35,26 @@ import SectionEyebrow from "@/components/ui/section-eyebrow";
 // `active`, o autoplay, o efeito de digitacao e os botoes. A secao virou
 // conteudo parado: chega, mostra e deixa ler.
 //
-// No celular os quatro widgets viram uma ESTEIRA continua (`Marquee`, de
-// ui/3d-testimonials.tsx — a mesma peca que ja anima os depoimentos desta
-// pagina, so que horizontal em vez de vertical). Diferenca deliberada dos
-// carrosseis de Organization.tsx/Features.tsx: aqueles param num cartao por
-// vez, arrastados pelo dedo, porque cada cartao la carrega uma maquete
+// No celular os quatro widgets viram uma ESTEIRA continua e ROLAVEL
+// (`useAutoScrollCarousel`, abaixo). Diferenca deliberada dos carrosseis de
+// Organization.tsx/Features.tsx: aqueles param num cartao por vez, arrastados
+// pelo dedo (drag do motion), porque cada cartao la carrega uma maquete
 // INTEIRA que pede leitura parada. Os widgets sao 4 fatos curtos — icone,
-// nome, uma frase — que nao competem por atencao entre si, entao andar
-// sozinho em loop (sem parar, sem esperar gesto) le mais como "dashboard
-// viva" (o proprio nome da secao) do que como formulario de passo a passo.
-// Nao ha estado nenhum aqui: sem indice ativo, sem drag, sem barra de
-// progresso — a animacao e 100% CSS (@keyframes marquee, em globals.css),
-// e o global `prefers-reduced-motion` (tambem em globals.css) ja para
-// qualquer animacao CSS da pagina, entao nao precisa de tratamento extra
-// pra reduced-motion aqui.
+// nome, uma frase — que nao competem por atencao entre si, entao o padrao e
+// andar sozinho em loop, sem esperar gesto nenhum — mas a pedido do usuario
+// o dedo tambem pode tomar o controle: e uma rolagem NATIVA de verdade
+// (overflow-x-auto + scroll-left), nao um drag reimplementado, entao ganha
+// o momentum/elastico de borda do sistema de graca. Encostar no cartao pausa
+// o autoplay na hora; ele so volta a andar sozinho depois de um tempo sem
+// nenhum evento de scroll (usuario parou de mexer), retomando de onde a
+// rolagem manual deixou — nunca pula de volta pro inicio.
+//
+// O "loop infinito" e um truque de scrollLeft, nao de CSS: a lista real (4
+// itens) e desenhada 2x seguidas, e ao cruzar a metade do scrollWidth o
+// scrollLeft e devolvido pra tras nesse mesmo valor — como as duas metades
+// sao identicas, o salto e invisivel. Respeita `prefers-reduced-motion`
+// (via useReducedMotionSafe): com reduce=true o autoplay nem liga, so sobra
+// rolagem manual comum.
 
 type Widget = { icon: Icon; title: string; note: string };
 
@@ -116,6 +121,85 @@ function RingIcon({
       <Glyph size={glyph} weight="light" aria-hidden className="text-white/85" />
     </span>
   );
+}
+
+// ---- Esteira rolavel com autoplay (mobile) ------------------------------------
+// px/frame do avanco automatico. Partiu de um valor calibrado pra bater com
+// o ritmo da esteira antiga (CSS `animate-marquee`, --duration:26s pra
+// ~960px de largura de um conjunto de 4 cartoes => ~37px/s => ~0.6px a
+// 60fps) e foi reduzido pela metade a pedido do usuario — o ritmo original
+// lia rapido demais pra ler os 4 cartoes com calma.
+const AUTOSCROLL_SPEED = 0.3;
+// Quanto tempo parado (sem evento de scroll) ate o autoplay retomar.
+const AUTOSCROLL_RESUME_DELAY = 2200;
+
+function useAutoScrollCarousel(reduce: boolean) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  // Ref, nao state: o passo roda a cada frame dentro do rAF, e um state
+  // reagendaria o efeito (e recriaria o loop) a cada pausa/retomada.
+  const pausedRef = useRef(false);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Acumulador em ponto flutuante — NAO da pra usar `el.scrollLeft` como a
+  // propria fonte da verdade entre frames: o navegador arredonda essa
+  // propriedade pro inteiro mais proximo a cada leitura, entao um incremento
+  // fracionario (AUTOSCROLL_SPEED < 1) soma em cima do valor ja arredondado
+  // e pode nunca passar do proximo inteiro (bug medido: com 0.3, 0+0.3=0.3
+  // arredonda de volta pra 0 todo frame, e o carrossel nunca sai do lugar).
+  // Mantendo a soma aqui, o navegador so arredonda na hora de PINTAR — a
+  // precisao entre frames fica intacta.
+  const posRef = useRef(0);
+
+  useEffect(() => {
+    if (reduce) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    posRef.current = el.scrollLeft;
+
+    let rafId: number;
+    const step = () => {
+      if (!pausedRef.current) {
+        const half = el.scrollWidth / 2;
+        posRef.current += AUTOSCROLL_SPEED;
+        if (posRef.current >= half) posRef.current -= half;
+        el.scrollLeft = posRef.current;
+      }
+      rafId = requestAnimationFrame(step);
+    };
+    rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
+  }, [reduce]);
+
+  useEffect(() => () => clearTimeout(resumeTimerRef.current), []);
+
+  // Toque/clique no cartao tira o controle do autoplay imediatamente — antes
+  // mesmo do primeiro evento de scroll, senao o dedo "briga" um instante com
+  // o avanco automatico.
+  const pause = useCallback(() => {
+    pausedRef.current = true;
+    clearTimeout(resumeTimerRef.current);
+  }, []);
+
+  // Cada evento de scroll (arraste, momentum apos soltar o dedo, ou o
+  // proprio autoplay) reageta o wraparound, ressincroniza o acumulador com a
+  // posicao real (pra retomada nao pular de volta pro ponto onde o autoplay
+  // tinha parado antes do usuario mexer) e, se pausado, adia a retomada —
+  // so volta a andar sozinho depois de ficar `AUTOSCROLL_RESUME_DELAY` sem
+  // nenhum evento novo.
+  const onScroll = useCallback(() => {
+    const el = scrollerRef.current;
+    if (el) {
+      const half = el.scrollWidth / 2;
+      if (el.scrollLeft >= half) el.scrollLeft -= half;
+      posRef.current = el.scrollLeft;
+    }
+    if (!pausedRef.current) return;
+    clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      pausedRef.current = false;
+    }, AUTOSCROLL_RESUME_DELAY);
+  }, []);
+
+  return { scrollerRef, pause, onScroll };
 }
 
 // ---- Lightbox ----------------------------------------------------------------
@@ -237,6 +321,7 @@ export default function Showcase() {
   // acende aneis que o visitante nao pediu.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const close = useCallback(() => setExpanded(false), []);
+  const { scrollerRef, pause, onScroll } = useAutoScrollCarousel(reduce);
 
   return (
     <section
@@ -299,7 +384,7 @@ export default function Showcase() {
               titulo na mesma linha do rotulo em telas largas). */}
           <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-              Uma dashboard viva
+              Monte sua tela
             </h2>
             <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
           </div>
@@ -495,50 +580,54 @@ export default function Showcase() {
             ))}
           </div>
 
-          {/* Celular (abaixo de lg): esteira continua, sem parada nenhuma —
-              anda sozinha pra esquerda em loop infinito. `Marquee` (mesma
-              peca das esteiras de depoimento) repete os 4 cartoes 3x
-              (repeat=3) e anima o BLOCO inteiro em `translateX(-100% -
-              gap)`; quando um bloco sai completamente, o proximo ja esta
-              exatamente onde o primeiro comecou, entao o loop nunca mostra
-              costura. -mx-6 px-6 sangra a esteira ate a borda real da tela
-              (o titulo/paragrafo acima continuam no respiro normal da
-              secao) — e os degrades nas pontas escondem o corte abrupto de
-              onde os cartoes entram/saem.
-              Altura MENOR que a versao anterior (h-40 = 160px, era h-60 =
-              240px): sem gesto pra guiar, um cartao mais compacto deixa
-              o olho ver mais de um por vez enquanto a esteira passa. */}
+          {/* Celular (abaixo de lg): esteira continua e rolavel. A lista de
+              4 cartoes e desenhada 2x seguidas (repeticao minima que basta
+              pro truque de wraparound em `useAutoScrollCarousel` — nao
+              precisa do buffer de 3x que o `Marquee` antigo usava, porque
+              ali a segunda copia so precisava cobrir o vazio atras do
+              translateX; aqui e scrollLeft, entao 2 copias identicas ja
+              fecham o loop sem costura visivel). -mx-6 px-6 sangra a esteira
+              ate a borda real da tela (o titulo/paragrafo acima continuam
+              no respiro normal da secao). touch-pan-x + no-scrollbar: deixa
+              o gesto horizontal nativo (com momentum/elastico do sistema)
+              sem a barra de rolagem sobrando por cima dos cartoes.
+              Altura MENOR que a versao original antes do Marquee (h-40 =
+              160px, era h-60 = 240px): um cartao mais compacto deixa o olho
+              ver mais de um por vez enquanto a esteira passa. */}
           <motion.div
             initial={reduce ? false : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.6, ease: EASE }}
-            className="relative -mx-6 mt-10 overflow-hidden lg:hidden"
+            ref={scrollerRef}
+            onScroll={onScroll}
+            onPointerDown={pause}
+            onTouchStart={pause}
+            onWheel={pause}
+            className="no-scrollbar relative -mx-6 mt-10 flex touch-pan-x gap-4 overflow-x-auto px-6 lg:hidden"
           >
-            <Marquee repeat={3} className="[--duration:26s] [--gap:1rem] p-1">
-              {WIDGETS.map((w) => (
-                <div
-                  key={w.title}
-                  // bg-[#151519]: mais um pouquinho mais escuro (era
-                  // #18181C) — pedido do usuario, so pra este cartao
-                  // (widgets, mobile). Fora da escala de proposito (mesmo
-                  // raciocinio do bg-[#111114] em Organization.tsx): o
-                  // ajuste pedido e mais fino do que o degrau inteiro ate
-                  // ink-800 (#141417), que escureceria demais.
-                  className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-[#151519] p-5 text-center"
-                >
-                  <RingIcon icon={w.icon} size="lg" className="mx-auto" />
-                  <div>
-                    <h3 className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#FAFAFA]">
-                      {w.title}
-                    </h3>
-                    <p className="mt-1 text-[13px] leading-relaxed text-white/50">
-                      {w.note}
-                    </p>
-                  </div>
+            {[...WIDGETS, ...WIDGETS].map((w, i) => (
+              <div
+                key={`${w.title}-${i}`}
+                // bg-[#151519]: mais um pouquinho mais escuro (era
+                // #18181C) — pedido do usuario, so pra este cartao
+                // (widgets, mobile). Fora da escala de proposito (mesmo
+                // raciocinio do bg-[#111114] em Organization.tsx): o
+                // ajuste pedido e mais fino do que o degrau inteiro ate
+                // ink-800 (#141417), que escureceria demais.
+                className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-[#151519] p-5 text-center"
+              >
+                <RingIcon icon={w.icon} size="lg" className="mx-auto" />
+                <div>
+                  <h3 className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#FAFAFA]">
+                    {w.title}
+                  </h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-white/50">
+                    {w.note}
+                  </p>
                 </div>
-              ))}
-            </Marquee>
+              </div>
+            ))}
           </motion.div>
         </div>
       </div>

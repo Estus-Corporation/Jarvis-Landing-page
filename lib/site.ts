@@ -4,8 +4,11 @@
 // (na Vercel, em Project Settings > Environment Variables) com o dominio real.
 // O fallback de localhost so serve para desenvolvimento: se ele for para o ar,
 // as URLs canonicas e as imagens de OG apontam para lugar nenhum.
+// "||" e nao "??": uma var DEFINIDA mas vazia (NEXT_PUBLIC_SITE_URL= no
+// .env, comum de sobrar num template preenchido aos poucos) e string vazia,
+// nao undefined — "??" deixa passar, "new URL('')" quebra o build inteiro.
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export const SITE = {
   name: "Jarvis",

@@ -17,18 +17,19 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 // Convite da Comunidade do WhatsApp, mostrado na tela de sucesso.
 //
-// TROQUE ANTES DE DIVULGAR: crie a Comunidade no WhatsApp Business, copie o
-// link de convite e cole aqui (ou defina NEXT_PUBLIC_WHATSAPP_COMMUNITY_URL no
-// ambiente). Enquanto estiver vazio, a tela de sucesso continua funcionando: em
-// vez do botao, ela promete o convite por mensagem — nao inventa um link que
-// leva a lugar nenhum.
+// Nao e segredo — um link de convite EXISTE pra ser divulgado — entao fica
+// hardcoded aqui como default em vez de depender so de env var. A env var
+// NEXT_PUBLIC_WHATSAPP_COMMUNITY_URL continua funcionando como override, util
+// se o link precisar ser trocado (rotacionado, ou virar outro canal) sem
+// esperar um deploy — so cadastrar a var na Vercel que ela assume na hora.
 //
 // Comunidade, nao grupo comum: grupo tem teto de 1024 membros, vira ruido bem
 // antes disso e o link de convite pode ser resetado (quebrando divulgacao ja
 // feita). Comunidade tem canal de Avisos, onde so admin posta — que e
 // exatamente o formato de "te aviso quando lancar".
 const WHATSAPP_COMMUNITY_URL =
-  process.env.NEXT_PUBLIC_WHATSAPP_COMMUNITY_URL ?? "";
+  process.env.NEXT_PUBLIC_WHATSAPP_COMMUNITY_URL ??
+  "https://chat.whatsapp.com/CmCz8lGmQVuD3NsLRSnvxV";
 
 type FieldName = "nome" | "whatsapp" | "email";
 type Values = Record<FieldName, string>;

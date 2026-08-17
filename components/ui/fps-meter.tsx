@@ -23,7 +23,7 @@ const SECTION_NAMES: Record<string, string> = {
   organizacao: "Organização",
   futuro: "Próximas atualizações",
   depoimentos: "Depoimentos",
-  precos: "Preços",
+  formulario: "Lista de espera",
 };
 
 // Qual secao esta ocupando o meio da tela agora. O meio, e nao o topo, porque

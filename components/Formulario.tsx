@@ -194,7 +194,7 @@ export default function Formulario() {
       className="relative overflow-hidden border-t border-white/[0.07] bg-[#0C0C0E] px-6 pb-24 pt-20 sm:pb-28 sm:pt-28 lg:px-10 laptop:pb-16 laptop:pt-16 wide:px-16"
     >
       {/* linha divisoria: mesmo brilho estatico (sem animacao) das outras
-          secoes — ver Pricing.tsx/Testimonials.tsx. Fica por cima do border-t
+          secoes — ver Testimonials.tsx/Roadmap.tsx. Fica por cima do border-t
           solido do <section>, que continua ali por baixo. */}
       <div
         aria-hidden
@@ -220,9 +220,9 @@ export default function Formulario() {
           <div className="flex justify-center">
             <SectionEyebrow>Lista de espera</SectionEyebrow>
           </div>
-          {/* Mesma formula de fonte fluida das demais secoes (ver Pricing.tsx /
-              Testimonials.tsx) + wrapper mx-auto w-fit pra linha do titulo casar
-              com a largura da frase em qualquer tela. */}
+          {/* Mesma formula de fonte fluida das demais secoes (ver
+              Testimonials.tsx/Roadmap.tsx) + wrapper mx-auto w-fit pra linha
+              do titulo casar com a largura da frase em qualquer tela. */}
           <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight font-display text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
               Entre para a lista

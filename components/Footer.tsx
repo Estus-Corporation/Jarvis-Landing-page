@@ -19,7 +19,7 @@ const footerLinks = [
       { label: "Interface", href: "#interface" },
       { label: "Organização", href: "#organizacao" },
       { label: "Depoimentos", href: "#depoimentos" },
-      { label: "Preços", href: "#precos" },
+      { label: "Lista de espera", href: "#formulario" },
     ],
   },
   {
@@ -112,9 +112,9 @@ export default function Footer() {
 
   // Era o unico bloco da pagina sem entrada por scroll: todo o resto ja
   // aparece com fade+subida ao entrar na tela, e o rodape so surgia estatico.
-  // ink-900, nao ink-950: a secao anterior (Precos) ja e ink-950. Antes havia
-  // o fechamento (CTA) em ink-900 entre as duas, dando a costura visual; sem
-  // ele, o rodape precisa ser quem quebra a cor.
+  // ink-900: a secao anterior (Formulario) usa #0C0C0E — quebra o tom o
+  // suficiente pra costura ficar visivel sem precisar de um bloco de
+  // transicao a mais entre as duas.
   return (
     <footer className="relative overflow-hidden border-t border-white/[0.08] bg-ink-900 px-6 py-16 sm:py-20 lg:px-10 wide:px-16">
       {/* linha divisoria: mesmo brilho estatico (sem animacao) das outras

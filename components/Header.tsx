@@ -7,16 +7,18 @@ import { cn } from "@/lib/utils";
 // Navegacao. Uma ancora por secao real da pagina, na mesma ordem em que elas
 // aparecem ao rolar: Recursos, Interface (o showcase da dashboard),
 // Organizacao (tarefas/agenda/lembretes), Futuro (spoilers de atualizacoes),
-// Depoimentos e Precos. As antigas "Como funciona" e "Demonstracao" sairam com
-// a secao que elas linkavam, e "Integracoes" virou "Organizacao" quando aquela
-// secao trocou de assunto (as integracoes agora moram em "Recursos").
+// Depoimentos e Lista de espera. As antigas "Como funciona" e "Demonstracao"
+// sairam com a secao que elas linkavam, "Integracoes" virou "Organizacao"
+// quando aquela secao trocou de assunto (as integracoes agora moram em
+// "Recursos"), e "Preços" virou "Lista de espera" quando a secao de Precos
+// saiu da pagina (produto ainda nao lancou).
 const navLinksData = [
   { label: "Recursos", href: "#recursos" },
   { label: "Interface", href: "#interface" },
   { label: "Organização", href: "#organizacao" },
   { label: "Futuro", href: "#futuro" },
   { label: "Depoimentos", href: "#depoimentos" },
-  { label: "Preços", href: "#precos" },
+  { label: "Lista de espera", href: "#formulario" },
 ];
 
 // Indicador da secao ativa: uma linha fina embaixo do link, nao mais o
@@ -145,9 +147,9 @@ export default function Header() {
       // blur+saturacao, sem o url() — cai pro vidro forte sem a curvatura em
       // vez de quebrar.
       //
-      // O aro de luz (proximo <div>, mask-composite: exclude — mesma tecnica
-      // do brilho do botao Mensal em Pricing.tsx) e o sheen no topo (o <div>
-      // depois) substituem a borda lisa de antes: vidro de verdade nao tem
+      // O aro de luz (proximo <div>, mask-composite: exclude) e o sheen no
+      // topo (o <div> depois) substituem a borda lisa de antes: vidro de
+      // verdade nao tem
       // contorno solido uniforme, tem luz pegando mais forte no topo/bordas
       // e quase nada no meio — e o que da o "brilho de vidro" da Apple.
       //

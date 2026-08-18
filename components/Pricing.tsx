@@ -260,7 +260,13 @@ function PlanCard({
 
       <div>
         <a
-          href="#top"
+          // Rota de servidor, nao pagina: ela cria a cobranca no Mercado Pago
+          // e responde com um redirecionamento pro checkout de la (ver
+          // app/api/checkout/*/route.ts). Continua sendo um <a> comum de
+          // proposito — sem fetch nem estado de carregando, o navegador
+          // mostra o proprio indicador de navegacao e o link segue
+          // funcionando com "abrir em nova aba".
+          href={`/api/checkout/${plan.id}`}
           // tabIndex -1 enquanto so espiando: e o UNICO elemento focavel
           // do cartao, entao tirar ele da ordem de tab basta pra fechar o
           // cartao inteiro pra quem navega por teclado (o aria-hidden do

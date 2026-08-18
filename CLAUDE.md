@@ -11,6 +11,49 @@ npm run lint     # eslint
 npx tsc --noEmit -p .   # typecheck (não tem script próprio)
 ```
 
+## Checkout (Mercado Pago)
+
+Os botões "Obter plano" da seção de Preços apontam para `/api/checkout/mensal` e
+`/api/checkout/anual`, que criam a cobrança e redirecionam para o checkout
+hospedado do Mercado Pago. Nada de dado de cartão passa pelo site (sem PCI).
+
+**Gateway escolhido: Mercado Pago.** Único que atende os três requisitos ao
+mesmo tempo — funciona com CPF puro (não há CNPJ/MEI), tem PIX desde o primeiro
+dia, e cobre recorrência + pagamento único. Stripe foi descartado (PIX é
+invite-only no Brasil, indisponível para conta nova) e AbacatePay também
+(exige CNPJ/MEI em produção).
+
+Os dois planos usam mecanismos diferentes, porque a cobrança é diferente:
+
+- **Mensal (R$79/mês)** — assinatura recorrente via um *plano* (`/preapproval_plan`)
+  criado uma vez por `node scripts/setup-mercadopago.mjs`, cujo ID vai em
+  `MP_PREAPPROVAL_PLAN_ID`. Não usa `POST /preapproval` porque ele exigiria
+  `payer_email` antes do checkout, obrigando a pessoa a digitar o e-mail duas
+  vezes (aqui e na tela do Mercado Pago). **Sem esse ID configurado o botão do
+  Mensal não funciona.**
+- **Anual (R$650/ano)** — cobrança única via Checkout Pro (`/preferences`),
+  criada a cada clique.
+
+**Entrega:** o webhook `/api/webhooks/mercadopago` valida a assinatura
+(`WebhookSignatureValidator` do SDK), consulta o recurso por ID na API (nunca
+confia no corpo) e, se aprovado, manda um e-mail com o link de download e a
+chave de licença.
+
+**Não há banco de dados**, de propósito: a chave de licença é o HMAC de
+(e-mail + plano) — ver `lib/license.ts` —, então validar não exige guardar nada,
+e reprocessar o mesmo comprador devolve sempre a mesma chave. O Mercado Pago é a
+fonte da verdade de quem pagou. Cancelamento e reembolso são **manuais** pelo
+painel do Mercado Pago (decisão explícita para a V1, sem login de cliente).
+
+**Em aberto:** o app Windows ainda não valida licença nenhuma — quando for
+implementar, precisa repetir o mesmo cálculo de `lib/license.ts`, ou o formato
+muda junto. E `DOWNLOAD_URL` precisa apontar para um instalador hospedado
+(não existe ainda) antes do fluxo servir para alguma coisa.
+
+Variáveis de ambiente: ver `.env.example`. Para testar o webhook localmente é
+preciso um túnel (ngrok), porque o Mercado Pago não alcança `localhost` — e
+`auto_return` faz ele rejeitar `back_urls` de localhost.
+
 ## Investigação de performance (2026-08-12 → 2026-08-13)
 
 O usuário reportou o site travando num notebook de terceiros. Isto documenta o que foi investigado, corrigido, revertido em parte, e o que ainda está em aberto — para não repetir trabalho numa próxima sessão.

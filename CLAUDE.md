@@ -43,7 +43,7 @@ No dia seguinte ao commit `ee66711`, dois relatos do usuário mudaram a decisão
 
 3. **`components/ui/tracing-beam.tsx`** — em modo leve, o SVG de progresso (altura da página inteira) para de reanimar o gradiente (`animated={!lowPower}`), e a fonte do `useTransform` vira um `MotionValue` parado em vez de `scrollYProgress`, pra não recalcular à toa.
 
-4. **`components/Pricing.tsx`** — `PrismaticBurst` (shader WebGL, raymarching) substituído por um `radial-gradient` estático em modo leve. Raymarching é custo por pixel; não há parâmetro que barateie o suficiente numa GPU integrada.
+4. **`components/Pricing.tsx`** — `PrismaticBurst` (shader WebGL, raymarching) substituído por um `radial-gradient` estático em modo leve. Raymarching é custo por pixel; não há parâmetro que barateie o suficiente numa GPU integrada. **[Obsoleto desde 2026-08-20: `Pricing.tsx` e `prismatic-burst.tsx` foram deletados — ver seção "Formulário de lista de espera" abaixo. O ponto sobre raymarching/GPU integrada continua válido caso a seção de Preços volte no lançamento.]**
 
 5. **`components/Roadmap.tsx`** + `app/globals.css` — a barra de progresso do carrossel (`.roadmap-fill`) animava `height` (força layout todo frame). Trocada para `transform: scaleY()` + `transform-origin: top` (compositor, sem layout). Era a única seção que ficava abaixo de 60fps no Firefox depois de tudo o resto corrigido (36fps → 60fps). Isto **não** depende do modo leve, sempre foi assim.
 
@@ -72,3 +72,36 @@ O relato que gerou a rodada de 2026-08-12 (usuário testou com um amigo, i5 + 8G
 npm run build && npm run start -- -p 3111
 ```
 Depois `http://localhost:3111/?fps=1` (medidor) ou `?lowpower=1` / `?lowpower=0` (força o modo). Pra medir de verdade (não só abrir), usar Playwright com CDP `Emulation.setCPUThrottlingRate` no Chromium, ou `firefox` do Playwright pra reproduzir bugs específicos de Gecko — não tem script formal disso no repo, foi tudo feito com scripts ad-hoc no scratchpad da sessão.
+
+## Formulário de lista de espera (2026-08-18 → 2026-08-20)
+
+O produto ainda não lançou e não existe checkout de verdade — a seção de Preços linkava pra lugar nenhum real (`Obter plano` ia pra `#top`, um placeholder morto). Decisão: **tirar a seção de Preços da página inteiramente** e substituir por um formulário de captura de lead (`#formulario`, entre Depoimentos e o fim da página, dentro do `TracingBeam`), pra construir lista de espera antes do lançamento. `components/Pricing.tsx`, `components/ui/prismatic-burst.tsx` e `components/ui/hover-border-gradient.tsx` foram deletados (órfãos, só a Pricing usava). O `offers` do JSON-LD também saiu — preço em dado estruturado sem preço nenhum visível na página é o "dado enganoso" que o comentário original daquele bloco avisava pra evitar; volta junto se/quando Preços voltar.
+
+### O que existe hoje
+
+- **`components/Formulario.tsx`** — seção com 3 campos (nome, WhatsApp, email — rotulado "WhatsApp" e não "Telefone" de propósito, já responde por que o número é pedido). Segue a mesma anatomia de seção do resto do site (`SectionEyebrow`, `<h2>` com a fórmula de fonte fluida, linha de brilho no topo). Primeiro uso real do token `rounded-chip` (10px) do Tailwind config, que já existia reservado mas nunca tinha sido usado. Erro é sinalizado por **contraste de borda + tranco horizontal, nunca por cor** — o site é monocromático, um vermelho de erro seria o único acento da página inteira.
+- **`app/api/waitlist/route.ts`** — grava os leads numa planilha do Google Sheets, falando REST cru (sem o pacote `googleapis`, que pesa ~100MB pra fazer ~40 linhas de trabalho). JWT da service account assinado com `node:crypto` (RS256). Runtime `nodejs` explícito (a assinatura precisa de `node:crypto`, não roda em Edge). Rate limit por IP **folgado de propósito** (30/min) — operadora móvel BR usa CGNAT, um teto apertado bloquearia gente real num disparo de marketing; quem barra robô é um honeypot (campo invisível), não o contador.
+- **Todos os CTAs da página** (Header "Começar agora", Hero "Assinar agora", Roadmap "Quero ser notificado!" ×2, antigo botão de plano) apontam pra `#formulario`. Nav do Header e Footer também trocaram a entrada "Preços" por "Lista de espera".
+- **Canal de aviso**: Comunidade do WhatsApp (não grupo — grupo tem teto de 1024 membros e o link de convite pode ser resetado; Comunidade tem canal de Avisos só-admin, formato certo pra "te aviso quando lançar") como principal, email como reforço via planilha (fase 2, Resend, ainda não implementado). O link da Comunidade é **hardcoded como default** em `Formulario.tsx` (não é segredo — link de convite existe pra ser divulgado), com `NEXT_PUBLIC_WHATSAPP_COMMUNITY_URL` como override se precisar trocar sem esperar deploy.
+
+### Variáveis de ambiente (ver `.env.example` pro passo a passo completo)
+
+`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_WHATSAPP_COMMUNITY_URL` (opcional, já tem default), `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_SHEET_ID`. As 3 do Google são de uma service account do Google Cloud (IAM e admin → Contas de serviço → Chaves → JSON) com a planilha compartilhada pra ela como Editor — **não dá pra usar um Gmail pessoal aqui**, precisa ser o `client_email` gerado pelo Cloud Console, senão a assinatura RS256 falha com `invalid_grant: Invalid JWT Signature` (sintoma de chave errada/revogada — já aconteceu 2x nesta feature, sempre foi isso).
+
+### Formato da planilha
+
+Colunas A–E: `data (DD/MM/AAAA HH:MM, fuso America/Sao_Paulo)`, `nome`, `telefone (E.164, +55...)`, `email (minúsculo)`, `origem (fixo "landing")`. O telefone foi cogitado em formato bonito `(DDD)99999-9999` pra leitura e **revertido de propósito**: o plano é importar a lista em massa futuramente (WhatsApp broadcast, ESP), e essas ferramentas esperam E.164, não o formato de tela. A data, ao contrário, não afeta import nenhum — fica formatada pra leitura humana.
+
+### `lib/site.ts`: bug de `??` com string vazia
+
+`SITE_URL` usava `process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"` — `??` só cai no fallback com `null`/`undefined`, não com string vazia. Um `.env` com `NEXT_PUBLIC_SITE_URL=` (variável definida, valor vazio — comum ao preencher um template aos poucos) quebrava `npm run build` inteiro em `new URL('')` dentro do `layout.tsx`. Trocado pra `||`. Vale o mesmo cuidado em qualquer env var nova que vire `new URL(...)`.
+
+### Testando a rota sem passar pela UI
+
+Playwright foi instalado como devDependency (`playwright.config.ts`, chromium apenas, sem exemplos) — mas não existe suite formal no repo; os testes de cada sessão foram ad-hoc, escritos em `tests/*.spec.ts`, rodados, e apagados depois (junto com `screenshots/`). Pra debugar a integração com Google Sheets sem depender do formulário na tela, um script node avulso (fora do repo, no scratchpad da sessão) usando `@next/env` pra carregar o `.env.local` + replicando a função `getAccessToken`/`appendRow` da rota foi o jeito mais rápido de isolar "é a chave ou é a permissão da planilha" — retorna `invalid_grant` se a credencial estiver errada, `403 PERMISSION_DENIED` se a planilha não estiver compartilhada com a service account, `200` se tudo certo. **Nunca imprimir `GOOGLE_PRIVATE_KEY` no terminal/transcript** — o classificador do Claude Code bloqueia isso por padrão (`cat .env.local` é negado); scripts de diagnóstico devem carregar a env var e usá-la sem nunca fazer `console.log` dela.
+
+### Em aberto
+
+- Email de confirmação via Resend (fase 2) — planejado, não implementado. Mesma rota `/api/waitlist`, só falta o disparo.
+- Copy do Hero ("Assinar agora") aponta pra `#formulario` mas ainda promete ação de assinatura paga — mismatch de expectativa sinalizado, não resolvido; trocar a copy (ex: "Quero ser avisado") é decisão separada de só repontar o `href`.
+- Bug pré-existente (não desta feature, mas achado durante ela): seções com `whileInView`/`once:true` ficam com opacidade 0 permanentemente **até a próxima passagem de scroll** se a página carregar direto numa âncora (`/#formulario`, `/#recursos` etc.) ou em modo `low-power` (Lenis inerte = scroll nativo, sem passar suavemente pelas seções no meio). Confirmado recuperável (rolar de volta por cima resolve), não é permanente — mas é a explicação mais provável se alguém reportar "seção em branco" de novo.

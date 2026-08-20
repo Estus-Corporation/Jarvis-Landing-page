@@ -18,6 +18,13 @@
 // ESCALA (false -> true), nunca volta atras, pra a pagina nao ficar ligando e
 // desligando efeito no meio da rolagem.
 //
+// A medicao PARADA (antes de rolar) exige DUAS janelas ruins seguidas antes
+// de condenar, nao uma so — celular potente pode dar uma leitura ruim isolada
+// so por ficar parado (governor de CPU do aparelho baixa o clock depois de
+// alguns segundos sem toque na tela; ja aconteceu na pratica). A medicao da
+// primeira rolagem continua bastando sozinha, porque ali a leitura ruim e
+// sobre uma acao real que a pessoa fez (ver comentario em startProbe).
+//
 // Existia tambem um palpite estatico por navigator.hardwareConcurrency/
 // deviceMemory, resolvido no primeiro frame sem esperar nada — foi REMOVIDO
 // depois de um falso positivo real: um notebook que "rodava super bem" caiu
@@ -90,6 +97,19 @@ function startProbe() {
 
   let frames = 0;
   let startedAt = 0;
+  // Conta leituras ruins da medicao PARADA (pre-rolagem). Um celular potente
+  // parado alguns segundos na Hero pode dar UMA janela ruim por motivo
+  // nenhum relacionado a capacidade real — o mais provavel e o governor de
+  // CPU do proprio aparelho baixando o clock depois de alguns segundos sem
+  // toque na tela (visto na pratica: usuario relatou celular forte caindo
+  // pra modo fraco so de ficar parado na Hero). Uma leitura ruim sozinha so
+  // agenda uma SEGUNDA medicao pra confirmar antes de condenar — exige duas
+  // leituras ruins seguidas, nao uma. A medicao da PRIMEIRA rolagem (mais
+  // abaixo) continua condenando sozinha: ali o motivo de rodar de novo e
+  // testar rolagem de verdade, entao uma leitura ruim ali e informacao real
+  // (a pagina engasgou durante uma acao que a pessoa de fato fez), nao um
+  // soluco de maquina parada.
+  let idleStrikes = 0;
 
   const tick = (now: number) => {
     // Aba escondida no meio da contagem invalida a medicao inteira: o
@@ -109,7 +129,11 @@ function startProbe() {
       // nunca cai exatamente no fim da janela, e numa maquina lenta ele pode
       // passar MUITO do prazo — dividir pelo tempo nominal inflaria o
       // resultado justo no caso que a gente quer detectar.
-      if ((frames * 1000) / elapsed < FPS_FLOOR) markLowPower();
+      if ((frames * 1000) / elapsed < FPS_FLOOR) {
+        idleStrikes += 1;
+        if (idleStrikes >= 2) markLowPower();
+        else window.setTimeout(begin, 1500);
+      }
       return;
     }
 

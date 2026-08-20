@@ -158,8 +158,9 @@ function Beam({
 //  - wrapper sem "max-w-4xl mx-auto": aqui o uso e uma unica barra global
 //    cobrindo a largura cheia da pagina, nao uma coluna de blog estreita.
 // Secao em que a barra deve terminar de encher. Precisa bater com o `id` da
-// secao de Precos (components/Pricing.tsx).
-const FINISH_SECTION_ID = "precos";
+// ultima secao dentro do TracingBeam (hoje, o formulario de lista de espera —
+// components/Formulario.tsx).
+const FINISH_SECTION_ID = "formulario";
 
 export const TracingBeam = ({
   children,

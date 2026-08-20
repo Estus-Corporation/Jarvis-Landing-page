@@ -10,8 +10,8 @@
 // Extras sobre a demo:
 //  - respeita "reduzir movimento": se o visitante pede menos animacao, o Lenis
 //    nao e montado e a rolagem volta a ser a nativa;
-//  - navegacao ancorada (#recursos, #precos...) passa a ser suave via Lenis,
-//    com um recuo pra nao ficar escondida atras do header fixo.
+//  - navegacao ancorada (#recursos, #formulario...) passa a ser suave via
+//    Lenis, com um recuo pra nao ficar escondida atras do header fixo.
 import React, { useEffect, useState } from "react";
 import { ReactLenis, useLenis } from "lenis/react";
 import { useLowPowerDevice } from "@/components/ui/use-low-power";

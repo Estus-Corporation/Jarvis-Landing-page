@@ -39,3 +39,12 @@ next-env.d.ts
 # .claude/skills sao junctions geradas pelo `npx skills add` — recriar com:
 #   npx skills add https://github.com/Leonxlnx/taste-skill
 /.claude/
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+/screenshots/

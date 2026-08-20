@@ -15,11 +15,11 @@ const footerLinks = [
   {
     title: "Produto",
     links: [
-      { label: "Recursos", href: "#recursos" },
-      { label: "Interface", href: "#interface" },
-      { label: "Organização", href: "#organizacao" },
-      { label: "Depoimentos", href: "#depoimentos" },
-      { label: "Lista de espera", href: "#formulario" },
+      { label: "Recursos", href: "/#recursos" },
+      { label: "Interface", href: "/#interface" },
+      { label: "Organização", href: "/#organizacao" },
+      { label: "Depoimentos", href: "/#depoimentos" },
+      { label: "Lista de espera", href: "/#formulario" },
     ],
   },
   {
@@ -33,8 +33,8 @@ const footerLinks = [
   {
     title: "Legal",
     links: [
-      { label: "Termos de uso", href: "#" },
-      { label: "Política de privacidade", href: "#" },
+      { label: "Termos de uso", href: "/termos-de-uso" },
+      { label: "Política de privacidade", href: "/politica-de-privacidade" },
     ],
   },
 ];
@@ -168,7 +168,7 @@ export default function Footer() {
             o layout de desktop (marca + 3 grupos lado a lado) nao mudou. */}
         <div className="grid grid-cols-1 gap-y-10 sm:grid-cols-4 sm:gap-10">
           <div>
-            <a href="#top" className="flex items-center gap-2.5">
+            <a href="/#top" className="flex items-center gap-2.5">
               <div className="relative flex h-5 w-5 items-center justify-center">
                 <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" />
                 <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/90" />
@@ -229,6 +229,23 @@ export default function Footer() {
           className="mt-16 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-8 text-center text-sm text-white/30"
         >
           <span>Feito pela Estus Corporation.</span>
+          <p className="max-w-[62ch] text-xs leading-relaxed text-white/25">
+            Jarvis é um software fornecido &ldquo;no estado em que se
+            encontra&rdquo;; as ações de automação ocorrem no computador do
+            próprio usuário e sob seu comando. O uso implica concordância com
+            os{" "}
+            <a href="/termos-de-uso" className="underline underline-offset-2 hover:text-white/50">
+              Termos de Uso
+            </a>{" "}
+            e a{" "}
+            <a
+              href="/politica-de-privacidade"
+              className="underline underline-offset-2 hover:text-white/50"
+            >
+              Política de Privacidade
+            </a>
+            .
+          </p>
         </div>
       </motion.div>
     </footer>

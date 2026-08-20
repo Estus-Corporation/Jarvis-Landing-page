@@ -13,12 +13,12 @@ import { cn } from "@/lib/utils";
 // "Recursos"), e "Preços" virou "Lista de espera" quando a secao de Precos
 // saiu da pagina (produto ainda nao lancou).
 const navLinksData = [
-  { label: "Recursos", href: "#recursos" },
-  { label: "Interface", href: "#interface" },
-  { label: "Organização", href: "#organizacao" },
-  { label: "Futuro", href: "#futuro" },
-  { label: "Depoimentos", href: "#depoimentos" },
-  { label: "Lista de espera", href: "#formulario" },
+  { label: "Recursos", href: "/#recursos" },
+  { label: "Interface", href: "/#interface" },
+  { label: "Organização", href: "/#organizacao" },
+  { label: "Futuro", href: "/#futuro" },
+  { label: "Depoimentos", href: "/#depoimentos" },
+  { label: "Lista de espera", href: "/#formulario" },
 ];
 
 // Indicador da secao ativa: uma linha fina embaixo do link, nao mais o
@@ -66,7 +66,7 @@ const AnimatedNavLink = ({
 );
 
 const Logo = () => (
-  <a href="#top" className="flex items-center gap-2.5">
+  <a href="/#top" className="flex items-center gap-2.5">
     <div className="relative flex h-5 w-5 items-center justify-center">
       <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" />
       <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/90" />
@@ -94,8 +94,10 @@ export default function Header() {
   useEffect(() => {
     const hero = document.getElementById("top");
     const sections = navLinksData
-      .map((link) => document.querySelector(link.href))
-      .filter((el): el is Element => el !== null);
+      // link.href e "/#recursos" (precisa do "/" pra navegar de outras
+      // paginas, ver componentes/Footer.tsx) — querySelector quer so o hash.
+      .map((link) => document.getElementById(link.href.split("#")[1]))
+      .filter((el): el is HTMLElement => el !== null);
 
     const watched = hero ? [hero, ...sections] : sections;
     if (watched.length === 0) return;
@@ -104,7 +106,7 @@ export default function Header() {
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
-          setActiveHref(entry.target.id === "top" ? null : `#${entry.target.id}`);
+          setActiveHref(entry.target.id === "top" ? null : `/#${entry.target.id}`);
         });
       },
       { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
@@ -118,7 +120,7 @@ export default function Header() {
   // Sem mola e sem brilho/sombra no hover (ambos rejeitados).
   const signupButton = (
     <a
-      href="#formulario"
+      href="/#formulario"
       className="block w-full rounded-full bg-[#FAFAFA] px-6 py-2.5 text-center text-sm font-semibold text-ink-950 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white active:translate-y-0 active:scale-[0.97] sm:w-auto"
     >
       Começar agora

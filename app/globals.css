@@ -280,6 +280,13 @@ body {
   animation: orbit-spin 34s linear infinite;
 }
 
+/* A barra girando na borda da esfera da Hero (ver jarvis-sphere.tsx) NAO usa
+   animation CSS: mudar animation-duration com a animacao em andamento
+   recalcula o progresso (tempo decorrido / nova duracao), o que pula o
+   ANGULO na hora — testado, a barra "teleportava" toda vez que falar
+   comecava/parava. A rotacao e feita em JS (rAF) direto no componente, com a
+   velocidade angular suavizada por lerp em vez de trocar de duracao. */
+
 /* Linha de varredura descendo por uma "tela": usada na demonstracao de
    "ele ve a sua tela". Le como um scanner passando pelo monitor. */
 @keyframes scan-y {

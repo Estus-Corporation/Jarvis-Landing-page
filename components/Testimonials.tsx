@@ -37,12 +37,12 @@ type Testimonial = { quote: string; name: string; role: string };
 // Temas variados nos placeholders pra a esteira nao repetir a mesma frase.
 // Nomes ficam como espaco reservado honesto — nada de pessoa inventada.
 const testimonials: Testimonial[] = [
-  { quote: "[Depoimento sobre a primeira impressão ao instalar o Jarvis.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
-  { quote: "[Depoimento sobre quanto tempo o Jarvis economiza no dia a dia.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
-  { quote: "[Depoimento sobre a experiência de ouvir a própria voz clonada.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
-  { quote: "[Depoimento sobre controlar o PC inteiro só falando.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
-  { quote: "[Depoimento sobre o suporte e a confiança no produto.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
-  { quote: "[Depoimento sobre usar o Jarvis no trabalho todos os dias.]", name: "Seu nome aqui", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre a primeira impressão ao instalar o Jarvis.]", name: "Em breve", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre quanto tempo o Jarvis economiza no dia a dia.]", name: "Em breve", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre a precisão do reconhecimento de voz em português.]", name: "Em breve", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre controlar o PC inteiro só falando.]", name: "Em breve", role: "Cliente Jarvis" },
+  { quote: "[Este espaço está reservado para o primeiro depoimento sobre o Jarvis.]", name: "Em breve", role: "Cliente Jarvis" },
+  { quote: "[Depoimento sobre usar o Jarvis no trabalho todos os dias.]", name: "Em breve", role: "Cliente Jarvis" },
 ];
 
 const trust: { icon: Icon; title: string; note: string }[] = [
@@ -213,7 +213,7 @@ export default function Testimonials() {
             <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
           </div>
           <p className="mx-auto mt-3 max-w-[52ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
-            Histórias reais de quem já colocou o Jarvis pra trabalhar todos os dias.
+            Depois do lançamento, este espaço vai se preencher com as impressões de quem já está usando o Jarvis.
           </p>
         </motion.div>
       </div>

@@ -3,13 +3,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
-import {
-  GithubLogo,
-  XLogo,
-  InstagramLogo,
-  LinkedinLogo,
-} from "@phosphor-icons/react/dist/ssr";
+import { WhatsappLogo, LinkedinLogo } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
+
+// Mesmo link/padrao de override da Comunidade do WhatsApp usado em
+// Formulario.tsx — ver o comentario la para o motivo do link ficar
+// hardcoded como default (nao e segredo, existe pra ser divulgado).
+const WHATSAPP_COMMUNITY_URL =
+  process.env.NEXT_PUBLIC_WHATSAPP_COMMUNITY_URL ??
+  "https://chat.whatsapp.com/CmCz8lGmQVuD3NsLRSnvxV";
 
 const footerLinks = [
   {
@@ -49,9 +51,7 @@ const footerLinks = [
 const SPREAD = 1.015;
 
 const socialLinks: { icon: Icon; href: string; label: string }[] = [
-  { icon: GithubLogo, href: "#", label: "GitHub" },
-  { icon: XLogo, href: "#", label: "X" },
-  { icon: InstagramLogo, href: "#", label: "Instagram" },
+  { icon: WhatsappLogo, href: WHATSAPP_COMMUNITY_URL, label: "WhatsApp" },
   { icon: LinkedinLogo, href: "#", label: "LinkedIn" },
 ];
 
@@ -190,10 +190,12 @@ export default function Footer() {
                   <a
                     key={social.label}
                     href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={social.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/50 transition-colors duration-200 hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 text-white/70 transition-colors duration-200 hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
                   >
-                    <Glyph size={16} weight="light" aria-hidden />
+                    <Glyph size={22} weight="regular" aria-hidden />
                   </a>
                 );
               })}

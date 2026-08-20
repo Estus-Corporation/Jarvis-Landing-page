@@ -121,7 +121,7 @@ export default function Header() {
       href="#formulario"
       className="block w-full rounded-full bg-[#FAFAFA] px-6 py-2.5 text-center text-sm font-semibold text-ink-950 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white active:translate-y-0 active:scale-[0.97] sm:w-auto"
     >
-      Começar agora
+      Quero ser notificado!
     </a>
   );
 

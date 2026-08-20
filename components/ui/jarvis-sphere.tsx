@@ -401,6 +401,53 @@ export function JarvisOrb({
   const rgb = (a: number) => `rgba(${cr},${cg},${cb},${a.toFixed(3)})`;
   const wh = (a: number) => `rgba(255,255,255,${a.toFixed(3)})`;
 
+  // Barra girando na borda da esfera: um arco curto (16% do perimetro do
+  // anel RI, que ja acompanha a borda da esfera) com as pontas arredondadas.
+  // Rotacao em JS (rAF), NAO animation-duration via CSS: trocar a DURACAO de
+  // uma animacao CSS em andamento recalcula o progresso (tempo decorrido /
+  // nova duracao), o que muda o ANGULO instantaneamente — a barra "pulava"
+  // pra outra posicao toda vez que falar comecava/parava (bug ja visto e
+  // corrigido). Aqui a velocidade angular (graus/s) e que muda, suavizada
+  // por lerp — mesma tecnica do speedRef/tiltSpeedRef do NetworkSphere, uns
+  // px acima — entao a posicao so acelera/desacelera, nunca salta.
+  const speaking = state === "speaking";
+  const speakingRef = useRef(speaking);
+  useEffect(() => {
+    speakingRef.current = speaking;
+  }, [speaking]);
+
+  const ringRef = useRef<SVGCircleElement>(null);
+  useEffect(() => {
+    if (paused) return;
+    let raf = 0;
+    let last = performance.now();
+    let angle = 0;
+    let angSpeed = 0;
+    // 22.5deg/s = 1 volta a cada 16s (repouso); 40deg/s = 1 volta a cada 9s
+    // (falando) — mesmos periodos de antes, agora em velocidade angular.
+    const SLOW = 22.5;
+    const FAST = 40;
+    const tick = (now: number) => {
+      const dt = Math.min(Math.max(0, now - last) / 1000, 0.05);
+      last = now;
+      const target = speakingRef.current ? FAST : SLOW;
+      const lerpK = 1 - Math.pow(0.02, dt);
+      angSpeed += (target - angSpeed) * lerpK;
+      angle = (angle + angSpeed * dt) % 360;
+      const el = ringRef.current;
+      if (el) el.style.transform = `rotate(${angle.toFixed(2)}deg)`;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // So depende de `paused`: reagir a `speaking` (via ref, nao dependencia)
+    // e o que evita reiniciar o loop — e o proprio ANGULO — a cada troca de
+    // estado.
+  }, [paused]);
+
+  const beamCirc = 2 * Math.PI * RI;
+  const beamArc = beamCirc * 0.16;
+
   const alphaCfg: Record<JarvisState, number> = {
     idle: 0.34,
     listening: 0.8,
@@ -482,6 +529,20 @@ export function JarvisOrb({
           stroke={rgb(0.92 * 0.45)}
           strokeWidth="0.9"
           filter="url(#jrGlow)"
+        />
+
+        <circle
+          ref={ringRef}
+          cx={CX}
+          cy={CX}
+          r={RI}
+          fill="none"
+          stroke={wh(0.78)}
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeDasharray={`${beamArc} ${beamCirc - beamArc}`}
+          filter="url(#jrGlow)"
+          style={{ transformOrigin: `${CX}px ${CX}px` }}
         />
 
         <circle cx={CX} cy={CX} r={RO} fill="none" stroke={rgb(a * 0.14)} strokeWidth="0.6" />

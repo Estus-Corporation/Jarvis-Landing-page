@@ -89,8 +89,14 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const SHOT = {
   src: "/images/dashjarvis.webp",
   alt: "Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor.",
-  width: 1536,
-  height: 864,
+  // Dimensao real do arquivo (checada com sharp), nao mais 1536x864: a
+  // imagem foi trocada por uma mais panoramica (1920x995, ~1.93:1) e esses
+  // numeros tinham ficado desatualizados — o descompasso de proporcao era o
+  // que cortava as laterais no `object-cover` mais abaixo (caixa em 16/9,
+  // imagem mais larga que isso, cover cortava os 2 lados pra preencher a
+  // altura).
+  width: 1920,
+  height: 995,
 } as const;
 
 // Icone em anel duplo — mesma familia visual do RingIcon de Organization.tsx
@@ -397,8 +403,9 @@ export default function Showcase() {
             a grade de widgets nasce exatamente sob as bordas da imagem, o que
             e o que faz as duas lerem como um bloco so em vez de dois blocos
             empilhados por acaso. O teto de 1080px existe porque a janela e
-            16/9 — em telas `wide` o container vai a 1400px, e ali a imagem
-            passaria de 780px de altura, alta demais pra caber num olhar. */}
+            bem panoramica (~1.93:1, ver SHOT) — em telas `wide` o container
+            vai a 1400px, e ali a imagem ainda ficaria alta demais pra caber
+            num olhar. */}
         <div className="mx-auto mt-12 max-w-[1080px] laptop:mt-9 laptop:max-w-[860px]">
           {/* janela do app */}
           <motion.div
@@ -446,11 +453,14 @@ export default function Showcase() {
               </span>
             </div>
 
-            {/* a imagem: aspect-[16/9], igual a proporcao real do arquivo
-                (1536x864) — antes era 16/10 (proporcao da imagem antiga),
-                que cortava as laterais desta por object-cover tentar
-                preencher uma caixa mais "quadrada" que a imagem. Com a
-                caixa na MESMA proporcao do arquivo, cover nao corta nada.
+            {/* a imagem: aspect-[1920/995], igual a proporcao real do
+                arquivo (checada com sharp) — antes a caixa estava fixa em
+                16/9 enquanto o arquivo (trocado por uma captura mais
+                panoramica) ja era ~1.93:1, e object-cover cortava as duas
+                laterais pra preencher uma caixa mais "quadrada" que a
+                imagem. Com a caixa na MESMA proporcao do arquivo, cover nao
+                corta nada — se a imagem for trocada de novo, os dois (SHOT
+                width/height e esta classe) precisam ser atualizados juntos.
 
                 unoptimized: o arquivo fonte JA e um .webp comprimido. Sem
                 isso, o otimizador de imagem do Next decodifica esse webp e
@@ -460,8 +470,7 @@ export default function Showcase() {
                 sobretudo nos pontinhos da esfera e nas estrelas de fundo).
                 unoptimized manda o Next servir os bytes originais direto,
                 sem reprocessar nada — a imagem fica identica ao arquivo
-                fonte. Custo: sem srcset responsivo, mas o arquivo ja e leve
-                (165KB) e nao vale a pena trocar fidelidade por isso aqui. */}
+                fonte. */}
             {/* A captura inteira e o botao de ampliar. Sem nenhuma reacao
                 visual ao hover — nem selo, nem zoom, nem anel na borda: a
                 unica pista e o cursor virar lupa. */}
@@ -479,7 +488,7 @@ export default function Showcase() {
               // pelo overflow-hidden da janela em tres lados, sobrando so a
               // aresta de cima (a "barra branca"). O ring por dentro fica todo
               // dentro da area visivel. focus-visible: so no teclado.
-              className="relative block aspect-[16/9] w-full cursor-zoom-in overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
+              className="relative block aspect-[1920/995] w-full cursor-zoom-in overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
             >
               <Image
                 src={SHOT.src}
@@ -545,8 +554,8 @@ export default function Showcase() {
               lg:-mx-8: pedido do usuario foi deixar o cartao mais LARGO —
               sangra 32px de cada lado pra fora do container de 1080px/860px
               que ele divide com a janela do app (ver comentario grande la
-              em cima, no pai: aquele teto existe pra imagem 16/9 nao ficar
-              alta demais, mas nao precisa valer pro cartao de widgets, que
+              em cima, no pai: aquele teto existe pra imagem panoramica nao
+              ficar alta demais, mas nao precisa valer pro cartao de widgets, que
               nao tem essa restricao de proporcao). 64px de sangria total
               ainda cabe dentro do max-w-6xl (1152px) da secao inteira nas
               duas faixas (1080+64=1144 e 860+64=924). */}

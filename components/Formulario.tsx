@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
@@ -10,8 +11,17 @@ import {
   WhatsappLogo,
 } from "@phosphor-icons/react/dist/ssr";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { cn } from "@/lib/utils";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
+
+// Import dinamico (ssr:false): mesmo motivo de quando isso vivia em
+// Pricing.tsx (ver git history) — PrismaticBurst carrega a lib `ogl`
+// (WebGL) inteira so pra um fundo decorativo, entao so baixa quando esta
+// secao de fato for renderizada, em vez de entrar no bundle inicial.
+const PrismaticBurst = dynamic(() => import("@/components/ui/prismatic-burst"), {
+  ssr: false,
+});
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -112,6 +122,7 @@ const FIELDS: {
 
 export default function Formulario() {
   const reduce = useReducedMotionSafe();
+  const lowPower = useLowPowerDevice();
 
   const [values, setValues] = React.useState<Values>(EMPTY);
   const [errors, setErrors] = React.useState<Errors>({});
@@ -201,14 +212,45 @@ export default function Formulario() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
       />
-      {/* Halo unico atras do cartao: uma pintura so, estatica. Nao entra shader
-          nem canvas aqui de proposito — esta secao e a unica da pagina em que a
-          pessoa DIGITA, e nada decorativo deve competir por frame com o teclado
-          do celular abrindo/fechando. */}
+      {/* Halo atras do cartao: PrismaticBurst (React Bits, ver
+          components/ui/prismatic-burst.tsx), reaproveitado da antiga secao
+          de Precos. Esta secao e a unica da pagina em que a pessoa DIGITA —
+          por isso, diferente de Precos, aqui o shader so entra em maquina
+          que aguenta (`lowPower` de useLowPowerDevice), pra nunca competir
+          por frame com o teclado do celular abrindo/fechando; em modo
+          leve, o mesmo gradiente radial estatico que fazia as vezes dele
+          em Precos. `paused` tambem respeita reduced motion. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-[560px] w-[820px] -translate-x-1/2 rounded-full bg-white/[0.04] blur-[140px]"
-      />
+        className="pointer-events-none absolute inset-x-0 top-0 h-[560px] overflow-hidden opacity-[0.7]"
+        style={{
+          maskImage:
+            "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 9%, rgba(0,0,0,0.8) 20%, #000 32%, #000 52%, rgba(0,0,0,0.45) 74%, transparent 100%)",
+        }}
+      >
+        {lowPower ? (
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse 70% 55% at 50% 6%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.13) 32%, rgba(255,255,255,0.04) 58%, transparent 78%)",
+            }}
+          />
+        ) : (
+          <PrismaticBurst
+            animationType="rotate3d"
+            intensity={1.8}
+            speed={0.35}
+            distort={0.6}
+            paused={reduce}
+            rayCount={16}
+            mixBlendMode="lighten"
+            colors={["#ffffff", "#9a9a9a", "#4a4a4a"]}
+          />
+        )}
+      </div>
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
@@ -234,8 +276,8 @@ export default function Formulario() {
             />
           </div>
           <p className="mx-auto mt-3 max-w-[54ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
-            Avisamos você assim que o Jarvis for lançado — e quem entra agora
-            garante o preço de lançamento.
+            Avisamos você assim que o Jarvis for lançado. Quem entra agora
+            garante o preço de lançamento!
           </p>
         </motion.div>
 

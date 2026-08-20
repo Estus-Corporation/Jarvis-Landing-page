@@ -27,6 +27,21 @@ function base64url(input: Buffer | string) {
     .replace(/\//g, "_");
 }
 
+// DD/MM/AAAA HH:MM, fuso de Brasilia — a hora crua em ISO/UTC (com "T" e "Z")
+// e o formato certo pra maquina, errado pra quem so vai olhar a planilha.
+function formatDateBR(date: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+    .format(date)
+    .replace(",", "");
+}
+
 async function getAccessToken(clientEmail: string, privateKey: string) {
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
@@ -168,11 +183,12 @@ export async function POST(request: Request) {
 
   try {
     await appendRow([
-      new Date().toISOString(),
+      formatDateBR(new Date()),
       nome.trim(),
-      // Guardado em E.164 (+55...) e nao formatado: e o formato que WhatsApp e
-      // qualquer import de contatos esperam. O bonitinho com parenteses so
-      // existe na tela.
+      // E.164 (+55...) e nao formatado: e o formato que import em massa
+      // (WhatsApp broadcast, ESP) espera. Formatado bonito (DDD)99999-9999
+      // foi cogitado e revertido — planilha alimenta import futuro, e isso
+      // pesa mais que ficar bonito na tela.
       `+55${digits}`,
       email.trim().toLowerCase(),
       "landing",

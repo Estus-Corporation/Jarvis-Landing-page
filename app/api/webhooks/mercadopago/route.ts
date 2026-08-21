@@ -38,9 +38,23 @@ async function deliver(email: string | undefined, plan: PlanId, id: string) {
   console.log(`[webhook] licenca ${plan} entregue para ${email} (${id})`);
 }
 
+// Tipos que resultam em alguma acao (entrega de licenca). Tudo que nao for
+// isso — merchant_order (rastreio de pedido), etc. — e ignorado antes mesmo
+// de validar assinatura: como nenhuma acao e tomada, nao ha nada a proteger,
+// e validar mesmo assim so rejeitava notificacoes legitimas (o MP nao assina
+// merchant_order do mesmo jeito que payment/subscription_preapproval) e
+// fazia o Mercado Pago reenviar em loop.
+const ACTIONABLE_TYPES = new Set(["payment", "subscription_preapproval"]);
+
 export async function POST(request: NextRequest) {
   const url = new URL(request.url);
-  const dataId = url.searchParams.get("data.id");
+  const dataId = url.searchParams.get("data.id") ?? url.searchParams.get("id");
+  const queryType =
+    url.searchParams.get("type") ?? url.searchParams.get("topic");
+
+  if (queryType && !ACTIONABLE_TYPES.has(queryType)) {
+    return NextResponse.json({ ignored: queryType }, { status: 200 });
+  }
 
   try {
     WebhookSignatureValidator.validate({
@@ -65,8 +79,12 @@ export async function POST(request: NextRequest) {
   // O corpo so serve pra saber O QUE mudou. O estado real vem sempre da
   // consulta autenticada abaixo — confiar no corpo deixaria qualquer um
   // liberar licenca postando JSON aqui.
-  const type: string | undefined = body?.type;
+  const type: string | undefined = body?.type ?? queryType;
   const id: string | undefined = body?.data?.id ?? dataId ?? undefined;
+
+  if (type && !ACTIONABLE_TYPES.has(type)) {
+    return NextResponse.json({ ignored: type }, { status: 200 });
+  }
 
   if (!id) {
     return NextResponse.json({ ignored: "sem id" }, { status: 200 });

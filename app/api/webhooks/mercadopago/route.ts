@@ -60,7 +60,15 @@ async function deliver(
 // e validar mesmo assim so rejeitava notificacoes legitimas (o MP nao assina
 // merchant_order do mesmo jeito que payment/subscription_preapproval) e
 // fazia o Mercado Pago reenviar em loop.
-const ACTIONABLE_TYPES = new Set(["payment", "subscription_preapproval"]);
+// subscription_authorized_payment (a cobranca RECORRENTE de cada renovacao
+// mensal) entrou na lista junto da integracao de credito/licenca — sem isso
+// aqui, o retorno antecipado logo abaixo mataria a notificacao antes mesmo
+// de chegar no tratamento de renovacao mais abaixo.
+const ACTIONABLE_TYPES = new Set([
+  "payment",
+  "subscription_preapproval",
+  "subscription_authorized_payment",
+]);
 
 export async function POST(request: NextRequest) {
   const url = new URL(request.url);

@@ -6,6 +6,7 @@ import {
 import { requireEnv } from "@/lib/env";
 import { fetchPayment, fetchPreApproval } from "@/lib/mercadopago";
 import { generateLicenseKey } from "@/lib/license";
+import { grantCredits } from "@/lib/credits";
 import { sendPurchaseEmail } from "@/lib/email";
 import type { PlanId } from "@/lib/plans";
 
@@ -14,12 +15,18 @@ export const dynamic = "force-dynamic";
 // Reduz e-mail duplicado quando o Mercado Pago reenvia a mesma notificacao
 // (ele reenvia a cada 15 min ate receber um 2xx, e costuma cair na mesma
 // instancia quente). NAO resolve o caso geral: a memoria morre junto com a
-// instancia serverless. So vale a pena porque o dano de um duplicado e
-// pequeno — a chave e deterministica (ver lib/license.ts), entao o cliente
-// receberia o mesmo e-mail duas vezes, nunca duas licencas diferentes.
+// instancia serverless. Ainda vale a pena porque agora a licenca NAO e mais
+// deterministica (o payload leva `iat`, ver lib/license.ts) — sem isso, um
+// reenvio geraria uma segunda licenca (ambas validas, so um pouco confuso
+// pro comprador ver dois codigos diferentes por e-mail).
 const processed = new Set<string>();
 
-async function deliver(email: string | undefined, plan: PlanId, id: string) {
+async function deliver(
+  email: string | undefined,
+  plan: PlanId,
+  id: string,
+  isRenewal: boolean
+) {
   if (!email) {
     // Nada a fazer sem e-mail, e reenviar a notificacao nao vai criar um.
     // Erro alto no log pra alguem entregar a licenca na mao.
@@ -30,12 +37,21 @@ async function deliver(email: string | undefined, plan: PlanId, id: string) {
   }
   if (processed.has(id)) return;
 
-  await sendPurchaseEmail(email, plan, generateLicenseKey(email, plan));
+  const licenseKey = generateLicenseKey(email, plan);
+  // Credito gerenciado (Jarvis Credits Server) — reseta pro valor do plano;
+  // se essa chamada falhar, o catch do POST devolve 500 e o Mercado Pago
+  // reenvia (mesma logica de "falha parcial = tentar tudo de novo" do
+  // envio de e-mail abaixo).
+  const creditsToken = await grantCredits(email, plan);
+
+  await sendPurchaseEmail(email, plan, licenseKey, creditsToken, isRenewal);
   // Marcado so DEPOIS do envio dar certo: marcar antes faria uma falha de
   // e-mail bloquear a propria retentativa do Mercado Pago que existe pra
   // consertar essa falha.
   processed.add(id);
-  console.log(`[webhook] licenca ${plan} entregue para ${email} (${id})`);
+  console.log(
+    `[webhook] licenca ${plan} (${isRenewal ? "renovacao" : "nova"}) entregue para ${email} (${id})`
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -79,17 +95,26 @@ export async function POST(request: NextRequest) {
         // external_reference sai como "anual:<uuid>" (ver lib/mercadopago.ts).
         const plan = (payment.external_reference?.split(":")[0] ??
           "anual") as PlanId;
-        await deliver(payment.payer?.email, plan, id);
+        await deliver(payment.payer?.email, plan, id, false);
       }
     } else if (type === "subscription_preapproval") {
       const subscription = await fetchPreApproval(id);
       if (subscription.status === "authorized") {
-        await deliver(subscription.payer_email, "mensal", id);
+        await deliver(subscription.payer_email, "mensal", id, false);
+      }
+    } else if (type === "subscription_authorized_payment") {
+      // Cobranca RECORRENTE (renovacao mensal) — precisa reemitir a licenca
+      // (ela expira em ~35 dias, ver lib/license.ts) e RESETAR o credito
+      // gerenciado pro valor do plano de novo (ver lib/credits.ts). Antes
+      // isso era ignorado de proposito, o que quebraria silenciosamente o
+      // acesso de quem continua pagando depois de ~30 dias.
+      const payment = await fetchPayment(id);
+      if (payment.status === "approved") {
+        await deliver(payment.payer?.email, "mensal", id, true);
       }
     }
-    // Os demais tipos (subscription_authorized_payment das renovacoes,
-    // merchant_order, etc.) sao ignorados de proposito: a licenca ja foi
-    // entregue na autorizacao e reenviar a cada mes so viraria spam.
+    // merchant_order e outros tipos continuam ignorados de proposito — nao
+    // carregam nada que a gente precise agir.
   } catch (error) {
     console.error(`[webhook] falha ao processar ${type} ${id}:`, error);
     // 500 de proposito: o Mercado Pago reenvia, e um erro transitorio (API

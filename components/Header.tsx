@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import FreeTrialModal from "@/components/FreeTrialModal";
 
 // Navegacao. Uma ancora por secao real da pagina, na mesma ordem em que elas
 // aparecem ao rolar: Recursos, Interface (o showcase da dashboard),
@@ -79,6 +80,7 @@ const Logo = () => (
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const [trialOpen, setTrialOpen] = useState(false);
   // Nenhum link comeca ativo: a Hero (#top) e a primeira coisa na tela, e
   // ela nao tem link correspondente no menu, entao nada deve acender ate a
   // pessoa rolar ate a primeira secao de verdade.
@@ -121,6 +123,19 @@ export default function Header() {
     >
       Começar agora
     </a>
+  );
+
+  // Secundario, sem competir com "Comecar agora" (pilula solida): so texto,
+  // clareia no hover igual aos links de navegacao. Abre o modal de teste
+  // gratis (FreeTrialModal) em vez de rolar pra secao nenhuma.
+  const trialButton = (
+    <button
+      type="button"
+      onClick={() => { setTrialOpen(true); setIsOpen(false); }}
+      className="block w-full text-center text-sm text-white/55 transition-colors hover:text-white sm:w-auto"
+    >
+      Testar grátis
+    </button>
   );
 
   return (
@@ -245,7 +260,10 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="hidden items-center lg:flex">{signupButton}</div>
+        <div className="hidden items-center gap-x-5 lg:flex">
+          {trialButton}
+          {signupButton}
+        </div>
 
         {/* h-11 w-11 (44px): abaixo disso o alvo de toque fica menor que o
             minimo recomendado (Apple/Material, ~44px) — e o unico jeito de
@@ -294,7 +312,10 @@ export default function Header() {
           ))}
         </nav>
         <div className="mt-5 w-full">{signupButton}</div>
+        <div className="mt-4 w-full">{trialButton}</div>
       </div>
+
+      <FreeTrialModal open={trialOpen} onClose={() => setTrialOpen(false)} />
     </header>
   );
 }

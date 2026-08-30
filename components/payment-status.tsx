@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { Icon } from "@phosphor-icons/react";
 
 // Moldura compartilhada das tres telas de retorno do Mercado Pago
@@ -12,6 +13,7 @@ export default function PaymentStatus({
   actionLabel,
   actionHref,
   footnote,
+  children,
 }: {
   icon: Icon;
   title: string;
@@ -19,9 +21,13 @@ export default function PaymentStatus({
   actionLabel: string;
   actionHref: string;
   footnote?: string;
+  // Conteudo extra abaixo do cartao — hoje so /obrigado usa (o passo a passo
+  // de onboarding, ver OnboardingSteps.tsx). pendente/recusado nao passam
+  // nada aqui, entao continuam identicos a antes.
+  children?: ReactNode;
 }) {
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-ink-950 px-6 py-16">
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-ink-950 px-6 py-16">
       <div className="w-full max-w-md rounded-card border border-white/10 bg-ink-800 p-8 text-center sm:p-10">
         <StatusIcon
           size={44}
@@ -47,6 +53,8 @@ export default function PaymentStatus({
           <p className="mt-5 text-xs leading-relaxed text-white/40">{footnote}</p>
         )}
       </div>
+
+      {children}
     </main>
   );
 }

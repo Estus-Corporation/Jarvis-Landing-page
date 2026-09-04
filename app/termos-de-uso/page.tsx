@@ -11,13 +11,12 @@ export const metadata: Metadata = {
 // Ultima atualizacao dos textos legais. Atualize esta constante (e a de
 // app/politica-de-privacidade/page.tsx) sempre que o conteudo mudar de
 // verdade — nao a cada deploy.
-const UPDATED_AT = "20/08/2026";
+const UPDATED_AT = "03/09/2026";
 
-const SUPPORT_EMAIL = "suporte@estuscorporation.com.br";
+const SUPPORT_EMAIL = "contato@estuscorporation.com.br";
 const WHATSAPP = "+55 (16) 99238-6188";
 const CITY_UF = "São Carlos/SP";
-const FULL_NAME = "Gustavo Nunes";
-const CPF = "528.016.058-08";
+const PROVIDER_NAME = "Estus Corporation";
 
 export default function TermosDeUsoPage() {
   return (
@@ -27,8 +26,7 @@ export default function TermosDeUsoPage() {
       updatedAt={UPDATED_AT}
     >
       <p>
-        <strong>Fornecedor:</strong> {FULL_NAME}, inscrito no CPF {CPF},
-        pessoa física, com contato em{" "}
+        <strong>Fornecedor:</strong> {PROVIDER_NAME}, contato em{" "}
         <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
         (&ldquo;nós&rdquo;, &ldquo;Fornecedor&rdquo;).
       </p>

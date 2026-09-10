@@ -30,6 +30,9 @@ const jsonLd = {
   operatingSystem: "Windows 10, Windows 11",
   url: SITE_URL,
   author: { "@type": "Organization", name: SITE.company },
+  // Os valores abaixo são um dos CINCO lugares onde o preço vive — a lista
+  // completa está no topo de lib/plans.ts. Este aqui é o que o Google indexa:
+  // divergir dele significa aparecer na busca com um preço e cobrar outro.
   offers: [
     {
       "@type": "Offer",

@@ -7,7 +7,7 @@ import {
   animate,
   type PanInfo,
 } from "motion/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
 import { Card } from "@/components/ui/card";
@@ -288,9 +288,10 @@ function FeatureCard({
   children: React.ReactNode;
 }) {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   return (
     <motion.div
-      initial={reduce ? false : { opacity: 0, y: 20 }}
+      initial={skipEntrance ? false : { opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.6, ease: EASE, delay }}
@@ -677,6 +678,7 @@ const CARDS: {
 
 export default function Organization() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
 
   // Abaixo de lg a secao de 3 cartoes vira carrossel de um cartao so,
   // arrastavel de lado — mesmos limiares (distancia/velocidade) do seletor
@@ -906,7 +908,7 @@ export default function Organization() {
           secao passe a destoar das vizinhas em telas nao-wide. */}
       <div className="relative mx-auto max-w-[84rem] laptop:max-w-[76rem] wide:max-w-shell">
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: EASE }}
@@ -983,7 +985,7 @@ export default function Organization() {
             Features.tsx, pra nao inventar uma segunda linguagem de gesto na
             mesma pagina. */}
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: EASE }}

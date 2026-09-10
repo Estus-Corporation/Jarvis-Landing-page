@@ -16,7 +16,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { cn } from "@/lib/utils";
 import {
@@ -162,6 +162,7 @@ function RotatingTrust({ reduce }: { reduce: boolean }) {
 
 export default function Testimonials() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   // Maquina fraca: as esteiras (Marquee) do carrossel de depoimentos param,
   // congeladas onde estavam (ver `paused` em 3d-testimonials.tsx) — sao 8
   // faixas de CSS animation continua (6 de fundo no palco do desktop + 2 no
@@ -187,7 +188,7 @@ export default function Testimonials() {
 
       <div className="relative mx-auto max-w-6xl px-6 lg:px-10 wide:max-w-shell wide:px-16">
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -226,7 +227,7 @@ export default function Testimonials() {
           rotativo). */}
       <div className="relative left-1/2 mt-10 hidden w-screen -translate-x-1/2 lg:block laptop:mt-8">
         <motion.div
-          initial={reduce ? false : { opacity: 0 }}
+          initial={skipEntrance ? false : { opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -442,7 +443,7 @@ export default function Testimonials() {
             (Features.tsx), pra destacar essa faixa como um "selo" de
             garantia em vez de mais um bloco escuro entre secoes escuras. */}
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}

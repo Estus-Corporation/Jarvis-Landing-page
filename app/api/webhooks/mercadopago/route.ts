@@ -42,7 +42,12 @@ async function deliver(
   // se essa chamada falhar, o catch do POST devolve 500 e o Mercado Pago
   // reenvia (mesma logica de "falha parcial = tentar tudo de novo" do
   // envio de e-mail abaixo).
-  const creditsToken = await grantCredits(email, plan);
+  // O `id` vai junto como chave de idempotencia: e o que impede um reenvio do
+  // Mercado Pago de resetar o saldo de quem ja consumiu parte do mes. A
+  // deducao de verdade acontece no servidor de creditos, que tem banco; o
+  // `processed` abaixo continua sendo so uma economia de chamada na instancia
+  // quente.
+  const creditsToken = await grantCredits(email, plan, id);
 
   await sendPurchaseEmail(email, plan, licenseKey, creditsToken, isRenewal);
   // Marcado so DEPOIS do envio dar certo: marcar antes faria uma falha de

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import {
   Microphone,
   AppWindow,
@@ -86,6 +86,7 @@ function IncludedTrack() {
 
 export default function FeatureTicker() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
 
   // Gate igual ao de Organization.tsx: a esteira troca a ARVORE renderizada
   // (chips duplicados pra loop vs. lista unica), entao so decide qual versao
@@ -97,7 +98,7 @@ export default function FeatureTicker() {
   return (
     <div className="relative overflow-hidden border-y border-white/[0.08] bg-ink-950 py-4">
       <motion.div
-        initial={reduce ? false : { opacity: 0, y: 14 }}
+        initial={skipEntrance ? false : { opacity: 0, y: 14 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}

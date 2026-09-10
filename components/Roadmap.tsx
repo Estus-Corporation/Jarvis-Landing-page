@@ -8,7 +8,7 @@ import {
   useMotionValue,
   type PanInfo,
 } from "motion/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
   DeviceMobile,
@@ -261,6 +261,7 @@ function CarouselControl({
 
 export default function Roadmap() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   // Se o carrossel do celular ja foi arrastado (ou um tracinho dele tocado)
@@ -528,7 +529,7 @@ export default function Roadmap() {
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}

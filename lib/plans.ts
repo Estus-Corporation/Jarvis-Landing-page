@@ -1,9 +1,17 @@
 // Valor NUMERICO dos planos, que e o que o Mercado Pago cobra de verdade.
 //
-// Os mesmos precos aparecem como texto em components/Pricing.tsx
-// (`plans[].price`) e no JSON-LD de app/page.tsx. Sao tres leitores
-// diferentes — visitante, buscador e gateway — e se divergirem o cliente e
-// cobrado num valor diferente do anunciado. Mudou aqui, mude nos outros dois.
+// ─────────────────────────────────────────────────────────────────────────
+// OS CINCO LUGARES ONDE O PREÇO DE UM PLANO VIVE. Divergência entre eles não é
+// bug de UI: é cobrar um valor diferente do anunciado, o que o CDC trata como
+// publicidade enganosa. Mudou um, varra os cinco na mesma passada:
+//
+//   1. Jarvis-Landing-page/lib/plans.ts        → o que o Mercado Pago cobra
+//   2. Jarvis-Landing-page/components/Pricing.tsx → o texto que o visitante lê
+//   3. Jarvis-Landing-page/app/page.tsx        → o JSON-LD que o Google indexa
+//   4. Jarvis-Credits-Server/src/pricing.ts    → PLAN_ALLOTMENT_MICRO e PLAN_DIAS
+//                                                (quanto de uso o preço compra)
+//   5. Project-Jarvis/legal/termos-de-uso.md   → seção 13, o valor contratado
+// ─────────────────────────────────────────────────────────────────────────
 export type PlanId = "mensal" | "anual";
 
 export const PLANS = {

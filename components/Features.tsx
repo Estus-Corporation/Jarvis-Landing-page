@@ -8,7 +8,7 @@ import {
   useMotionValue,
   type PanInfo,
 } from "motion/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
@@ -2704,6 +2704,7 @@ function ConsoleWindow({
 
 export default function Features() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   // Modo fraco: pausa o autoplay entre capacidades (fica so no clique/toque),
   // pula a digitacao letra-a-letra do pedido (ver useEffect logo abaixo) e
   // desliga as duas animacoes CONTINUAS que as demos tem (disco do Spotify,
@@ -3027,7 +3028,7 @@ export default function Features() {
           colunas + console) ganha os ~128px extras. */}
       <div className="relative mx-auto max-w-7xl wide:max-w-shell">
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -3064,7 +3065,7 @@ export default function Features() {
         </motion.div>
 
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 24 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}

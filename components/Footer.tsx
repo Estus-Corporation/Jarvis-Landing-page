@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import {
   GithubLogo,
   XLogo,
@@ -57,6 +57,7 @@ const socialLinks: { icon: Icon; href: string; label: string }[] = [
 
 export default function Footer() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
 
   // Espacamento das letras do "JARVIS" de fundo calculado por JS pra ele
   // comecar e terminar exatamente em cima da linha do rodape (a borda acima
@@ -152,7 +153,7 @@ export default function Footer() {
       </div>
 
       <motion.div
-        initial={reduce ? false : { opacity: 0, y: 20 }}
+        initial={skipEntrance ? false : { opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}

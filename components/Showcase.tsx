@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { useLenis } from "lenis/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import {
   CloudSun,
   MusicNotes,
@@ -215,6 +215,7 @@ function Lightbox({
   manageFocus: boolean;
 }) {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   const closeRef = useRef<HTMLButtonElement>(null);
   const lenis = useLenis();
 
@@ -315,6 +316,7 @@ function Lightbox({
 
 export default function Showcase() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   const [expanded, setExpanded] = useState(false);
   // Se a ampliacao foi aberta pelo teclado. So nesse caso o lightbox mexe no
   // foco (ver comentario la dentro) — no clique de mouse, mexer no foco so
@@ -360,7 +362,7 @@ export default function Showcase() {
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: EASE }}
@@ -402,7 +404,7 @@ export default function Showcase() {
         <div className="mx-auto mt-12 max-w-[1080px] laptop:mt-9 laptop:max-w-[860px]">
           {/* janela do app */}
           <motion.div
-            initial={reduce ? false : { opacity: 0, y: 24, scale: 0.97 }}
+            initial={skipEntrance ? false : { opacity: 0, y: 24, scale: 0.97 }}
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.8, ease: EASE }}
@@ -522,7 +524,7 @@ export default function Showcase() {
               COM o led-dot piscando) porque aqui o pedido foi sem a bolinha
               — so o mesmo desenho de pilula, escrito na mao. */}
           <motion.div
-            initial={reduce ? false : { opacity: 0 }}
+            initial={skipEntrance ? false : { opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, amount: 0.6 }}
             transition={{ duration: 0.6, ease: EASE }}
@@ -554,7 +556,7 @@ export default function Showcase() {
             {WIDGETS.map((w, i) => (
               <motion.div
                 key={w.title}
-                initial={reduce ? false : { opacity: 0, y: 14 }}
+                initial={skipEntrance ? false : { opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
                 // Escalonado por indice: a 0.06s de intervalo os itens entram
@@ -595,7 +597,7 @@ export default function Showcase() {
               160px, era h-60 = 240px): um cartao mais compacto deixa o olho
               ver mais de um por vez enquanto a esteira passa. */}
           <motion.div
-            initial={reduce ? false : { opacity: 0, y: 18 }}
+            initial={skipEntrance ? false : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.6, ease: EASE }}

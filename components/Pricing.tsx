@@ -8,7 +8,7 @@ import {
   useMotionValue,
   type PanInfo,
 } from "motion/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
@@ -54,6 +54,20 @@ const PrismaticBurst = dynamic(() => import("@/components/ui/prismatic-burst"), 
 // planos, repetir dentro dos cartoes so fingiria uma diferenca que nao
 // existe). Sao 3 pontos sobre a UNICA coisa que de fato muda entre os
 // planos: a forma de cobranca.
+// ─────────────────────────────────────────────────────────────────────────
+// OS CINCO LUGARES ONDE O PREÇO DE UM PLANO VIVE. Divergência entre eles não é
+// bug de UI: é cobrar um valor diferente do anunciado, o que o CDC trata como
+// publicidade enganosa. Mudou um, varra os cinco na mesma passada:
+//
+//   1. Jarvis-Landing-page/lib/plans.ts        → o que o Mercado Pago cobra
+//   2. Jarvis-Landing-page/components/Pricing.tsx → o texto que o visitante lê
+//   3. Jarvis-Landing-page/app/page.tsx        → o JSON-LD que o Google indexa
+//   4. Jarvis-Credits-Server/src/pricing.ts    → PLAN_ALLOTMENT_MICRO e PLAN_DIAS
+//                                                (quanto de uso o preço compra —
+//                                                 e de onde sai o "~585 comandos
+//                                                 de voz por mês" dos dois cards)
+//   5. Project-Jarvis/legal/termos-de-uso.md   → seção 13, o valor contratado
+// ─────────────────────────────────────────────────────────────────────────
 const plans = [
   {
     id: "mensal",
@@ -65,8 +79,12 @@ const plans = [
     normalPrice: "R$ 139,90",
     discountPercent: "-44%",
     highlights: [
+      // O volume incluído sai do PLAN_ALLOTMENT_MICRO do Credits Server
+      // (src/pricing.ts) dividido pelo custo de uma interação de voz. Os dois
+      // planos anunciam o MESMO número de propósito — ver a nota de decisão
+      // naquele arquivo. Mudou o allotment lá, mude o número aqui.
+      "~585 comandos de voz por mês (~19 por dia)",
       "Comece hoje, sem burocracia",
-      "Ideal pra testar antes de decidir",
       "Sem multa se você cancelar",
     ],
     note: "Cobrado todo mês. Cancele quando quiser.",
@@ -82,8 +100,11 @@ const plans = [
     normalPrice: "R$ 987",
     discountPercent: "-34%",
     highlights: [
+      // Mesmo volume mensal do plano Mensal — 12 × o allotment mensal. É o
+      // ponto do plano anual: mesmo uso, preço menor. Ver o comentário gêmeo
+      // no card Mensal acima.
+      "~585 comandos de voz por mês (~19 por dia)",
       "Equivale a R$ 54,17 por mês",
-      "Pague uma vez, esqueça o resto do ano",
       "Preço de lançamento travado por 12 meses",
     ],
     note: "Cobrado uma vez, vale 12 meses.",
@@ -318,6 +339,7 @@ function PlanCard({
 
 export default function Pricing() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   // Ver o comentario do fundo, mais abaixo: decide entre o shader WebGL e o
   // degrade estatico que faz as vezes dele.
   const lowPower = useLowPowerDevice();
@@ -463,7 +485,7 @@ export default function Pricing() {
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -532,7 +554,7 @@ export default function Pricing() {
               "elastico bate na ponta" de Organization.tsx/Roadmap.tsx, so
               que com 2 cartoes em vez de 3. */}
           <motion.div
-            initial={reduce ? false : { opacity: 0, y: 18 }}
+            initial={skipEntrance ? false : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.6, ease: EASE }}
@@ -593,7 +615,7 @@ export default function Pricing() {
             {plans.map((plan, i) => (
               <motion.div
                 key={plan.id}
-                initial={reduce ? false : { opacity: 0, y: 22 }}
+                initial={skipEntrance ? false : { opacity: 0, y: 22 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{
@@ -619,14 +641,19 @@ export default function Pricing() {
             mesma frase duas vezes. Uma linha so, entre a escolha e a lista de
             recursos. */}
         <motion.p
-          initial={reduce ? false : { opacity: 0, y: 10 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.6 }}
           transition={{ duration: 0.5, delay: reduce ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="mt-6 flex translate-y-1 items-center justify-center gap-2 text-center text-xs text-white/55 sm:text-sm"
         >
           <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
-          Garantia de 7 dias: não gostou, devolvemos 100%.
+          {/* O canal do reembolso precisa aparecer AQUI, antes da compra: o
+              art. 49 do CDC da 7 dias de arrependimento em compra pela
+              internet, e a informacao de COMO exercer esse direito nao pode
+              viver so no e-mail que chega depois de pagar. Falta ainda fixar o
+              PRAZO de estorno — quando decidir, escrever aqui e nos Termos. */}
+          Garantia de 7 dias: não gostou, devolvemos 100% — é só pedir em suporte@estuscorporation.com.br.
         </motion.p>
       </div>
     </section>

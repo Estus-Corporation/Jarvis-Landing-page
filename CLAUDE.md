@@ -115,3 +115,64 @@ O relato que gerou a rodada de 2026-08-12 (usuário testou com um amigo, i5 + 8G
 npm run build && npm run start -- -p 3111
 ```
 Depois `http://localhost:3111/?fps=1` (medidor) ou `?lowpower=1` / `?lowpower=0` (força o modo). Pra medir de verdade (não só abrir), usar Playwright com CDP `Emulation.setCPUThrottlingRate` no Chromium, ou `firefox` do Playwright pra reproduzir bugs específicos de Gecko — não tem script formal disso no repo, foi tudo feito com scripts ad-hoc no scratchpad da sessão.
+
+
+## Auditoria de lançamento — 3 correções (09/09/2026)
+
+### Seções em branco ao abrir a página numa âncora
+
+Bug que já estava documentado como "em aberto" e virou urgente: com
+`whileInView` + `once: true`, uma seção só anima quando entra no viewport.
+Quando a página abre DIRETO numa âncora (`/#precos`), o navegador pula pra lá e
+as seções que ficaram pra trás nunca são intersectadas — ficam em `opacity: 0`
+até a pessoa rolar por cima. Mesma coisa em `low-power`, onde o Lenis fica
+inerte.
+
+Era cosmético enquanto âncora era só navegação interna. Deixou de ser quando o
+app passou a mandar o usuário sem crédito direto pra `/#precos`: a primeira
+coisa que ele vê ao clicar em "Recarregar" não pode ser meia página em branco.
+
+Correção: `useSkipEntrance()` novo em `components/ui/use-reduced-motion-safe.ts`
+— `reduce || tem âncora na URL || low-power`. **Não** dá pra reaproveitar o
+`useReducedMotionSafe` pra isso: `reduce` também governa loops, parallax e
+movimento ambiente, e desligar tudo isso porque alguém chegou por uma âncora
+seria pior que o bug.
+
+Aplicado em **20 animações de entrada**, e só nelas. As 11 que usam `initial` +
+`animate`/`AnimatePresence` (Hero, troca de depoimento, Formulário) continuam no
+`reduce`: elas animam no mount independente de scroll, nunca sofreram o
+problema, e pular a entrada ali seria regressão visual — a Hero apareceria sem
+intro. **A distinção é `whileInView` na linha seguinte**; foi exatamente isso
+que separou os dois grupos.
+
+### Idempotência do webhook (o `Set` em memória não bastava mais)
+
+`grantCredits()` agora manda o id do pagamento como `eventId`. O `Set` daqui
+morre com a instância serverless, e o Mercado Pago reenvia a mesma notificação a
+cada 15 min até receber 2xx. Enquanto o webhook só mandava e-mail, um reenvio
+era chato. Depois que ele passou a conceder crédito virou problema de verdade:
+`/v1/admin/grant` **reseta** o saldo (não soma), então uma notificação atrasada
+devolveria o saldo cheio pra quem já gastou metade do mês. A dedução real passou
+a viver no Credits Server, que tem banco (tabela `processed_events`).
+
+### Canal do reembolso antes da compra
+
+A garantia de 7 dias já aparecia na seção de Preços, mas sem dizer COMO exercer
+— só o e-mail pós-compra explicava. O art. 49 do CDC pede a informação antes da
+contratação. Agora nomeia o canal. **Falta fixar o prazo de estorno** — quando
+decidir, escrever aqui e nos Termos.
+
+### ⚠️ Armadilha desta pasta: o git não consegue trocar de branch
+
+O shell remoto desta sessão não tem permissão pra APAGAR arquivos, e
+`git checkout` depende disso. Trocar de branch **escreve os arquivos novos mas
+não remove nem sobrescreve os que já existem**, e a árvore de trabalho fica
+misturada entre duas branches sem nenhum erro visível. Foi o que aconteceu ao
+mudar de `feat/paginas-legais` pra cá; a árvore foi reconstruída arquivo a
+arquivo a partir do HEAD. Os arquivos que sobraram da `main` estão em
+`_leftovers-da-main/` (todos commitados lá, pode apagar a pasta). Também há um
+`.git/.index.lock.stale` residual, inofensivo.
+
+**Se for mexer nesta pasta por uma sessão remota de novo**: fazer o checkout no
+Windows, não pelo shell remoto.
+

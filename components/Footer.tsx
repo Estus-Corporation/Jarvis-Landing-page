@@ -35,8 +35,8 @@ const footerLinks = [
   {
     title: "Legal",
     links: [
-      { label: "Termos de uso", href: "/termos-de-uso" },
-      { label: "Política de privacidade", href: "/politica-de-privacidade" },
+      { label: "Termos de uso", href: "/termos" },
+      { label: "Política de privacidade", href: "/privacidade" },
     ],
   },
 ];
@@ -236,12 +236,12 @@ export default function Footer() {
             encontra&rdquo;; as ações de automação ocorrem no computador do
             próprio usuário e sob seu comando. O uso implica concordância com
             os{" "}
-            <a href="/termos-de-uso" className="underline underline-offset-2 hover:text-white/50">
+            <a href="/termos" className="underline underline-offset-2 hover:text-white/50">
               Termos de Uso
             </a>{" "}
             e a{" "}
             <a
-              href="/politica-de-privacidade"
+              href="/privacidade"
               className="underline underline-offset-2 hover:text-white/50"
             >
               Política de Privacidade

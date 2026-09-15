@@ -2,6 +2,77 @@
 
 Landing page em Next.js 14 (App Router) + Tailwind + Framer Motion (`motion/react`) para o Jarvis, assistente de voz para Windows. Site monocromático (preto/branco, sem cor de acento — ver comentário em `tailwind.config.ts`), com seções tipo scrollytelling e vários efeitos decorativos (canvas, WebGL, animações CSS).
 
+> Repos irmãos: `Project-Jarvis` (app Electron, remoto `Jarvis-Developer-Edition`)
+> e `Jarvis-Credits-Server` (proxy de créditos), ambos em `C:\dev`. Pendências
+> consolidadas dos três: **`Project-Jarvis/PENDENCIAS.md`**.
+
+## ⚠️ Branches — leia antes de mergear qualquer coisa (15/09/2026)
+
+Este repo tem 4 branches vivas e **a divisão é deliberada**. Não existe "a branch
+atrasada que só falta mergear".
+
+| Branch | O que é |
+|---|---|
+| `main` | O que está **no ar**. Lista de espera + páginas legais. Sem preço/checkout/download. |
+| `feat/paginas-legais` | ✅ **Já mergeada na `main`** (commit `5d6ffbc`) — não tem mais nada exclusivo (`git log main..feat/paginas-legais` volta vazio). Pode apagar. |
+| `feat(checkout-mercadopago)` | **Branch de lançamento** — Preços, Mercado Pago, webhook, licença por e-mail, `/obrigado`, `FreeTrialModal`. |
+| `feat/formulario-lista-espera` | Histórica, já incorporada na `main`. |
+
+**A armadilha que sobra:**
+
+**`feat(checkout-mercadopago)` fica fora da `main` de propósito** até o produto
+estar pronto pra vender. Já houve uma sessão que a mergeou por achar que o
+checkout tinha se perdido, e precisou desfazer com `git merge --abort`. Se
+parecer que "falta checkout na landing": ele existe, naquela branch, esperando.
+
+> ℹ️ **Susto já resolvido, registrado pra não virar alarme falso de novo**: a
+> branch `feat/paginas-legais` **deletava** `app/politica-de-privacidade-extensao/`
+> (que só existia na `main`, commit `0259c84`, e é a URL que a submissão da
+> extensão na Chrome Web Store aponta). O merge foi feito na ordem certa e a rota
+> **sobreviveu** — conferido: o arquivo existe na `main` e está no ar. Se aparecer
+> uma cópia local atrasada dessa branch numa próxima sessão, não é perigo, é só
+> `git pull`.
+
+`_leftovers-da-main/` é lixo de troca de branch (gitignored, tem `LEIA-ME.txt`
+explicando) — pode apagar.
+
+## Páginas legais (no ar desde 15/09/2026)
+
+Três rotas em produção, **todas confirmadas respondendo 200**:
+
+- `https://www.primejarvis.com.br/privacidade`
+- `https://www.primejarvis.com.br/termos`
+- `https://www.primejarvis.com.br/politica-de-privacidade-extensao`
+
+As rotas antigas (`/politica-de-privacidade`, `/termos-de-uso`) foram removidas;
+`Footer.tsx` e `app/sitemap.ts` já apontam pras novas, sem link quebrado.
+
+Isso destrava dois processos externos que dependiam de URL pública: a verificação
+OAuth do Google (escopo `calendar.events` do app) e a submissão da extensão na
+Chrome Web Store. **A página `/termos` no ar não cita preço nenhum** — ver a nota
+de preço abaixo pra saber por que isso importa.
+
+## ⚠️ Preço desatualizado nesta landing (pré-lançamento)
+
+O preço vigente do produto é **R$110 mensal / R$899 anual**. O Credits Server
+(`pricing.ts`) e os Termos do app já estão nesses valores. **Esta landing não.**
+
+Na branch `feat(checkout-mercadopago)`:
+- `lib/plans.ts` → ainda `price: 79` e `price: 650`
+- `scripts/setup-mercadopago.mjs` → ainda `transaction_amount: 79`
+
+O CLAUDE.md do Credits Server afirma que esses dois arquivos foram corrigidos em
+11/09. **Não foram** — conferido em 15/09/2026.
+
+**Nada disso está exposto ao público** (a `main` não tem checkout e a `/termos` no
+ar não cita valor), então é dívida pré-lançamento, não problema de CDC. Mas na
+hora de abrir o funil, lembrar que **corrigir o código não basta**: a mensalidade
+recorrente usa um `PreApprovalPlan` **pré-criado** no Mercado Pago
+(`MP_PREAPPROVAL_PLAN_ID`), cujo valor fica gravado no objeto desde a criação —
+`getMonthlyCheckout()` busca por ID e nunca lê `PLANS.mensal.price`. Precisa rodar
+`setup-mercadopago.mjs` de novo com o `MP_ACCESS_TOKEN` de produção e trocar o ID.
+O anual não tem esse problema (Checkout Pro lê o preço na hora).
+
 ## Comandos
 
 ```
@@ -104,4 +175,13 @@ Playwright foi instalado como devDependency (`playwright.config.ts`, chromium ap
 
 - Email de confirmação via Resend (fase 2) — planejado, não implementado. Mesma rota `/api/waitlist`, só falta o disparo.
 - Copy do Hero ("Assinar agora") aponta pra `#formulario` mas ainda promete ação de assinatura paga — mismatch de expectativa sinalizado, não resolvido; trocar a copy (ex: "Quero ser avisado") é decisão separada de só repontar o `href`.
+- **`FreeTrialModal` redundante** — a branch de lançamento tem um modal de teste
+  grátis (e-mail → código → token, proxy pro `POST /v1/signup`), mas o
+  `SetupWizard` do app **já cria a conta sozinho** pelo mesmo fluxo. Decisão de
+  produto em aberto: manter os dois caminhos ou só um.
+- **A seção de Preços volta junto com a branch de lançamento** — o texto de
+  20/08 abaixo diz que `Pricing.tsx` foi "deletado", o que é verdade **na
+  `main`**; a branch `feat(checkout-mercadopago)` tem a seção viva e ligada ao
+  Mercado Pago. O `offers` do JSON-LD volta junto (e é mais um lugar onde o preço
+  vive — ver a nota de preço no topo).
 - Bug pré-existente (não desta feature, mas achado durante ela): seções com `whileInView`/`once:true` ficam com opacidade 0 permanentemente **até a próxima passagem de scroll** se a página carregar direto numa âncora (`/#formulario`, `/#recursos` etc.) ou em modo `low-power` (Lenis inerte = scroll nativo, sem passar suavemente pelas seções no meio). Confirmado recuperável (rolar de volta por cima resolve), não é permanente — mas é a explicação mais provável se alguém reportar "seção em branco" de novo.

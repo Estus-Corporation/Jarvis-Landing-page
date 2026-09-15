@@ -14,7 +14,7 @@ atrasada que só falta mergear".
 | Branch | O que é |
 |---|---|
 | `main` | O que está **no ar**. Lista de espera + páginas legais. Sem preço/checkout/download. |
-| `feat/paginas-legais` | ✅ **Já mergeada na `main`** (commit `5d6ffbc`) — não tem mais nada exclusivo (`git log main..feat/paginas-legais` volta vazio). Pode apagar. |
+| ~~`feat/paginas-legais`~~ | ✅ Mergeada na `main` (commit `5d6ffbc`) e **já apagada do GitHub**. Só existe como cópia local nesta máquina, sem nada exclusivo. |
 | `feat(checkout-mercadopago)` | **Branch de lançamento** — Preços, Mercado Pago, webhook, licença por e-mail, `/obrigado`, `FreeTrialModal`. |
 | `feat/formulario-lista-espera` | Histórica, já incorporada na `main`. |
 
@@ -29,9 +29,14 @@ parecer que "falta checkout na landing": ele existe, naquela branch, esperando.
 > branch `feat/paginas-legais` **deletava** `app/politica-de-privacidade-extensao/`
 > (que só existia na `main`, commit `0259c84`, e é a URL que a submissão da
 > extensão na Chrome Web Store aponta). O merge foi feito na ordem certa e a rota
-> **sobreviveu** — conferido: o arquivo existe na `main` e está no ar. Se aparecer
-> uma cópia local atrasada dessa branch numa próxima sessão, não é perigo, é só
-> `git pull`.
+> **sobreviveu** — conferido: o arquivo existe na `main` e está no ar.
+>
+> ⚠️ **`git branch -r` mente sobre essa branch.** Ela já foi apagada do GitHub,
+> mas a referência `origin/feat/paginas-legais` continua no cache local até alguém
+> rodar `git fetch --prune` (o `fetch` normal não limpa ref removida). A lista
+> verdadeira vem de `gh api repos/Estus-Corporation/Jarvis-Landing-page/branches`
+> ou da aba Branches do GitHub — hoje são **3**: `main`,
+> `feat(checkout-mercadopago)` e `feat/formulario-lista-espera`.
 
 `_leftovers-da-main/` é lixo de troca de branch (gitignored, tem `LEIA-ME.txt`
 explicando) — pode apagar.

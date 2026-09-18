@@ -2,8 +2,10 @@
 
 // Esfera de rede geodésica do app Jarvis, adaptada para a landing page.
 // Mesma malha, projeção e shading do app original (NetworkSphere + OrbRings em
-// MainInterface.tsx) — só a sequência de "ignição" (big bang + som de boot) foi
-// removida, já que aqui a esfera deve nascer já "online" e girando.
+// MainInterface.tsx do Jarvis-Developer-Edition) — só a sequência de "ignição"
+// (big bang + som de boot) e o teto de fps configurável foram removidos, já que
+// aqui a esfera deve nascer já "online" e girando. Ao mudar a esfera no app,
+// portar pra cá também (os anéis foram sincronizados em 2026-09-17).
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
@@ -88,7 +90,10 @@ function NetworkSphere({
 
   useLayoutEffect(() => {
     cancelAnimationFrame(frameRef.current);
-    const dpr = window.devicePixelRatio || 1;
+    // Teto de 1.5 no dpr, igual ao app: são 3 canvas com composição 'lighter'
+    // full-canvas por quadro, então o custo escala com a contagem de pixels.
+    // Numa tela 200% sem teto seria 4× o trabalho, e em 1.5 ainda fica nítido.
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     for (const ref of [canvasRef, glowCanvasRef, trailCanvasRef]) {
       const canvas = ref.current;
       if (!canvas) continue;
@@ -445,6 +450,49 @@ export function JarvisOrb({
   const TOFF = RO + 18;
   const TSIZ = 5.5;
 
+  // Barra giratória no anel interno, igual à do app (OrbRings). Gira via rAF,
+  // não animação CSS: trocar a DURAÇÃO de uma animação CSS em andamento faz a
+  // barra pular de posição a cada troca idle/speaking. Aqui muda a VELOCIDADE
+  // angular, suavizada por lerp; a posição só acelera/desacelera.
+  const speakingRef = useRef(state === "speaking");
+  useEffect(() => {
+    speakingRef.current = state === "speaking";
+  }, [state]);
+
+  const ringRef = useRef<SVGCircleElement>(null);
+  useEffect(() => {
+    if (paused) return;
+    let raf = 0;
+    let last = performance.now();
+    let angle = 0;
+    let angSpeed = 0;
+    // 22.5deg/s = 1 volta a cada 16s (repouso); 40deg/s = 1 volta a cada 9s (falando)
+    const SLOW = 22.5;
+    const FAST = 40;
+    const tick = (now: number) => {
+      const dt = Math.min(Math.max(0, now - last) / 1000, 0.05);
+      last = now;
+      const target = speakingRef.current ? FAST : SLOW;
+      angSpeed += (target - angSpeed) * (1 - Math.pow(0.02, dt));
+      angle = (angle + angSpeed * dt) % 360;
+      const el = ringRef.current;
+      if (el) el.style.transform = `rotate(${angle.toFixed(2)}deg)`;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [paused]);
+
+  const beamCirc = 2 * Math.PI * RI;
+  const beamArc = beamCirc * 0.16;
+
+  // Anel externo segmentado: 4 arcos com vãos de ~14° nos cardeais, onde caem
+  // os ticks longos. O dashoffset de meio-vão centra o vão no cardeal.
+  const roCirc = 2 * Math.PI * RO;
+  const roGapFrac = 14 / 360;
+  const roArc = roCirc * (0.25 - roGapFrac);
+  const roGap = roCirc * roGapFrac;
+
   return (
     <div style={{ position: "relative", width: TOT, height: TOT, flexShrink: 0 }}>
       <div style={{ position: "absolute", top: PAD, left: PAD }}>
@@ -471,6 +519,26 @@ export function JarvisOrb({
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+          {/* Bloom em 2 camadas (glow apertado + halo largo), só no anel
+              externo e nos ~16 ticks cardeais/médios — nos 72 ticks pesaria. */}
+          <filter id="jrGlowOuter" x="-150%" y="-150%" width="400%" height="400%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="1.6" result="tight" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="wide" />
+            <feMerge>
+              <feMergeNode in="wide" />
+              <feMergeNode in="tight" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <filter id="jrGlowOuterSoft" x="-120%" y="-120%" width="340%" height="340%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="tight" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="wide" />
+            <feMerge>
+              <feMergeNode in="wide" />
+              <feMergeNode in="tight" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
         <circle cx={CX} cy={CX} r={RI} fill="none" stroke={rgb(0.92 * 0.18)} strokeWidth="0.7" />
@@ -484,7 +552,46 @@ export function JarvisOrb({
           filter="url(#jrGlow)"
         />
 
-        <circle cx={CX} cy={CX} r={RO} fill="none" stroke={rgb(a * 0.14)} strokeWidth="0.6" />
+        {/* Barra giratória SEM blur de propósito: transform animado + filtro
+            no mesmo elemento impede o navegador de cachear o raster do blur. */}
+        <circle
+          ref={ringRef}
+          cx={CX}
+          cy={CX}
+          r={RI}
+          fill="none"
+          stroke={wh(0.85)}
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeDasharray={`${r3(beamArc)} ${r3(beamCirc - beamArc)}`}
+          style={{ transformOrigin: `${CX}px ${CX}px` }}
+        />
+
+        <circle
+          cx={CX}
+          cy={CX}
+          r={RO}
+          fill="none"
+          stroke={rgb(a * 0.14)}
+          strokeWidth="0.6"
+          style={{ transition: "stroke .5s ease" }}
+        />
+        <circle
+          cx={CX}
+          cy={CX}
+          r={RO}
+          fill="none"
+          stroke={rgb(a * 0.55)}
+          strokeWidth="1.1"
+          strokeDasharray={`${r3(roArc)} ${r3(roGap)}`}
+          strokeDashoffset={r3(roGap / 2)}
+          filter="url(#jrGlowOuter)"
+          style={{
+            transform: "rotate(-90deg)",
+            transformOrigin: `${CX}px ${CX}px`,
+            transition: "stroke .5s ease",
+          }}
+        />
 
         {ticks.map((t, i) => (
           <line
@@ -493,20 +600,11 @@ export function JarvisOrb({
             y1={t.y1}
             x2={t.x2}
             y2={t.y2}
-            stroke={rgb(t.long ? a * 0.8 : t.med ? a * 0.4 : a * 0.16)}
-            strokeWidth={t.long ? 1.4 : t.med ? 0.8 : 0.45}
-            filter={t.long ? "url(#jrGlowSoft)" : undefined}
+            stroke={rgb(t.long ? a * 1.0 : t.med ? a * 0.65 : a * 0.32)}
+            strokeWidth={t.long ? 1.6 : t.med ? 1.0 : 0.55}
+            filter={t.long ? "url(#jrGlowOuter)" : t.med ? "url(#jrGlowOuterSoft)" : undefined}
           />
         ))}
-
-        <polygon
-          points={tri(CX, CX - TOFF, TSIZ, true)}
-          fill="none"
-          stroke={wh(a * 0.9)}
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-          filter="url(#jrGlow)"
-        />
 
         <polygon
           points={tri(CX, CX + TOFF, TSIZ, false)}

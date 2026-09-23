@@ -6,7 +6,7 @@ import {
 import { requireEnv } from "@/lib/env";
 import { fetchPayment, fetchPreApproval } from "@/lib/mercadopago";
 import { generateLicenseKey } from "@/lib/license";
-import { grantCredits } from "@/lib/credits";
+import { grantCredits, markSubscriptionCanceled } from "@/lib/credits";
 import { sendPurchaseEmail } from "@/lib/email";
 import type { PlanId } from "@/lib/plans";
 
@@ -132,6 +132,32 @@ export async function POST(request: NextRequest) {
       const subscription = await fetchPreApproval(id);
       if (subscription.status === "authorized") {
         await deliver(subscription.payer_email, "mensal", id, false);
+      } else if (
+        subscription.status === "cancelled" ||
+        subscription.status === "paused"
+      ) {
+        // O Mercado Pago avisa o cancelamento por ESTE mesmo tipo, so com
+        // outro status — antes isto caia fora do if sem fazer nada, e o churn
+        // so aparecia quando o periodo vencia (ate um mes depois).
+        //
+        // `paused` entra junto de proposito: pro nosso lado o efeito e o
+        // mesmo (nao vem cobranca nova, logo nao vem grant), e tratar como
+        // ativo faria o painel contar um assinante que parou de pagar. Se a
+        // assinatura voltar, o `authorized` acima reativa a linha.
+        //
+        // Nao mexe em saldo nem em periodo: o cliente pagou o mes corrente e
+        // usa ate o fim dele. Ver o endpoint /v1/admin/subscription-canceled.
+        //
+        // Sem e-mail nao ha linha pra marcar (a PK de `subscriptions` e o
+        // e-mail). Loga alto em vez de silenciar: e um cancelamento real que
+        // vai ficar contado como ativo no painel ate o periodo vencer.
+        if (subscription.payer_email) {
+          await markSubscriptionCanceled(subscription.payer_email, id);
+        } else {
+          console.error(
+            `[webhook] assinatura ${id} cancelada SEM e-mail do pagador — marcar manualmente`
+          );
+        }
       }
     } else if (type === "subscription_authorized_payment") {
       // Cobranca RECORRENTE (renovacao mensal) — precisa reemitir a licenca

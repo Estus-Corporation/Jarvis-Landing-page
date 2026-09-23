@@ -41,3 +41,44 @@ export async function grantCredits(
   const data = (await res.json()) as { token: string };
   return data.token;
 }
+
+// Avisa o servidor de creditos que a assinatura foi cancelada no Mercado Pago.
+//
+// **Nao tira o acesso na hora** — quem cancelou no dia 3 pagou o mes inteiro. O
+// periodo corrente continua valendo ate `current_period_end`, e o que o
+// cancelamento faz e impedir a renovacao (que ja nao aconteceria sozinha, por
+// falta de cobranca nova). O ganho real e de VISIBILIDADE: sem isto, um
+// cancelamento so aparecia quando o periodo vencia — ate um mes depois no
+// mensal, um ano no anual —, ou seja, o churn ficava invisivel exatamente no
+// periodo em que da pra reagir a ele.
+//
+// Diferente de `grantCredits`, aqui um erro NAO e propagado: o cancelamento e
+// um registro de gestao, nao a entrega de algo que o cliente pagou. Derrubar o
+// webhook com 500 por causa disto faria o Mercado Pago reenviar a notificacao
+// em loop sem nada pra consertar. Loga alto e segue.
+export async function markSubscriptionCanceled(
+  email: string,
+  eventId?: string
+): Promise<void> {
+  try {
+    const baseUrl = requireEnv("CREDITS_SERVER_URL");
+    const res = await fetch(`${baseUrl}/v1/admin/subscription-canceled`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Secret": requireEnv("CREDITS_ADMIN_SECRET"),
+      },
+      body: JSON.stringify({ email, eventId }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error(
+        `[credits] falha ao marcar cancelamento de ${email} (${res.status}): ${detail}`
+      );
+      return;
+    }
+    console.log(`[credits] cancelamento registrado para ${email}`);
+  } catch (error) {
+    console.error(`[credits] erro ao marcar cancelamento de ${email}:`, error);
+  }
+}

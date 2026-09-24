@@ -37,12 +37,12 @@ const jsonLd = {
     {
       "@type": "Offer",
       name: "Mensal",
-      price: "79",
+      price: "110",
       priceCurrency: "BRL",
       availability: "https://schema.org/InStock",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "79",
+        price: "110",
         priceCurrency: "BRL",
         billingDuration: 1,
         billingIncrement: 1,
@@ -52,12 +52,12 @@ const jsonLd = {
     {
       "@type": "Offer",
       name: "Anual",
-      price: "650",
+      price: "899",
       priceCurrency: "BRL",
       availability: "https://schema.org/InStock",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "650",
+        price: "899",
         priceCurrency: "BRL",
         billingDuration: 12,
         billingIncrement: 12,

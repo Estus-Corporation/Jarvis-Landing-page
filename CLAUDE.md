@@ -25,13 +25,13 @@ invite-only no Brasil, indisponível para conta nova) e AbacatePay também
 
 Os dois planos usam mecanismos diferentes, porque a cobrança é diferente:
 
-- **Mensal (R$79/mês)** — assinatura recorrente via um *plano* (`/preapproval_plan`)
+- **Mensal (R$110/mês)** — assinatura recorrente via um *plano* (`/preapproval_plan`)
   criado uma vez por `node scripts/setup-mercadopago.mjs`, cujo ID vai em
   `MP_PREAPPROVAL_PLAN_ID`. Não usa `POST /preapproval` porque ele exigiria
   `payer_email` antes do checkout, obrigando a pessoa a digitar o e-mail duas
   vezes (aqui e na tela do Mercado Pago). **Sem esse ID configurado o botão do
   Mensal não funciona.**
-- **Anual (R$650/ano)** — cobrança única via Checkout Pro (`/preferences`),
+- **Anual (R$899/ano)** — cobrança única via Checkout Pro (`/preferences`),
   criada a cada clique.
 
 **Entrega:** o webhook `/api/webhooks/mercadopago` valida a assinatura

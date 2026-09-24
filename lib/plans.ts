@@ -18,7 +18,7 @@ export const PLANS = {
   mensal: {
     id: "mensal",
     label: "Mensal",
-    price: 79,
+    price: 110,
     // Assinatura recorrente: o cartao e cobrado sozinho todo mes ate o
     // cliente cancelar.
     billing: "recorrente",
@@ -26,7 +26,7 @@ export const PLANS = {
   anual: {
     id: "anual",
     label: "Anual",
-    price: 650,
+    price: 899,
     // Cobranca unica que da direito a 12 meses. Nao renova sozinha.
     billing: "unico",
   },

@@ -35,21 +35,15 @@ const PrismaticBurst = dynamic(() => import("@/components/ui/prismatic-burst"), 
 // listar os mesmos oito itens duas vezes finge uma diferenca que nao existe e
 // faz a pessoa procurar o que muda entre as colunas.
 //
-// Numeros conferidos: 139,90 - 79 = 60,90 de desconto no mensal, 43,5%
-// (60,90/139,90 = 0,4353). 987 - 650 = 337 de desconto no anual, 34,1%
-// (337/987 = 0,3415).
+// Ancora de preco (decisao de 24/09/2026): o anual compara com 12x o
+// mensal — 12 x 110 = 1.320; 1.320 - 899 = 421 de economia, 31,9% (-32%).
+// E verdade matematica, conferivel pelo visitante na propria pagina. O
+// mensal NAO tem preco riscado: o antigo "de R$139,90" era um preco futuro
+// sem data, e "de/por" com preco que nunca foi cobrado e publicidade
+// enganosa (CDC). Sem contador regressivo e sem "restam X vagas" — escassez
+// inventada derruba a confianca de quem le com atencao.
 //
-// Os dois planos agora seguem a MESMA estrutura de nota: preco de
-// lancamento, com o preco normal (pos-lancamento) e o desconto ao lado. Antes
-// o anual comparava com o mensal cheio ("economize XXX"); virou comparacao
-// direta contra o proprio preco normal do anual, simetrico ao mensal, porque
-// agora existe um preco normal proprio pro anual (987) — nao precisa mais
-// pedir emprestado o preco do outro plano pra parecer vantajoso.
-//
-// A urgencia do mensal vem so do que e verdade: o preco sobe para 139,90
-// quando o lancamento acabar (e o anual para 987). Sem contador regressivo
-// (nao ha data definida) e sem "restam X vagas". Escassez inventada derruba a
-// confianca justamente em quem le com atencao, que e o publico deste produto.
+// Mudou o preco do mensal? Recalcule `normalPrice`/`discountPercent` do anual.
 // `highlights` NAO repete a lista de recursos (essa e identica nos dois
 // planos, repetir dentro dos cartoes so fingiria uma diferenca que nao
 // existe). Sao 3 pontos sobre a UNICA coisa que de fato muda entre os
@@ -64,7 +58,7 @@ const PrismaticBurst = dynamic(() => import("@/components/ui/prismatic-burst"), 
 //   3. Jarvis-Landing-page/app/page.tsx        → o JSON-LD que o Google indexa
 //   4. Jarvis-Credits-Server/src/pricing.ts    → PLAN_ALLOTMENT_MICRO e PLAN_DIAS
 //                                                (quanto de uso o preço compra —
-//                                                 e de onde sai o "~585 comandos
+//                                                 e de onde sai o "~815 comandos
 //                                                 de voz por mês" dos dois cards)
 //   5. Project-Jarvis/legal/termos-de-uso.md   → seção 13, o valor contratado
 // ─────────────────────────────────────────────────────────────────────────
@@ -74,16 +68,14 @@ const plans = [
     name: "Mensal",
     icon: ArrowsClockwise,
     subtitle: "Para começar sem compromisso",
-    price: "R$ 79",
+    price: "R$ 110",
     period: "/mês",
-    normalPrice: "R$ 139,90",
-    discountPercent: "-44%",
     highlights: [
       // O volume incluído sai do PLAN_ALLOTMENT_MICRO do Credits Server
       // (src/pricing.ts) dividido pelo custo de uma interação de voz. Os dois
       // planos anunciam o MESMO número de propósito — ver a nota de decisão
       // naquele arquivo. Mudou o allotment lá, mude o número aqui.
-      "~585 comandos de voz por mês (~19 por dia)",
+      "~815 comandos de voz por mês (~27 por dia)",
       "Comece hoje, sem burocracia",
       "Sem multa se você cancelar",
     ],
@@ -95,17 +87,18 @@ const plans = [
     name: "Anual",
     icon: Trophy,
     subtitle: "Para quem já decidiu usar todo dia",
-    price: "R$ 650",
+    price: "R$ 899",
     period: "/ano",
-    normalPrice: "R$ 987",
-    discountPercent: "-34%",
+    normalPrice: "R$ 1.320",
+    discountPercent: "-32%",
+    anchorLabel: "12× o mensal",
     highlights: [
       // Mesmo volume mensal do plano Mensal — 12 × o allotment mensal. É o
       // ponto do plano anual: mesmo uso, preço menor. Ver o comentário gêmeo
       // no card Mensal acima.
-      "~585 comandos de voz por mês (~19 por dia)",
-      "Equivale a R$ 54,17 por mês",
-      "Preço de lançamento travado por 12 meses",
+      "~815 comandos de voz por mês (~27 por dia)",
+      "Equivale a R$ 74,92 por mês",
+      "Preço travado por 12 meses",
     ],
     note: "Cobrado uma vez, vale 12 meses.",
     highlighted: true,
@@ -243,16 +236,20 @@ function PlanCard({
           {/* shadow: mesmo halo suave dos CTAs solidos do site (Hero,
               "Quero ser notificado!"...) — pedido do usuario pra deixar o
               selo "levemente" mais apelativo, sem sair do preto-e-branco. */}
-          <span className="inline-flex shrink-0 items-center rounded-full bg-[#FAFAFA] px-2.5 py-1 text-xs font-bold tracking-tight text-ink-950 shadow-[0_6px_18px_-6px_rgba(255,255,255,0.55)]">
-            {plan.discountPercent}
-          </span>
+          {plan.discountPercent && (
+            <span className="inline-flex shrink-0 items-center rounded-full bg-[#FAFAFA] px-2.5 py-1 text-xs font-bold tracking-tight text-ink-950 shadow-[0_6px_18px_-6px_rgba(255,255,255,0.55)]">
+              {plan.discountPercent}
+            </span>
+          )}
         </div>
-        <p className="mt-2 flex items-center gap-1.5 text-xs leading-relaxed text-white/40">
-          <span className="font-mono text-white/40 line-through">
-            {plan.normalPrice}
-          </span>
-          Preço de lançamento
-        </p>
+        {plan.normalPrice && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs leading-relaxed text-white/40">
+            <span className="font-mono text-white/40 line-through">
+              {plan.normalPrice}
+            </span>
+            {plan.anchorLabel}
+          </p>
+        )}
 
         {/* Preenche o vao que sobrava entre a nota de preco e o botao.
             Antes essa lista repetia 4 dos 8 recursos do produto, que sao

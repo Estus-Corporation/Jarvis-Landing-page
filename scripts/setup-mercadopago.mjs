@@ -31,7 +31,7 @@ const plan = await new PreApprovalPlan(client).create({
     auto_recurring: {
       frequency: 1,
       frequency_type: "months",
-      transaction_amount: 79,
+      transaction_amount: 110,
       currency_id: "BRL",
     },
   },

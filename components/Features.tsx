@@ -450,20 +450,6 @@ function CapButton({
   );
 }
 
-// ---- Marca de 4 pontos do Jarvis (mesma do header/footer), em miniatura:
-// serve de "avatar" do cartao de resposta, do mesmo jeito que o microfone
-// marca o cartao do usuario. ----------------------------------------------
-function JarvisMark() {
-  return (
-    <span className="relative block h-3.5 w-3.5" aria-hidden>
-      <span className="absolute left-1/2 top-0 h-1 w-1 -translate-x-1/2 rounded-full bg-white" />
-      <span className="absolute left-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-white" />
-      <span className="absolute right-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-white" />
-      <span className="absolute bottom-0 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-white" />
-    </span>
-  );
-}
-
 // ---- "Pensando": 3 pontinhos que piscam UM DE CADA VEZ (delay escalonado
 // na mesma animacao CSS, ver .thinking-dot em globals.css), enquanto a
 // resposta do Jarvis ainda nao chegou. Ocupa o cartao antes de showReply
@@ -3264,9 +3250,6 @@ export default function Features() {
             <div className="mx-3.5 flex items-center gap-2.5 justify-center rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:mx-5 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
               {showReply ? (
                 <>
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
-                    <JarvisMark />
-                  </span>
                   <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
                     Jarvis
                   </span>

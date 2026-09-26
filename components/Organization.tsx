@@ -10,7 +10,7 @@ import {
 import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
-import { Card } from "@/components/ui/card";
+import { TechFrame } from "@/components/ui/tech-frame";
 import { cn } from "@/lib/utils";
 import {
   ListChecks,
@@ -161,33 +161,45 @@ function FeatureCardBody({
 }) {
   return (
     <>
-      {/* bg-ink-700: mesma cor dos cartoes de widget do carrossel do celular
-          em Showcase.tsx — pedido do usuario pra unificar as duas familias
-          de cartao.
-          Os paineis das maquetes continuam em ink-800: eles vivem sobre o
-          palco ink-950, sao outra superficie, e mexer neles ia junto tirar o
-          contraste que faz a maquete ler como app. */}
-      <Card
-        // Sem glow-ring (pedido do usuario): tirou o anel de luz girando na
-        // borda no hover destes 3 cartoes. O hover:border-white/25 dos dois
-        // apagados continua — e so uma troca de cor (transition-colors),
-        // nao uma animacao em loop.
-        className={cn(
-          "group overflow-hidden bg-ink-700 transition-colors duration-300",
-          // O cartao em destaque tem a borda clara SEMPRE, sem depender de
-          // hover — mesma gramatica de destaque do cartao Anual em Precos —, e
-          // com 2px no lugar de 1: `border-2` sobrescreve o `border` que vem do
-          // proprio componente Card (o twMerge do cn resolve, porque as duas
-          // classes sao do mesmo grupo de largura de borda).
-          // Os outros dois seguem apagados e so acendem sob o mouse, o que
-          // mantem a diferenca visivel mesmo com o cursor em cima de um deles.
-          bigger ? "border-2 border-white/40" : "hover:border-white/25"
-        )}
-      >
+      {/* MESMO CARD DA HUD DE CRIACAO DE TAREFA do app (TaskModal, em
+          `MainInterface.tsx` no Project-Jarvis), pedido do usuario em
+          25/09/2026: moldura TechFrame (octogono chanfrado com degraus e
+          linha dupla — ver tech-frame.tsx), corpo #141416 (= ink-800) com o
+          brilho INTERNO do keyframe jGlowInInset no estado final, cabecalho
+          #1c1c20 (= ink-700) com o filete de baixo, e o halo desfocado por
+          FORA, atras da moldura. O halo e uma forma propria (nao box-shadow)
+          pelo mesmo motivo de la: sombra "pra fora" deixa camada escura nos
+          triangulos que o chanfro corta.
+          Sem animacao de entrada propria (o jPopIn/jGlowOuterIn do app): a
+          entrada aqui e a do FeatureCard, e somar as duas tremia o cartao.
+          O destaque do cartao do meio, que antes era borda de 2px, virou halo
+          mais forte — a moldura e a mesma nos tres, como no app. */}
+      <div className="group relative">
+        <div
+          aria-hidden
+          className={cn(
+            // Fora do carrossel do celular: la a janela de recorte cortaria o
+            // blur seco no topo, e a moldura ja tem o proprio brilho de traco.
+            mobileCarousel && "hidden",
+            "pointer-events-none absolute -inset-[14px] rounded-[30px] bg-white blur-[20px] transition-opacity duration-300",
+            bigger ? "opacity-[0.09]" : "opacity-[0.04] group-hover:opacity-[0.08]"
+          )}
+        />
+        <TechFrame
+          // O vao entre moldura e conteudo (PAD em tech-frame.tsx) mostra o
+          // ink-900, um degrau abaixo do painel — le como a "caixa" do
+          // instrumento em volta da tela, e e onde o brilho interno aparece.
+          innerClassName="relative bg-ink-900 text-[#FAFAFA]"
+          contentClassName="bg-ink-800"
+          innerStyle={{
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 14px rgba(255,255,255,0.14), inset 0 0 28px rgba(255,255,255,0.08), inset 0 0 50px rgba(255,255,255,0.045)",
+          }}
+        >
         {/* cabecalho (data-card-head: e por aqui que o carrossel do celular
             acha e mede este bloco de fora — ver o comentario do calculo de
             altura em Organization()) */}
-        <div data-card-head className="border-b border-white/[0.08] p-6">
+        <div data-card-head className="border-b border-white/[0.055] bg-ink-700 p-6">
           <div className="flex items-center gap-3.5">
             <RingIcon icon={icon} />
             <h3 className="min-w-0 flex-1 font-display text-[1.375rem] font-semibold tracking-[-0.02em] text-[#FAFAFA]">
@@ -261,7 +273,8 @@ function FeatureCardBody({
             className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-gradient-to-t from-ink-950 via-ink-950/75 to-transparent"
           />
         </div>
-      </Card>
+        </TechFrame>
+      </div>
 
       {/* legenda: a frase que cria o que o cartao acabou de mostrar */}
       <p className="mt-4 px-1 text-center text-[13px] italic leading-snug text-white/45 laptop:mt-3 laptop:px-0 laptop:text-[11px]">
@@ -1160,12 +1173,16 @@ export default function Organization() {
               parada e essa largura menos o inset, ver `stride`.
               A altura e a do cartao mais alto dos tres, fixa enquanto a
               largura da tela nao muda (ver trackHeight, mais acima). */}
+          {/* -my-5 py-5: mesma sangria, na vertical — o brilho do traco da
+              moldura HUD (drop-shadow do SVG em tech-frame.tsx) vaza pra fora
+              do cartao, e sem folga a janela cortava ele seco no topo. Os 40px
+              somados na altura sao exatamente esse padding (border-box). */}
           <div
             ref={trackRef}
-            className={`-mx-6 overflow-hidden px-6 ${
+            className={`-mx-6 -my-5 overflow-hidden px-6 py-5 ${
               trackHeight ? "transition-[height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" : ""
             }`}
-            style={trackHeight ? { height: trackHeight } : undefined}
+            style={trackHeight ? { height: trackHeight + 40 } : undefined}
           >
             {/* O bloco INTEIRO (tira + pontinhos, mais abaixo) e a area de
                 arrasto, nao so o cartao — no celular o dedo cai em qualquer

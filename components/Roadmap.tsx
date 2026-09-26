@@ -13,6 +13,7 @@ import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
   DeviceMobile,
   House,
+  CalendarCheck,
   Car,
   ArrowRight,
   CaretUp,
@@ -48,32 +49,40 @@ type RoadmapItem = {
   // ser celular). Opcional: quando ausente, cai pra bodyCompact e depois
   // pra body.
   bodyMobile?: string;
+  // Data de lancamento, quando ja tem uma. Vira um SELO proprio (ver
+  // ReleaseBadge), nao uma frase no fim do body: pedido do usuario, que
+  // queria a data separada do texto e bem visivel. Os itens sem data nao
+  // mostram selo nenhum.
+  release?: string;
   quote: string;
   image: string;
 };
 
 const items: RoadmapItem[] = [
-  {
-    icon: DeviceMobile,
-    step: "01",
-    title: "App Mobile",
-    body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Pergunte algo, peça uma tarefa ou só acompanhe o que ele está fazendo — tudo pelo mesmo Jarvis, agora no seu bolso. Notificações chegam na hora certa, e o histórico da conversa segue com você entre o computador e o celular, sem perder o fio.",
-    bodyMobile:
-      "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Notificações chegam na hora certa, e a conversa segue com você entre os dois aparelhos.",
-    quote: "Jarvis, quanto falta pro meu build terminar?",
-    image: "/images/mobile.webp",
-  },
+  // Dispositivos Smart vem PRIMEIRO (pedido do usuario em 25/09/2026),
+  // trocado de lugar com o App Mobile.
   {
     icon: House,
-    step: "02",
+    step: "01",
     title: "Dispositivos Smart",
     body: "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Chegou e já quer tudo do jeito certo? Basta pedir, e ele ajusta a casa inteira antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra quando sair — um comando só, e cada cômodo responde do jeito que você combinou.",
     bodyCompact:
       "Lâmpada, ar-condicionado, tomada inteligente: o mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa. Peça, e ele ajusta tudo antes de você tirar o casaco. Crie rotinas pra manhã, pra noite ou pra saída — um comando só, e cada cômodo responde do jeito certo.",
     bodyMobile:
       "O mesmo Jarvis que cuida do seu PC passa a cuidar da sua casa: luz, ar-condicionado, tomada. Crie rotinas pra manhã, noite ou saída — um comando só.",
+    release: "27/10/2026",
     quote: "Jarvis, apaga as luzes e liga o ar-condicionado.",
     image: "/images/iot.webp",
+  },
+  {
+    icon: DeviceMobile,
+    step: "02",
+    title: "App Mobile",
+    body: "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Pergunte algo, peça uma tarefa ou só acompanhe o que ele está fazendo — tudo pelo mesmo Jarvis, agora no seu bolso. Notificações chegam na hora certa, e o histórico da conversa segue com você entre o computador e o celular, sem perder o fio.",
+    bodyMobile:
+      "Um app pra continuar comandando o Jarvis do celular, mesmo longe do computador. Notificações chegam na hora certa, e a conversa segue com você entre os dois aparelhos.",
+    quote: "Jarvis, quanto falta pro meu build terminar?",
+    image: "/images/mobile.webp",
   },
   {
     icon: Car,
@@ -88,6 +97,27 @@ const items: RoadmapItem[] = [
     image: "/images/car.webp",
   },
 ];
+
+// Selo de data de lancamento. Solido branco com texto escuro: e a mesma
+// superficie de maximo contraste do "Mais popular" e do "-32%" em Precos — a
+// unica cor "forte" que o sistema monocromatico permite, e por isso a que
+// separa a data do resto do cartao de longe. O halo e o mesmo dos CTAs
+// solidos do site. Sem animacao em loop: destaque por contraste, nao por
+// movimento.
+function ReleaseBadge({ date, className }: { date: string; className?: string }) {
+  return (
+    <p
+      className={`inline-flex items-center gap-2 rounded-full bg-[#FAFAFA] px-3.5 py-1.5 text-sm font-semibold text-ink-950 shadow-[0_6px_22px_-6px_rgba(255,255,255,0.55)] ${className ?? ""}`}
+    >
+      <CalendarCheck size={16} weight="bold" aria-hidden className="shrink-0" />
+      <span>
+        Chega em <span className="tabular-nums">{date}</span>
+      </span>
+    </p>
+  );
+}
+
+const hasRelease = items.some((item) => item.release);
 
 const AUTOPLAY_MS = 6000;
 
@@ -626,6 +656,18 @@ export default function Roadmap() {
                   >
                     {item.title}
                   </h3>
+                  {/* Nos cartoes sem data o selo ocupa o MESMO espaco, so
+                      invisivel: os tres ficam lado a lado na tira, e sem
+                      a reserva a imagem do cartao com selo descia ~40px em
+                      relacao a dos vizinhos no meio do arrasto. */}
+                  {hasRelease && (
+                    <div
+                      aria-hidden={!item.release || undefined}
+                      className={`mt-3 flex justify-center ${item.release ? "" : "invisible"}`}
+                    >
+                      <ReleaseBadge date={item.release ?? "00/00/0000"} />
+                    </div>
+                  )}
                   {/* shadow com duas camadas, mesma dupla do desktop
                       (pedido do usuario): halo branco parado por fora da
                       moldura + a sombra de profundidade que ja existia. */}
@@ -820,6 +862,9 @@ export default function Roadmap() {
                     <h3 className="mt-2 max-w-[16ch] text-balance font-display text-4xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-5xl laptop:text-4xl">
                       {item.title}
                     </h3>
+                    {item.release && (
+                      <ReleaseBadge date={item.release} className="mt-4 self-start laptop:mt-3" />
+                    )}
                     <p className="mt-5 max-w-[38ch] text-base leading-relaxed text-white/55 laptop:mt-4">
                       {isLaptop && item.bodyCompact ? item.bodyCompact : item.body}
                     </p>

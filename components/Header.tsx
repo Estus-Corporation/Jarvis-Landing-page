@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
-import FreeTrialModal from "@/components/FreeTrialModal";
 
 // Navegacao. Uma ancora por secao real da pagina, na mesma ordem em que elas
 // aparecem ao rolar: Recursos, Interface (o showcase da dashboard),
@@ -80,7 +79,6 @@ const Logo = () => (
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [trialOpen, setTrialOpen] = useState(false);
   // Nenhum link comeca ativo: a Hero (#top) e a primeira coisa na tela, e
   // ela nao tem link correspondente no menu, entao nada deve acender ate a
   // pessoa rolar ate a primeira secao de verdade.
@@ -117,25 +115,17 @@ export default function Header() {
   // Hover minimo, igual ao CTA da Hero: so levanta 2px e o fundo clareia.
   // Sem mola e sem brilho/sombra no hover (ambos rejeitados).
   const signupButton = (
+    // Leva ao bloco de download (25/09/2026): todo mundo comeca de graca,
+    // sem cartao. O "Testar gratis" que ficava ao lado (abria o
+    // FreeTrialModal, e-mail -> codigo) saiu junto: com o download direto e o
+    // SetupWizard do app criando a conta, o modal virou um segundo caminho
+    // pro mesmo lugar.
     <a
-      href="#precos"
+      href="#download"
       className="block w-full rounded-full bg-[#FAFAFA] px-6 py-2.5 text-center text-sm font-semibold text-ink-950 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white active:translate-y-0 active:scale-[0.97] sm:w-auto"
     >
-      Começar agora
+      Baixar grátis
     </a>
-  );
-
-  // Secundario, sem competir com "Comecar agora" (pilula solida): so texto,
-  // clareia no hover igual aos links de navegacao. Abre o modal de teste
-  // gratis (FreeTrialModal) em vez de rolar pra secao nenhuma.
-  const trialButton = (
-    <button
-      type="button"
-      onClick={() => { setTrialOpen(true); setIsOpen(false); }}
-      className="block w-full text-center text-sm text-white/55 transition-colors hover:text-white sm:w-auto"
-    >
-      Testar grátis
-    </button>
   );
 
   return (
@@ -261,7 +251,6 @@ export default function Header() {
         </nav>
 
         <div className="hidden items-center gap-x-5 lg:flex">
-          {trialButton}
           {signupButton}
         </div>
 
@@ -312,10 +301,8 @@ export default function Header() {
           ))}
         </nav>
         <div className="mt-5 w-full">{signupButton}</div>
-        <div className="mt-4 w-full">{trialButton}</div>
       </div>
 
-      <FreeTrialModal open={trialOpen} onClose={() => setTrialOpen(false)} />
     </header>
   );
 }

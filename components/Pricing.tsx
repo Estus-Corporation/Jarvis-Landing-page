@@ -16,10 +16,14 @@ import {
   ShieldCheck,
   ArrowsClockwise,
   Trophy,
+  DownloadSimple,
+  WindowsLogo,
+  Tag,
 } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
+import { TechFrame } from "@/components/ui/tech-frame";
 
 // Import dinamico (ssr:false): PrismaticBurst carrega a lib `ogl` (WebGL)
 // inteira so pra desenhar um fundo decorativo no fim da pagina. Import
@@ -107,6 +111,94 @@ const plans = [
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
+// ---- Download (topo da secao) -------------------------------------------
+// Decisao de 25/09/2026: todo mundo que baixa comeca de graca, sem cartao,
+// entao a acao
+// PRINCIPAL da secao deixou de ser "escolher plano" e virou "baixar". Os
+// planos continuam na mesma secao, atras do botao "Planos": quem vai baixar quer
+// saber quanto custa depois (preco escondido le como pegadinha), e o CDC
+// quer o preco visivel antes da compra.
+//
+// O teste NAO e por dias, e por USO (um saldo inicial de creditos — ver
+// FREE_GRANT_MICRO no Credits Server), e o tamanho dele NAO e divulgado,
+// decisao do usuario. Por isso nenhum texto daqui fala em prazo nem em
+// quantidade: so "gratis" e "sem cartao". (A "Garantia de 7 dias" no fim da
+// secao e outra coisa — e o reembolso do CDC, depois de pagar.)
+//
+// Link ESTAVEL do GitHub Releases: `latest/download/<arquivo>` redireciona
+// sempre pro instalador da versao mais nova, e o electron-builder publica
+// `Jarvis-Setup.exe` (sem numero de versao) justamente pra isso. Mesmo
+// arquivo do mesmo lugar tambem e o que ajuda a reputacao no SmartScreen (ver
+// DISTRIBUICAO-EXE.md no Project-Jarvis). Override por env pra trocar sem
+// mexer no codigo, mesmo padrao do link da Comunidade em Formulario.tsx.
+const DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_DOWNLOAD_URL ||
+  "https://github.com/Estus-Corporation/Jarvis-Releases/releases/latest/download/Jarvis-Setup.exe";
+
+const TRIAL_POINTS = ["Sem cartão de crédito", "Para Windows"];
+
+// Mesma moldura HUD dos cartoes de plano (e dos de Organizacao), so que
+// larga: e o bloco principal da secao, entao ganha o halo forte.
+function DownloadCard() {
+  return (
+    <div className="relative">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-[14px] rounded-[30px] bg-white opacity-[0.09] blur-[20px]"
+      />
+      <TechFrame
+        innerClassName="bg-ink-900"
+        innerStyle={{
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 14px rgba(255,255,255,0.14), inset 0 0 28px rgba(255,255,255,0.08), inset 0 0 50px rgba(255,255,255,0.045)",
+        }}
+        contentClassName="bg-ink-800"
+      >
+        <div className="flex flex-col items-center gap-7 px-6 py-9 text-center sm:px-10 md:flex-row md:justify-between md:gap-10 md:text-left laptop:py-7">
+          <div>
+            <p className="font-display text-2xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-[1.75rem]">
+              Comece grátis
+            </p>
+            <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-white/55 sm:text-base">
+              Baixe, instale e use o Jarvis completo. Se gostar, escolha um
+              plano no fim do teste.
+            </p>
+            <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 md:justify-start">
+              {TRIAL_POINTS.map((label) => (
+                <li key={label} className="flex items-center gap-2 text-sm text-white/65">
+                  <Check size={14} weight="bold" className="shrink-0 text-white/40" aria-hidden />
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex w-full shrink-0 flex-col items-center md:w-auto">
+            {/* Mesmo gesto dos CTAs solidos do site (Hero): levanta 2px e
+                cresce de leve no hover. */}
+            <a
+              href={DOWNLOAD_URL}
+              className="flex w-full items-center justify-center gap-3 rounded-full bg-[#FAFAFA] px-8 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] md:w-auto"
+            >
+              <DownloadSimple size={20} weight="bold" aria-hidden />
+              Baixar grátis
+            </a>
+            {/* "· versao mais recente" some no celular: com ela a linha
+                quebrava em duas e o icone ficava sozinho na ponta. */}
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-white/40">
+              <WindowsLogo size={13} weight="fill" aria-hidden className="shrink-0" />
+              <span>
+                Instalador para Windows
+                <span className="hidden sm:inline"> · versão mais recente</span>
+              </span>
+            </p>
+          </div>
+        </div>
+      </TechFrame>
+    </div>
+  );
+}
+
 // ---- Carrossel de arrastar (so no celular, abaixo de sm) -----------------
 // Mesma mecanica de Organization.tsx (posFor/snapTo/handleDragEnd) — ver os
 // comentarios grandes la pro raciocinio completo.
@@ -144,16 +236,32 @@ function Price({ value, className }: { value: string; className?: string }) {
 function PlanCard({
   plan,
   isPeeking,
+  inCarousel = false,
   mensalHovered,
   setMensalHovered,
   reduce,
 }: {
   plan: (typeof plans)[number];
   isPeeking: boolean;
+  // So a tira do celular passa true: la a janela de recorte cortaria o halo
+  // de fora seco, entao ele nao e desenhado (mesma decisao de
+  // Organization.tsx).
+  inCarousel?: boolean;
   mensalHovered: boolean;
   setMensalHovered: (v: boolean) => void;
   reduce: boolean;
 }) {
+  // MESMO CARD DA HUD DE CRIACAO DE TAREFA do app (TaskModal), igual aos 3
+  // cartoes de Organization.tsx — ver o comentario grande em
+  // FeatureCardBody la pra origem de cada peca. Moldura TechFrame no lugar
+  // do rounded-2xl + border, cabecalho ink-700 com filete, corpo ink-800 com
+  // brilho interno e halo desfocado por fora. O destaque do Anual, que antes
+  // era a borda white/40 permanente, virou o halo mais forte — a moldura e a
+  // mesma nos dois, como no app.
+  //
+  // A pilula "Mais popular" mora FORA do TechFrame, como irma dele: o miolo
+  // da moldura e recortado por clip-path, e ela fica de proposito meio pra
+  // fora da borda de cima — dentro, seria cortada ao meio.
   return (
     <div
       // aria-hidden: enquanto so espiando (arrastando ou parado do lado do
@@ -162,6 +270,29 @@ function PlanCard({
       // ver tambem o tabIndex no CTA, mais abaixo, que e o unico elemento
       // focavel aqui dentro.
       aria-hidden={isPeeking || undefined}
+      className={cn(
+        "relative h-full",
+        // So decorativa enquanto espia: sem isso, tocar bem na borda da
+        // espiada ativaria o CTA por baixo sem o visitante ter arrastado
+        // ou escolhido o plano de verdade.
+        isPeeking && "pointer-events-none"
+      )}
+    >
+      {!inCarousel && (
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute -inset-[14px] rounded-[30px] bg-white blur-[20px]",
+            plan.highlighted ? "opacity-[0.09]" : "opacity-[0.04]"
+          )}
+        />
+      )}
+      <TechFrame
+        className="h-full"
+        innerStyle={{
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 14px rgba(255,255,255,0.14), inset 0 0 28px rgba(255,255,255,0.08), inset 0 0 50px rgba(255,255,255,0.045)",
+        }}
       // h-full: preenche a celula do grid de desktop (que estica pra
       // altura da MAIOR das duas via align-items:stretch, o padrao de
       // grid) e a altura natural do proprio min-h na tira do celular (que
@@ -183,29 +314,21 @@ function PlanCard({
       // que fica de proposito meio pra fora da borda de cima dele — quem
       // corta a espiada e o WRAPPER da tira (ver Pricing(), mais abaixo),
       // nunca o cartao.
-      // Sem hover nos dois cartoes de proposito: o brilho da borda do
-      // Anual (que antes so aparecia no hover) virou permanente
-      // (border-white/40 direto), e o Mensal fica parado no
-      // border-white/10 sempre — nenhum dos dois reage mais ao mouse
-      // passando por cima.
-      className={cn(
-        "relative flex h-full min-h-[480px] flex-col justify-between rounded-2xl border p-6 sm:min-h-[530px] sm:p-7 laptop:min-h-[430px] laptop:p-6",
-        plan.highlighted
-          ? "border-white/40 bg-ink-800"
-          : "border-white/10 bg-ink-900",
-        // So decorativa enquanto espia: sem isso, tocar bem na borda da
-        // espiada ativaria o CTA por baixo sem o visitante ter arrastado
-        // ou escolhido o plano de verdade.
-        isPeeking && "pointer-events-none"
-      )}
-    >
-      {plan.highlighted && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#FAFAFA] px-3.5 py-1 text-xs font-semibold text-ink-950">
-          Mais popular
-        </span>
-      )}
-
-      <div>
+      // Sem hover nos dois cartoes de proposito: nenhum dos dois reage ao
+      // mouse passando por cima (o halo do Anual e permanente).
+      // O padding saiu do miolo: agora o cabecalho (faixa ink-700) e o
+      // corpo carregam cada um o seu, porque a faixa precisa encostar nas
+      // bordas da moldura.
+      // O vao entre moldura e conteudo (PAD em tech-frame.tsx, 12px) mostra
+      // o ink-900 — mesma leitura de Organization.tsx. Os min-h do painel
+      // descontam os 24px desse vao (12 em cima + 12 embaixo), entao o
+      // cartao inteiro continua com a altura de antes: 480/530/430.
+      innerClassName="h-full bg-ink-900"
+      contentClassName="relative flex h-full min-h-[456px] flex-col bg-ink-800 sm:min-h-[506px] laptop:min-h-[406px]"
+      >
+      {/* Cabecalho do card da HUD: faixa ink-700 (#1c1c20 no app) com o
+          filete de baixo. */}
+      <div className="border-b border-white/[0.055] bg-ink-700 px-6 pb-5 pt-6 sm:px-7 laptop:px-6">
         <h3 className="flex items-center gap-2 text-base font-semibold text-[#FAFAFA]">
           <plan.icon
             size={17}
@@ -216,6 +339,10 @@ function PlanCard({
           {plan.name}
         </h3>
         <p className="mt-1 text-sm text-white/45">{plan.subtitle}</p>
+      </div>
+
+      <div className="flex flex-1 flex-col justify-between px-6 pb-7 pt-5 sm:px-7 laptop:px-6 laptop:pb-6">
+      <div>
 
         {/* Desconto EXPLICITO, pedido do usuario: antes era uma linha de
             texto pequena e apagada (text-xs text-white/40) — "de/por" batido
@@ -225,7 +352,7 @@ function PlanCard({
             a unica cor "forte" que o sistema monocromatico permite) E o
             preco antigo riscado — a leitura "de X por Y" fica clara so de
             bater o olho, sem precisar ler a frase toda. */}
-        <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
           <div className="flex items-baseline gap-1.5">
             <Price
               value={plan.price}
@@ -308,10 +435,14 @@ function PlanCard({
           // voltando ao chao e encolhendo no clique. Vale para os dois
           // planos; o que continua diferente entre eles e so a superficie
           // (branca no Anual, aro girando no Mensal).
+          // Os dois agora sao SECUNDARIOS (contorno, sem fundo branco): a
+          // acao principal da secao virou o "Baixar gratis" la em cima, e um
+          // segundo botao branco aqui disputaria com ele. Quem ja quer pagar
+          // sem testar continua podendo, direto daqui.
           className={cn(
             "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-base font-semibold transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]",
             plan.highlighted
-              ? "border-transparent bg-[#FAFAFA] text-ink-950 hover:bg-white"
+              ? "border-white/40 text-white hover:border-white/70 hover:bg-white/[0.05]"
               : "border-white/15 text-white/85 hover:border-white/40 hover:text-white"
           )}
         >
@@ -324,12 +455,20 @@ function PlanCard({
             </div>
           )}
           <span className="relative">
-            {plan.id === "mensal" ? "Obter plano Mensal" : "Obter plano Anual"}
+            {plan.id === "mensal" ? "Assinar Mensal" : "Assinar Anual"}
           </span>
         </a>
 
         <p className="mt-3 text-center text-xs text-white/40">{plan.note}</p>
       </div>
+      </div>
+      </TechFrame>
+
+      {plan.highlighted && (
+        <span className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#FAFAFA] px-3.5 py-1 text-xs font-semibold text-ink-950">
+          Mais popular
+        </span>
+      )}
     </div>
   );
 }
@@ -341,6 +480,31 @@ export default function Pricing() {
   // degrade estatico que faz as vezes dele.
   const lowPower = useLowPowerDevice();
   const [mensalHovered, setMensalHovered] = React.useState(false);
+
+  // Qual das duas telas da secao aparece (ver o bloco #precos no JSX).
+  // Comeca no download; `/#precos` abre direto nos planos — e o link que o
+  // app usa pra mandar quem ficou sem credito, e o do "Precos" do menu e do
+  // rodape. O clique e ouvido na CAPTURA porque o Lenis (smooth-scroll.tsx)
+  // intercepta os links de ancora e rola sem mudar o hash, entao so o
+  // `hashchange` nao pegaria o clique no menu.
+  const [view, setView] = React.useState<"download" | "planos">("download");
+  React.useEffect(() => {
+    const fromHash = () => {
+      if (window.location.hash === "#precos") setView("planos");
+    };
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.("a");
+      const href = a?.getAttribute("href");
+      if (href === "#precos" || href === "/#precos") setView("planos");
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("hashchange", fromHash);
+      document.removeEventListener("click", onClick, true);
+    };
+  }, []);
   // So no mobile: qual dos dois cartoes esta ativo. No desktop os dois
   // aparecem lado a lado e este estado e ignorado (o grid de la nunca
   // depende dele).
@@ -413,7 +577,11 @@ export default function Pricing() {
 
   return (
     <section
-      id="precos"
+      // #download e a secao inteira (CTAs do Header/Hero). #precos continua
+      // existindo, so que no bloco dos PLANOS mais abaixo: o app manda quem
+      // ficou sem credito pra `/#precos`, e esse link tem que cair direto
+      // nos planos, nao no botao de download.
+      id="download"
       // laptop:* (ver tailwind.config.ts): tela de desktop, mas baixa. O
       // rodape ja e curto (pb-9/10), entao o que cede aqui e o topo, o bloco
       // do titulo e a altura minima dos dois cartoes.
@@ -488,7 +656,10 @@ export default function Pricing() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
-          <SectionEyebrow>Preços</SectionEyebrow>
+          {/* Titulo e descricao acompanham a tela ativa (pedido do
+              usuario): no download, o texto novo; nos planos, o texto que a
+              secao tinha antes de virar "Baixe o Jarvis". */}
+          <SectionEyebrow>{view === "download" ? "Download" : "Preços"}</SectionEyebrow>
           {/* Fonte fluida: trava em 48px pouco antes dos 640px, entao o
               resultado bate com o antigo sm:text-5xl sem precisar do degrau
               (que e o que causava estouro logo apos o breakpoint). */}
@@ -504,154 +675,230 @@ export default function Pricing() {
               titulo na mesma linha do rotulo em telas largas). */}
           <div className="mx-auto w-fit">
             <h2 className="mt-5 whitespace-nowrap leading-tight text-[length:clamp(0.9rem,calc(10.22vw_-_5.52px),3rem)] font-semibold tracking-[-0.02em] text-[#FAFAFA] laptop:text-[2.625rem]">
-              Escolha seu plano
+              {view === "download" ? "Baixe o Jarvis agora" : "Escolha seu plano"}
             </h2>
             <div aria-hidden className="mt-2 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent laptop:mt-1.5" />
           </div>
           <p className="mx-auto mt-3 max-w-[56ch] text-lg font-light leading-relaxed text-white/55 laptop:mt-2">
-            O Jarvis completo nos dois planos. Só muda a forma de pagar.
+            {view === "download"
+              ? "Comece de graça. Depois, escolha como quer continuar."
+              : "O Jarvis completo nos dois planos. Só muda a forma de pagar."}
           </p>
         </motion.div>
 
-        {/* Alternador so no mobile: os dois cartoes nao cabem lado a lado num
-            celular. Continua UM cartao por vez, com dois botoes por cima pra
-            trocar — so que agora "trocar" e a MESMA tira arrastavel do
-            carrossel logo abaixo (ver `snapTo`/useEffect, mais acima):
-            clicar em "Anual" desliza a tira ate la, em vez de so re-renderizar
-            o cartao ativo na hora. Some em sm+, onde os dois cartoes voltam a
-            aparecer lado a lado no grid. Ativo = "selo branco" (mesmo padrao
-            de selecao do resto do site). */}
-        <div className="mx-auto mt-10 flex w-full max-w-[320px] gap-1 rounded-full border border-white/10 bg-ink-900 p-1 sm:hidden">
-          {plans.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setMobilePlan(p.id)}
-              aria-pressed={mobilePlan === p.id}
-              className={cn(
-                "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
-                mobilePlan === p.id
-                  ? "bg-[#FAFAFA] text-ink-950"
-                  : "text-white/60 hover:text-white"
-              )}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="mx-auto max-w-[970px]">
-          {/* Celular (abaixo de sm): carrossel de arrastar de verdade — a
-              tira acompanha o dedo, com uma leve previa do vizinho (PEEK=32,
-              GAP=12 — mais discreta que os 44/16 dos outros carrosseis do
-              site, "leve previa" foi pedido assim). So 2 itens, entao o
-              mecanismo e simetrico: com o Mensal ativo o Anual espia a
-              direita; arrastando ate o Anual (ultima parada, trava flush a
-              direita) e o Mensal quem passa a espiar a esquerda — mesmo
-              "elastico bate na ponta" de Organization.tsx/Roadmap.tsx, so
-              que com 2 cartoes em vez de 3. */}
+        {/* DUAS TELAS NO MESMO LUGAR (pedido do usuario, 25/09/2026): o
+            download e a tela padrao; o botao "Planos" logo abaixo troca ela
+            pelos cartoes de plano, e ai o mesmo botao vira "Download" e
+            desfaz a troca. Antes os dois ficavam empilhados, com uma
+            divisoria "Depois do teste" no meio.
+            As duas telas ficam SEMPRE montadas e a inativa so ganha `hidden`
+            (em vez de desmontar): o carrossel de planos do celular mede a
+            propria largura com um ResizeObserver que so e ligado na montagem
+            da secao (ver viewportRef, mais acima). Desmontado no primeiro
+            render, ele nunca mediria nada e a tira nao arrastaria; escondido,
+            o observador pega a largura real assim que a tela aparece.
+            A ancora #precos mora neste bloco (ver o comentario do <section>
+            e o useEffect de `view`): quem chega por ela cai na tela de
+            planos. */}
+        <div id="precos" className="mx-auto mt-10 max-w-[970px] laptop:mt-8">
           <motion.div
-            initial={skipEntrance ? false : { opacity: 0, y: 18 }}
+            initial={skipEntrance ? false : { opacity: 0, y: 22 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, ease: EASE }}
-            className="mt-5 sm:hidden"
+            transition={{ duration: 0.65, ease: EASE }}
           >
-            {/* O mesmo par margem-negativa/padding em DOIS eixos, por dois
-                motivos diferentes:
-                -mx-6 + px-6 (horizontal): a janela sangra por baixo do
-                respiro lateral da secao, entao ela recorta na borda REAL da
-                tela e o vizinho aparece ate la — sem isso ele parava 24px
-                antes, com uma faixa morta de fundo entre a espiada e a
-                borda (ver SLIDE_INSET/GAP, mais acima).
-                -mt-3 + pt-3 (vertical): o overflow-hidden corta em
-                RETANGULO, topo incluso — sem essa folga ele cortava a
-                pilula "Mais popular" do Anual quando ele e o cartao ativo
-                (ela fica de proposito 12px/-top-3 pra fora da borda de cima
-                do cartao).
-                Nos dois eixos a conta e a mesma: a margem negativa estica a
-                caixa pra fora, o padding devolve o mesmo tanto por dentro,
-                entao o conteudo continua comecando exatamente onde
-                comecaria sem os dois — o que muda e so ONDE o recorte
-                acontece. */}
-            <div
-              ref={viewportRef}
-              className="-mx-6 -mt-3 overflow-hidden px-6 pt-3"
+            <motion.div
+              initial={false}
+              animate={view === "download" ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+              transition={{ duration: reduce ? 0 : 0.45, ease: EASE }}
+              className={cn(view !== "download" && "hidden")}
+              aria-hidden={view !== "download" || undefined}
             >
+              <DownloadCard />
+            </motion.div>
+
+            <motion.div
+              initial={false}
+              animate={view === "planos" ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+              transition={{ duration: reduce ? 0 : 0.45, ease: EASE }}
+              className={cn(view !== "planos" && "hidden")}
+              aria-hidden={view !== "planos" || undefined}
+            >
+            {/* Alternador so no mobile: os dois cartoes nao cabem lado a lado num
+                celular. Continua UM cartao por vez, com dois botoes por cima pra
+                trocar — so que agora "trocar" e a MESMA tira arrastavel do
+                carrossel logo abaixo (ver `snapTo`/useEffect, mais acima):
+                clicar em "Anual" desliza a tira ate la, em vez de so re-renderizar
+                o cartao ativo na hora. Some em sm+, onde os dois cartoes voltam a
+                aparecer lado a lado no grid. Ativo = "selo branco" (mesmo padrao
+                de selecao do resto do site). */}
+            <div className="mx-auto flex w-full max-w-[320px] gap-1 rounded-full border border-white/10 bg-ink-900 p-1 sm:hidden">
+              {plans.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setMobilePlan(p.id)}
+                  aria-pressed={mobilePlan === p.id}
+                  className={cn(
+                    "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
+                    mobilePlan === p.id
+                      ? "bg-[#FAFAFA] text-ink-950"
+                      : "text-white/60 hover:text-white"
+                  )}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+
+            <div>
+              {/* Celular (abaixo de sm): carrossel de arrastar de verdade — a
+                  tira acompanha o dedo, com uma leve previa do vizinho (PEEK=32,
+                  GAP=12 — mais discreta que os 44/16 dos outros carrosseis do
+                  site, "leve previa" foi pedido assim). So 2 itens, entao o
+                  mecanismo e simetrico: com o Mensal ativo o Anual espia a
+                  direita; arrastando ate o Anual (ultima parada, trava flush a
+                  direita) e o Mensal quem passa a espiar a esquerda — mesmo
+                  "elastico bate na ponta" de Organization.tsx/Roadmap.tsx, so
+                  que com 2 cartoes em vez de 3. */}
               <motion.div
-                drag={isMobileCarousel ? "x" : false}
-                dragConstraints={{ left: minX, right: 0 }}
-                dragElastic={0.15}
-                dragMomentum={false}
-                onDragEnd={handleDragEnd}
-                style={{ x }}
-                className="flex cursor-grab items-start gap-4 will-change-transform active:cursor-grabbing"
+                initial={skipEntrance ? false : { opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.6, ease: EASE }}
+                className="mt-5 sm:hidden"
               >
+                {/* O mesmo par margem-negativa/padding em DOIS eixos, por dois
+                    motivos diferentes:
+                    -mx-6 + px-6 (horizontal): a janela sangra por baixo do
+                    respiro lateral da secao, entao ela recorta na borda REAL da
+                    tela e o vizinho aparece ate la — sem isso ele parava 24px
+                    antes, com uma faixa morta de fundo entre a espiada e a
+                    borda (ver SLIDE_INSET/GAP, mais acima).
+                    -mt-3 + pt-3 (vertical): o overflow-hidden corta em
+                    RETANGULO, topo incluso — sem essa folga ele cortava a
+                    pilula "Mais popular" do Anual quando ele e o cartao ativo
+                    (ela fica de proposito 12px/-top-3 pra fora da borda de cima
+                    do cartao).
+                    Nos dois eixos a conta e a mesma: a margem negativa estica a
+                    caixa pra fora, o padding devolve o mesmo tanto por dentro,
+                    entao o conteudo continua comecando exatamente onde
+                    comecaria sem os dois — o que muda e so ONDE o recorte
+                    acontece.
+                    -mb-3 + pb-3: mesma coisa embaixo — o brilho do traco da
+                    moldura HUD (drop-shadow do SVG em tech-frame.tsx) vaza uns
+                    pixels pra fora do cartao, e sem folga era cortado seco. */}
+                <div
+                  ref={viewportRef}
+                  className="-mx-6 -mb-3 -mt-3 overflow-hidden px-6 pb-3 pt-3"
+                >
+                  <motion.div
+                    drag={isMobileCarousel ? "x" : false}
+                    dragConstraints={{ left: minX, right: 0 }}
+                    dragElastic={0.15}
+                    dragMomentum={false}
+                    onDragEnd={handleDragEnd}
+                    style={{ x }}
+                    className="flex cursor-grab items-start gap-4 will-change-transform active:cursor-grabbing"
+                  >
+                    {plans.map((plan, i) => (
+                      // 1.25rem = 20px = SLIDE_INSET, o mesmo numero de
+                      // Features.tsx/Organization.tsx — e dai que sai o cartao
+                      // do mesmo tamanho nas tres secoes.
+                      <div key={plan.id} className="w-[calc(100%-1.25rem)] shrink-0">
+                        <PlanCard
+                          plan={plan}
+                          isPeeking={i !== activeIndex}
+                          inCarousel
+                          mensalHovered={mensalHovered}
+                          setMensalHovered={setMensalHovered}
+                          reduce={reduce}
+                        />
+                      </div>
+                    ))}
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Desktop (sm+): grid lado a lado, como sempre foi — sem tira,
+                  sem drag, os dois cartoes inteiros e do mesmo tamanho (grid
+                  estica os dois pra altura do mais alto). */}
+              <div className="hidden gap-4 sm:grid sm:grid-cols-2">
                 {plans.map((plan, i) => (
-                  // 1.25rem = 20px = SLIDE_INSET, o mesmo numero de
-                  // Features.tsx/Organization.tsx — e dai que sai o cartao
-                  // do mesmo tamanho nas tres secoes.
-                  <div key={plan.id} className="w-[calc(100%-1.25rem)] shrink-0">
+                  <motion.div
+                    key={plan.id}
+                    initial={skipEntrance ? false : { opacity: 0, y: 22 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{
+                      duration: 0.65,
+                      delay: reduce ? 0 : i * 0.09,
+                      ease: EASE,
+                    }}
+                  >
                     <PlanCard
                       plan={plan}
-                      isPeeking={i !== activeIndex}
+                      isPeeking={false}
                       mensalHovered={mensalHovered}
                       setMensalHovered={setMensalHovered}
                       reduce={reduce}
                     />
-                  </div>
+                  </motion.div>
                 ))}
-              </motion.div>
+              </div>
             </div>
+
+            {/* Garantia, fora dos cartoes: vale para os dois planos igualmente,
+                entao repeti-la dentro de cada um so inflava os cartoes com a
+                mesma frase duas vezes. Uma linha so, entre a escolha e a lista de
+                recursos. */}
+            <motion.p
+              initial={false}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.6 }}
+              transition={{ duration: 0.5, delay: reduce ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6 flex translate-y-1 items-center justify-center gap-2 text-center text-xs text-white/55 sm:text-sm"
+            >
+              <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
+              {/* O canal do reembolso precisa aparecer AQUI, antes da compra: o
+                  art. 49 do CDC da 7 dias de arrependimento em compra pela
+                  internet, e a informacao de COMO exercer esse direito nao pode
+                  viver so no e-mail que chega depois de pagar. Falta ainda fixar o
+                  PRAZO de estorno — quando decidir, escrever aqui e nos Termos. */}
+              Garantia de 7 dias: não gostou, devolvemos 100% — é só pedir em suporte@estuscorporation.com.br.
+            </motion.p>
+            </motion.div>
           </motion.div>
 
-          {/* Desktop (sm+): grid lado a lado, como sempre foi — sem tira,
-              sem drag, os dois cartoes inteiros e do mesmo tamanho (grid
-              estica os dois pra altura do mais alto). */}
-          <div className="hidden gap-4 sm:mt-10 sm:grid sm:grid-cols-2 laptop:mt-8">
-            {plans.map((plan, i) => (
-              <motion.div
-                key={plan.id}
-                initial={skipEntrance ? false : { opacity: 0, y: 22 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{
-                  duration: 0.65,
-                  delay: reduce ? 0 : i * 0.09,
-                  ease: EASE,
-                }}
-              >
-                <PlanCard
-                  plan={plan}
-                  isPeeking={false}
-                  mensalHovered={mensalHovered}
-                  setMensalHovered={setMensalHovered}
-                  reduce={reduce}
-                />
-              </motion.div>
-            ))}
+          {/* O botao que alterna as duas telas. Fica no lugar da antiga
+              divisoria "Depois do teste" e herda a gramatica dela (filete,
+              rotulo, filete), so que o rotulo virou uma pilula clicavel.
+              Contorno, nao fundo branco: nas duas telas ja existe um CTA
+              solido (o "Baixar gratis" ou o "Mais popular"/precos), e este e
+              navegacao, nao compra. */}
+          <div className="mt-14 flex items-center gap-4 laptop:mt-10">
+            <span aria-hidden className="h-px flex-1 bg-gradient-to-r from-transparent to-white/20" />
+            <button
+              type="button"
+              onClick={() => setView((v) => (v === "download" ? "planos" : "download"))}
+              aria-controls="precos"
+              className="flex shrink-0 items-center gap-2 rounded-full border border-white/20 bg-ink-900 px-6 py-2.5 font-display text-xs font-semibold uppercase tracking-[0.22em] text-white/75 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/45 hover:text-white active:translate-y-0 active:scale-[0.97]"
+            >
+              {view === "download" ? (
+                <>
+                  <Tag size={15} weight="bold" aria-hidden />
+                  Planos
+                </>
+              ) : (
+                <>
+                  <DownloadSimple size={15} weight="bold" aria-hidden />
+                  Download
+                </>
+              )}
+            </button>
+            <span aria-hidden className="h-px flex-1 bg-gradient-to-l from-transparent to-white/20" />
           </div>
         </div>
-
-        {/* Garantia, fora dos cartoes: vale para os dois planos igualmente,
-            entao repeti-la dentro de cada um so inflava os cartoes com a
-            mesma frase duas vezes. Uma linha so, entre a escolha e a lista de
-            recursos. */}
-        <motion.p
-          initial={skipEntrance ? false : { opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.5, delay: reduce ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 flex translate-y-1 items-center justify-center gap-2 text-center text-xs text-white/55 sm:text-sm"
-        >
-          <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
-          {/* O canal do reembolso precisa aparecer AQUI, antes da compra: o
-              art. 49 do CDC da 7 dias de arrependimento em compra pela
-              internet, e a informacao de COMO exercer esse direito nao pode
-              viver so no e-mail que chega depois de pagar. Falta ainda fixar o
-              PRAZO de estorno — quando decidir, escrever aqui e nos Termos. */}
-          Garantia de 7 dias: não gostou, devolvemos 100% — é só pedir em suporte@estuscorporation.com.br.
-        </motion.p>
       </div>
     </section>
   );

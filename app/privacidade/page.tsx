@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacidade" },
 };
 
-const ATUALIZADO_EM = "14 de setembro de 2026";
+const ATUALIZADO_EM = "25 de setembro de 2026";
 
 export default function PoliticaDePrivacidade() {
   return (
@@ -77,10 +77,12 @@ export default function PoliticaDePrivacidade() {
               Dados do Google Agenda
             </h3>
             <p>
-              Com o escopo <Codigo>calendar.events</Codigo>, o Jarvis lê os
-              eventos futuros da sua agenda para poder falar seus compromissos
-              em voz alta, e cria eventos quando você dita um novo compromisso.
-              O Jarvis acessa apenas a agenda da conta que você conectou. Ele
+              Com o escopo <Codigo>calendar.events.owned</Codigo>, o Jarvis lê
+              os eventos da sua agenda principal (título, data, horário e
+              lembretes) para falar seus compromissos em voz alta e avisar você
+              antes de cada um, cria eventos quando você dita um novo
+              compromisso e apaga eventos quando você pede. O Jarvis acessa
+              apenas as agendas que pertencem à conta que você conectou. Ele
               não acessa agendas de outras pessoas, não lê convidados de
               eventos para nenhuma finalidade além de exibi-los a você, e não
               apaga eventos que você não tenha pedido para apagar.
@@ -113,8 +115,9 @@ export default function PoliticaDePrivacidade() {
               Os eventos da agenda, o histórico de comandos e as credenciais de
               acesso (tokens de autorização do Google) são armazenados
               localmente, no seu computador, no perfil do seu usuário do
-              Windows. Eles não são enviados para servidores da Estus
-              Corporation.
+              Windows. Eles não são armazenados em servidores da Estus
+              Corporation. A única situação em que dados da agenda saem do seu
+              computador está descrita na seção 5.
             </p>
             <p>
               Isso significa que a segurança desses dados depende também da
@@ -157,7 +160,8 @@ export default function PoliticaDePrivacidade() {
               </li>
               <li>
                 usados para treinar modelos de inteligência artificial,
-                generalizados ou não;
+                generalizados ou não, nem transferidos a serviços de IA que os
+                usem para treinar modelos;
               </li>
               <li>
                 acessados por pessoas, exceto quando você autorizar
@@ -170,7 +174,9 @@ export default function PoliticaDePrivacidade() {
 
           <Secao n={5} titulo="Compartilhamento com terceiros">
             <p>
-              O Jarvis não compartilha os dados da sua agenda com terceiros.
+              O Jarvis não vende nem compartilha os dados da sua agenda com
+              terceiros, com uma única exceção, necessária para o assistente
+              funcionar:
             </p>
             <p>
               Para interpretar linguagem natural, o texto dos seus comandos
@@ -182,6 +188,21 @@ export default function PoliticaDePrivacidade() {
               necessário. Quando o comando envolve a sua agenda, o Jarvis envia
               somente os campos indispensáveis (título, data e horário) e nunca
               suas credenciais de acesso.
+            </p>
+            <p>
+              O Jarvis Credits Server apenas repassa esse texto, sem
+              armazená-lo. O provedor de modelo de linguagem recebe os dados
+              pela sua API comercial, que não usa o conteúdo enviado para
+              treinar modelos de IA, e pode retê-lo por até 30 dias apenas para
+              prevenção de abuso, conforme os termos desse provedor.
+            </p>
+            <p className="rounded-md border border-neutral-800 bg-neutral-950 p-5 text-neutral-200">
+              The use of raw or derived user data received from Google Calendar
+              API will adhere to the Google API Services User Data Policy,
+              including the Limited Use requirements. Google Calendar data is
+              never used to develop, improve or train AI/ML models, and is only
+              sent to our AI model provider, transiently, to answer the
+              user&rsquo;s own request.
             </p>
           </Secao>
 
@@ -204,6 +225,11 @@ export default function PoliticaDePrivacidade() {
               Como os dados ficam no seu computador, você controla a exclusão
               diretamente. Desinstalar o Jarvis remove o aplicativo e os dados
               locais associados a ele, incluindo os tokens de acesso.
+            </p>
+            <p>
+              Desconectar o Google Agenda nas configurações do Jarvis apaga na
+              hora a cópia local dos eventos e os tokens de acesso. Os eventos
+              continuam na sua conta Google, onde sempre estiveram.
             </p>
             <p>
               Se você tiver se cadastrado na lista de espera, envie um pedido

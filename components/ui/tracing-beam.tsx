@@ -227,7 +227,21 @@ export const TracingBeam = ({
     // Redimensionar muda tanto a altura da janela quanto a altura das secoes
     // (texto refluindo), e as duas entram na conta do trecho aceso.
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    // A altura do conteudo tambem muda SEM resize: a secao de download troca
+    // pra tela de planos (bem mais alta) no clique, e a linha parava na
+    // altura antiga. Observar o conteudo pega essa e qualquer outra troca.
+    // rAF junta varias mudancas do mesmo frame numa medicao so.
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    });
+    if (contentRef.current) ro.observe(contentRef.current);
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   // O chanfro diagonal acontece ANTES do vao (termina exatamente onde o vao

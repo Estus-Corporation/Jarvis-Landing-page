@@ -16,7 +16,6 @@ import {
   ListChecks,
   CalendarCheck,
   NotePencil,
-  Repeat,
   Check,
   CaretUp,
   List,
@@ -182,7 +181,9 @@ function FeatureCardBody({
             // blur seco no topo, e a moldura ja tem o proprio brilho de traco.
             mobileCarousel && "hidden",
             "pointer-events-none absolute -inset-[14px] rounded-[30px] bg-white blur-[20px] transition-opacity duration-300",
-            bigger ? "opacity-[0.09]" : "opacity-[0.04] group-hover:opacity-[0.08]"
+            // Um pouco mais fraco que antes (0.09 / 0.04 / 0.08), pedido do
+            // usuario em 28/09/2026.
+            bigger ? "opacity-[0.06]" : "opacity-[0.03] group-hover:opacity-[0.06]"
           )}
         />
         <TechFrame
@@ -381,49 +382,6 @@ function Panel({
   );
 }
 
-// Cabecalho de pasta ("espaco") — o app abriu Tarefas, Agenda e Notas em
-// pastas, e esse cabecalho e a primeira linha dos tres paineis: chevron, nome
-// da pasta em monospace caixa alta, hamburguer de acoes, e embaixo a regua de
-// 1.5px. A regua ja foi barra de progresso no app e hoje e DECORATIVA (o
-// usuario pediu pra tirar primeiro a porcentagem, depois o calculo) — aqui ela
-// nasce ja no estado atual, cheia, sem representar conclusao nenhuma.
-function SpaceHeader({ name }: { name: string }) {
-  return (
-    <div
-      className="flex flex-col gap-3 bg-[#363636] px-3.5 pb-2.5 pt-3"
-      // So o canto de cima a direita e cortado; o de baixo a esquerda fica reto
-      // pra encostar no que vem embaixo — igual ao card de pasta do app.
-      style={{
-        clipPath: "polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%)",
-        WebkitClipPath: "polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%)",
-      }}
-    >
-      <div className="flex items-center gap-2">
-        {/* Fechada = mira pra cima. E o inverso da convencao, e e assim no app. */}
-        <CaretUp size={13} weight="bold" aria-hidden className="shrink-0 text-white/75" />
-        <span className="min-w-0 flex-1 truncate font-mono text-[10px] uppercase tracking-[0.16em] text-white/75">
-          {name}
-        </span>
-        <List size={13} aria-hidden className="shrink-0 text-white/75" />
-      </div>
-      <div className="h-[1.5px] bg-white/35" aria-hidden />
-    </div>
-  );
-}
-
-// Divisoria de categoria — filete, rotulo, filete. As categorias sao
-// divisorias DENTRO de uma pasta (um campo de texto livre na tarefa), e no app
-// o bloco inteiro e arrastavel; aqui e so o desenho.
-function CategoryRule({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-2 pt-1">
-      <span className="h-px flex-1 bg-white/[0.09]" aria-hidden />
-      <PanelLabel>{label}</PanelLabel>
-      <span className="h-px flex-1 bg-white/[0.09]" aria-hidden />
-    </div>
-  );
-}
-
 // Botao de acao do rodape dos paineis ("+ Nova tarefa", "+ Novo evento").
 function AddButton({ label }: { label: string }) {
   return (
@@ -470,46 +428,126 @@ function NavTabs({ active }: { active: (typeof NAV_TABS)[number] }) {
   );
 }
 
+// ---- Modo "sem card" do app (Tarefas e Notas) --------------------------------
+// Atualizado em 28/09/2026 pro visual "sem card" do Jarvis Developer Edition
+// (`MainInterface.tsx`, BareCardContext/bareFolderCardStyle): o painel perde o
+// cartao e o conteudo fica solto sobre o fundo, e so sobram blocos SOLIDOS
+// que "saem da parede" — a faixa das abas e o card da pasta. Aqui a parede e
+// a borda direita do palco (no app o painel de Tarefas mora na coluna da
+// direita), por isso esses blocos sangram ate la (`-mr-6` = o px-6 do palco).
+// Agenda continua na versao com card.
+//
+// Mesma cor do app pra tudo que e solido (SUB_CARD_BG); texto ~12% maior e em
+// Exo 2 (font-display), como o app faz nas colunas laterais sem card.
+const SUB_CARD_BG = "#1d1d20";
+// Chanfro espelhado (topo-esquerda + base-direita) — na coluna direita o app
+// espelha pra o canto cortado de cima ficar sempre do lado de DENTRO.
+const CHAMFER_XS_MIRROR =
+  "polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)";
+// Card da pasta: so o canto de cima a esquerda cortado (9px), resto reto.
+const FOLDER_CLIP = "polygon(9px 0, 100% 0, 100% 100%, 0 100%, 0 9px)";
+
+// Abas dentro de uma faixa igual as faixas de titulo dos cards do app —
+// borda fina, fundo solido, sombra, chanfro — saindo da parede.
+function BareTabs({ active }: { active: (typeof NAV_TABS)[number] }) {
+  return (
+    <div className="relative -ml-4 -mr-6 shadow-[0_4px_10px_rgba(0,0,0,0.6)]">
+      <div
+        className="border border-white/[0.18] py-0.5 pl-3 pr-6"
+        style={{ background: SUB_CARD_BG, clipPath: CHAMFER_XS_MIRROR, WebkitClipPath: CHAMFER_XS_MIRROR }}
+      >
+        <div className="flex gap-1 p-1">
+          {NAV_TABS.map((tab) => {
+            const on = tab === active;
+            return (
+              <span
+                key={tab}
+                className={cn(
+                  "flex-1 py-2 text-center font-mono text-[9px] uppercase tracking-[0.13em]",
+                  on
+                    ? "bg-white/30 font-semibold text-white/95 [text-shadow:0_0_9px_rgba(255,255,255,0.45)]"
+                    : "font-medium text-white/[0.34]"
+                )}
+                style={on ? { clipPath: CHAMFER_XS, WebkitClipPath: CHAMFER_XS } : undefined}
+              >
+                {tab}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Cabecalho de pasta sem card: card solido saindo da parede, passando 16px da
+// borda de dentro. Sem a regua de 1.5px embaixo (o modo sem card tira).
+function BareFolder({ name }: { name: string }) {
+  return (
+    <div
+      className="-ml-4 -mr-6 flex items-center gap-2 py-[11px] pl-[30px] pr-8"
+      style={{ background: SUB_CARD_BG, clipPath: FOLDER_CLIP, WebkitClipPath: FOLDER_CLIP }}
+    >
+      {/* Fechada = mira pra cima. E o inverso da convencao, e e assim no app. */}
+      <CaretUp size={14} weight="bold" aria-hidden className="shrink-0 text-white/75" />
+      <span className="min-w-0 flex-1 truncate font-mono text-[11px] uppercase tracking-[0.16em] text-white/75">
+        {name}
+      </span>
+      <List size={14} aria-hidden className="shrink-0 text-white/75" />
+    </div>
+  );
+}
+
+// "+ Nova tarefa" sem card: so contorno fino, sem preenchimento.
+function BareAddButton({ label }: { label: string }) {
+  return (
+    <div
+      className="flex items-center justify-center gap-1.5 border border-white/[0.14] py-[7px] font-mono text-[10px] uppercase tracking-[0.18em] text-white/55"
+      style={{ clipPath: CHAMFER_XS, WebkitClipPath: CHAMFER_XS }}
+    >
+      <Plus size={11} weight="bold" aria-hidden />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+// Divisoria de categoria sem card: so o nome, centralizado, numa faixa escura
+// lisa — mesma largura do botao de criar (nao encosta nos lados).
+function BareCategory({ label }: { label: string }) {
+  return (
+    <div
+      className="mb-2 mt-2 flex h-[26px] items-center justify-center bg-[#29292d] px-3"
+      style={{ clipPath: CHAMFER_XS_MIRROR, WebkitClipPath: CHAMFER_XS_MIRROR }}
+    >
+      <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-white/[0.82]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 // ---- Maquete 1: a tarefa -----------------------------------------------------
-// Reescrita em 17/09/2026 pra bater com o app de hoje (`MainInterface.tsx`,
-// TasksPanel, no Project-Jarvis). O que MUDOU no app desde a versao anterior
-// desta maquete, e que e o que esta secao passou a mostrar:
-//
-//   PASTAS ("espacos") — as tarefas vivem dentro de uma pasta, e o nome dela
-//   com o chevron e o hamburguer e a primeira linha do painel. Antes nao
-//   existiam; a maquete abria direto na lista.
-//
-//   CATEGORIAS — divisorias dentro da pasta (filete/rotulo/filete). O bloco
-//   sem categoria vem sempre primeiro e sem cabecalho.
-//
-//   CHANFRO — cada tarefa e um bloco PREENCHIDO de canto cortado, nao uma
-//   linha solta com checkbox arredondado. Sem borda (o clip-path recorta
-//   borda), sem raio.
-//
-//   A REGUA de 1.5px que ja foi barra de progresso e hoje e so decorativa.
-//
-// O que SAIU: a faixa "Repete em" com os sete circulos da semana e o painel
-// "Lembrar as". Os dois eram campos do formulario de criacao; hoje a
-// recorrencia e o lembrete aparecem na propria linha da tarefa, como badge no
-// canto direito (sino + hora, seta de recorrente). Toda a aritmetica de
-// altura que o comentario antigo fazia aqui — quantas linhas cabem antes da
-// faixa de dias entrar na zona do degrade — morreu junto com a faixa.
+// Espelha o TasksPanel do app (`MainInterface.tsx`) no modo SEM CARD — ver o
+// bloco "Modo sem card" logo acima. Na ordem do app: abas, card da pasta,
+// "+ Nova tarefa" e a lista, com as categorias como faixas escuras dentro
+// dela. A recorrencia e o lembrete vivem na propria linha (so o sino + hora
+// aparece; os icones de recorrente sairam do app).
 //
 // `cat` e a divisoria de categoria que ABRE o bloco (undefined = bloco sem
-// categoria, sempre primeiro). `bell` e a hora do lembrete; `recurring` marca
-// a que se repete.
+// categoria, sempre primeiro). `bell` e a hora do lembrete. Os icones de
+// recorrente/unica que ficavam no canto SAIRAM do app (pedido do usuario de
+// la), entao sairam daqui tambem.
 const TASK_LIST_NEW: {
   text: string;
   done?: boolean;
   cat?: string;
   bell?: string;
-  recurring?: boolean;
 }[] = [
   { text: "Revisar contrato do cliente", done: true },
   { text: "Enviar relatório de março", bell: "09:00" },
-  { text: "Reunião de equipe", cat: "Trabalho", recurring: true },
+  { text: "Reunião de equipe", cat: "Trabalho" },
   { text: "Confirmar consulta de quinta", bell: "14:00" },
-  { text: "Pagar a fatura do cartão", cat: "Casa", recurring: true },
+  { text: "Pagar a fatura do cartão", cat: "Casa" },
   { text: "Levar o carro na revisão" },
 ];
 
@@ -518,85 +556,83 @@ const TASKS_ON_LAPTOP = 4;
 
 // Quantas linhas sobrevivem no carrossel do celular, onde o palco de Tarefas
 // nao e maior que o dos outros dois (ver o `<FeatureCardBody>` do carrossel em
-// Organization()) — usa o MESMO palco curto de Agenda e Notas. Com o
-// cabecalho de pasta e as divisorias de categoria ocupando espaco, e a linha
-// de tarefa agora bem mais alta (52px minimos contra os 16 da versao antiga),
-// tres linhas ja passam da borda — que e o corte que o degrade precisa.
+// Organization()) — tres linhas ja passam da borda, que e o corte que o
+// degrade precisa.
 const TASKS_ON_MOBILE = 3;
 
-// A faixa "Repete em" (sete circulos da semana) SAIU junto com o `WEEK` que a
-// alimentava: no app de hoje a recorrencia e uma seta no canto da propria
-// linha da tarefa, nao um campo separado embaixo da lista.
-
+// Tarefas no modo SEM CARD do app (ver o bloco "Modo sem card" mais acima):
+// nada de bloco preenchido por tarefa — linhas soltas separadas por um fio que
+// vem da parede e para ao encostar no checkbox. Concluida: o app pinta de
+// verde; aqui (pagina monocromatica) e so contraste, e o risco e uma linha
+// desenhada no meio do texto, como la.
 function TaskMock() {
   return (
-    <div className="space-y-1.5">
-      <NavTabs active="Tarefas" />
-      <SpaceHeader name="Geral" />
-      <AddButton label="Nova tarefa" />
+    <div className="relative font-display [text-shadow:0_1px_6px_rgba(0,0,0,0.85)]">
+      <BareTabs active="Tarefas" />
+      <div className="mt-2">
+        <BareFolder name="Geral" />
+      </div>
+      <div className="pb-2 pt-2.5">
+        <BareAddButton label="Nova tarefa" />
+      </div>
 
-      <div className="space-y-1.5 pt-0.5">
-        {TASK_LIST_NEW.map((t, i) => (
-          <React.Fragment key={t.text}>
-            {t.cat && <CategoryRule label={t.cat} />}
-            <div
-              className={cn(
-                "flex min-h-[52px] items-center gap-2.5 px-2.5 py-2.5",
-                // Concluida: o app pinta de verde; aqui e so um degrau mais
-                // claro que o bloco normal — o estado le por contraste, nao
-                // por matiz (a pagina e monocromatica).
-                t.done ? "bg-[#2b2b2b]" : "bg-[#212121]",
-                // Abaixo de lg (carrossel do celular) o palco e sempre curto.
-                i >= TASKS_ON_MOBILE && "hidden lg:flex",
-                i >= TASKS_ON_LAPTOP && "laptop:hidden"
-              )}
-              style={{ clipPath: CHAMFER_SM, WebkitClipPath: CHAMFER_SM }}
-            >
-              {/* Checkbox 28px, chanfrado — no app e um quadrado de canto
-                  cortado com borda de 1.5px, nao um circulo nem um
-                  arredondado. */}
-              <span
-                aria-hidden
+      <div>
+        {TASK_LIST_NEW.map((t, i) => {
+          const lastInSeg = i === TASK_LIST_NEW.length - 1 || !!TASK_LIST_NEW[i + 1].cat;
+          return (
+            <React.Fragment key={t.text}>
+              {t.cat && <BareCategory label={t.cat} />}
+              <div
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center border-[1.5px]",
-                  t.done
-                    ? "border-white/70 bg-white/[0.14]"
-                    : "border-white/[0.22] bg-white/[0.04]"
-                )}
-                style={{ clipPath: CHAMFER_XS, WebkitClipPath: CHAMFER_XS }}
-              >
-                {t.done && <Check size={14} weight="bold" className="text-white/95" />}
-              </span>
-
-              <span
-                className={cn(
-                  "min-w-0 flex-1 truncate text-xs font-medium",
-                  t.done ? "text-white/30 line-through" : "text-white/90"
+                  "relative -mr-6 ml-[18px] flex min-h-[52px] items-center gap-[9px] py-[9px] pr-6",
+                  // Abaixo de lg (carrossel do celular) o palco e sempre curto.
+                  i >= TASKS_ON_MOBILE && "hidden lg:flex",
+                  i >= TASKS_ON_LAPTOP && "laptop:hidden"
                 )}
               >
-                {t.text}
-              </span>
+                {/* Checkbox 32px (28 com card), chanfrado, fundo leve. */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center border-[1.5px]",
+                    t.done ? "border-white/70 bg-white/[0.14]" : "border-white/30 bg-white/10"
+                  )}
+                  style={{ clipPath: CHAMFER_XS, WebkitClipPath: CHAMFER_XS }}
+                >
+                  {t.done && <Check size={17} weight="bold" className="text-white/95" />}
+                </span>
 
-              {/* Badges de estado no canto — sino + hora quando tem lembrete,
-                  e sempre um marcador de recorrente/unica. */}
-              <span className="flex shrink-0 items-center gap-1">
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={cn(
+                      "relative inline-block max-w-full truncate align-top text-[13.5px] font-medium leading-[1.3]",
+                      t.done ? "text-white/30" : "text-white/90"
+                    )}
+                  >
+                    {t.text}
+                    {t.done && (
+                      <span aria-hidden className="absolute inset-x-0 top-[54%] h-px bg-white/[0.42]" />
+                    )}
+                  </span>
+                </span>
+
                 {t.bell && (
-                  <span className="flex items-center gap-1 pr-0.5">
+                  <span className="flex shrink-0 items-center gap-[3px]">
                     <Bell size={9} aria-hidden className="text-white/35" />
                     <span className="font-mono text-[8.5px] tabular-nums tracking-[0.06em] text-white/40">
                       {t.bell}
                     </span>
                   </span>
                 )}
-                {t.recurring ? (
-                  <Repeat size={12} aria-hidden className="text-white/[0.28]" />
-                ) : (
-                  <Check size={12} aria-hidden className="text-white/[0.18]" />
+
+                {/* Fio separador: da borda direita do checkbox ate a parede. */}
+                {!lastInSeg && (
+                  <span aria-hidden className="absolute bottom-0 left-8 right-0 h-px bg-white/10" />
                 )}
-              </span>
-            </div>
-          </React.Fragment>
-        ))}
+              </div>
+            </React.Fragment>
+          );
+        })}
       </div>
     </div>
   );
@@ -738,59 +774,34 @@ function AgendaMock() {
 
 
 // ---- Maquete 3: as notas -----------------------------------------------------
-// Era "o lembrete" (uma notificacao do Jarvis + a fila do que vinha depois) e
-// virou NOTAS em 17/09/2026, porque o app nao tem painel de lembrete nenhum: a
-// terceira aba dele e Notas, e o lembrete e uma PROPRIEDADE da tarefa (o sino
-// com a hora no canto da linha, ver TaskMock) — nunca foi uma tela propria.
-// A maquete antiga mostrava uma notificacao de sistema que o app tambem nao
-// desenha assim, entao o `JarvisDot` que existia so pra ela saiu junto.
-//
-// A nota e a linha de tarefa SEM o checkbox e SEM os badges: titulo em cima,
-// descricao embaixo, mesmo bloco chanfrado, mesmas pastas e categorias.
-
-const NOTES = [
-  {
-    title: "Ideias pro site novo",
-    desc: "Trocar a home, revisar os textos da seção de preços",
-  },
-  { title: "Senha do roteador", desc: "Trocar depois da visita do técnico" },
-  {
-    title: "Livros recomendados",
-    desc: "O que a Bia falou no jantar de sexta",
-    cat: "Pessoal",
-  },
-  { title: "Medidas da sala", desc: "3,20m × 4,10m — pro orçamento do armário" },
-  { title: "Checklist da viagem", desc: "Passaporte, seguro, adaptador" },
-  { title: "Presentes de fim de ano", desc: "Lista que a gente fez no domingo" },
-  { title: "Vinho que eu gostei", desc: "O português do jantar de sexta" },
+// Atualizada em 28/09/2026: no app de hoje Notas NAO e mais uma lista de
+// notas com "+ Nova nota" — e um espaco de ESCRITA LIVRE por pasta (um
+// textarea, sem titulo, sem botao de criar: a pessoa escreve direto). No modo
+// sem card esse texto fica solto sobre o fundo, logo abaixo do card da pasta.
+// O texto tem mais linhas do que cabem de proposito: o degrade de baixo corta
+// no meio, e o corte le como "o texto continua".
+const NOTE_LINES = [
+  "Ideias pro site novo: trocar a home e revisar os textos da seção de preços.",
+  "",
+  "Senha do roteador — trocar depois da visita do técnico.",
+  "",
+  "A sala tem 3,20 por 4,10. Pro orçamento do armário.",
+  "",
+  "Livros que a Bia recomendou no jantar de sexta.",
+  "Checklist da viagem: passaporte, seguro, adaptador.",
 ];
 
 function NotesMock() {
   return (
-    <div className="space-y-1.5">
-      <NavTabs active="Notas" />
-      <SpaceHeader name="Geral" />
-      <AddButton label="Nova nota" />
-
-      <div className="space-y-1.5 pt-0.5">
-        {NOTES.map((n) => (
-          <React.Fragment key={n.title}>
-            {n.cat && <CategoryRule label={n.cat} />}
-            <div
-              className="flex min-h-[52px] items-center bg-[#212121] px-2.5 py-2.5"
-              style={{ clipPath: CHAMFER_SM, WebkitClipPath: CHAMFER_SM }}
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-medium leading-tight text-white/90">
-                  {n.title}
-                </span>
-                <span className="mt-0.5 block truncate text-[10px] leading-tight text-white/40">
-                  {n.desc}
-                </span>
-              </span>
-            </div>
-          </React.Fragment>
-        ))}
+    <div className="relative font-display [text-shadow:0_1px_6px_rgba(0,0,0,0.85)]">
+      <BareTabs active="Notas" />
+      <div className="mt-2">
+        <BareFolder name="Geral" />
+      </div>
+      <div className="px-0.5 pt-3 text-[12.5px] leading-[1.6] text-white/90">
+        {NOTE_LINES.map((line, i) =>
+          line ? <p key={i}>{line}</p> : <p key={i} aria-hidden className="h-[1.6em]" />
+        )}
       </div>
     </div>
   );

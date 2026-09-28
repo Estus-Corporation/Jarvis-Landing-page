@@ -54,21 +54,33 @@ const NET_CFG: Record<
   speaking: { speed: 1.1, tilt: 0.28, dimMax: 0.5, brightMax: 1.0, pulse: 0.12 },
 };
 
+// `lit`: o BRILHO do estado "speaking" (fios e pontos mais acesos) com o
+// MOVIMENTO do estado atual — velocidade, inclinacao e pulso nao mudam. E o
+// que a Hero usa: a esfera acesa como quando fala, mas girando devagar.
+const litCfg = (s: JarvisState) => ({
+  ...NET_CFG[s],
+  dimMax: NET_CFG.speaking.dimMax,
+  brightMax: NET_CFG.speaking.brightMax,
+});
+
 function NetworkSphere({
   state,
   size = 460,
   paused = false,
   color,
+  lit = false,
 }: {
   state: JarvisState;
   size?: number;
   paused?: boolean;
   color?: [number, number, number];
+  lit?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glowCanvasRef = useRef<HTMLCanvasElement>(null);
   const trailCanvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef(state);
+  const litRef = useRef(lit);
   const colorRef = useRef<[number, number, number]>(color ?? [255, 255, 255]);
   const frameRef = useRef(0);
   const prevTsRef = useRef<number>(0);
@@ -84,6 +96,9 @@ function NetworkSphere({
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+  useEffect(() => {
+    litRef.current = lit;
+  }, [lit]);
   useEffect(() => {
     colorRef.current = color ?? [255, 255, 255];
   }, [color]);
@@ -192,7 +207,7 @@ function NetworkSphere({
       const rimTouch = 0;
 
       const s = stateRef.current;
-      const c = NET_CFG[s];
+      const c = litRef.current ? litCfg(s) : NET_CFG[s];
       const scl = size / 460;
 
       const lerpK = 1 - Math.pow(0.02, dt);
@@ -391,11 +406,14 @@ export function JarvisOrb({
   sphereSize,
   paused = false,
   color,
+  lit = false,
 }: {
   state: JarvisState;
   sphereSize: number;
   paused?: boolean;
   color?: [number, number, number];
+  // Brilho do estado "speaking" sem a animacao dele (ver litCfg).
+  lit?: boolean;
 }) {
   const PAD = 72;
   const TOT = sphereSize + PAD * 2;
@@ -413,7 +431,7 @@ export function JarvisOrb({
     working: 0.58,
     speaking: 0.92,
   };
-  const a = alphaCfg[state];
+  const a = alphaCfg[lit ? "speaking" : state];
 
   // Arredondamento obrigatorio, nao cosmetico. Math.sin/Math.cos podem devolver
   // o ultimo digito diferente no Node (servidor) e no navegador (cliente). Como
@@ -496,7 +514,7 @@ export function JarvisOrb({
   return (
     <div style={{ position: "relative", width: TOT, height: TOT, flexShrink: 0 }}>
       <div style={{ position: "absolute", top: PAD, left: PAD }}>
-        <NetworkSphere state={state} size={sphereSize} paused={paused} color={color} />
+        <NetworkSphere state={state} size={sphereSize} paused={paused} color={color} lit={lit} />
       </div>
 
       <svg

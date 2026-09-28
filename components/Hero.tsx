@@ -7,7 +7,6 @@ import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
 import { useOrbSize } from "@/components/ui/use-orb-size";
-import { SpokenCaption } from "@/components/ui/spoken-caption";
 import { Particles } from "@/components/ui/particles";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +15,7 @@ import {
   Microphone,
   Terminal,
   SquaresFour,
+  WindowsLogo,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
@@ -63,17 +63,6 @@ const TRUST_SIGNALS: { icon: Icon; title: string; subtitle: string }[] = [
   { icon: Lightning, title: "Instalação rápida", subtitle: "Menos de 1 minuto" },
 ];
 
-// Frases proprias do hero. Sao diferentes das da secao de Voz clonada de
-// proposito: a mesma legenda datilografada aparece em dois pontos da pagina, e
-// repetir texto identico faria a segunda parecer um bug de copia. Todas
-// descrevem coisas que o produto realmente faz.
-const HERO_PHRASES = [
-  "Abrindo o Chrome e buscando os documentos.",
-  "Comando executado. Terminal pronto.",
-  "Notificações silenciadas. Modo foco ligado.",
-  "Claro. Enviando a mensagem agora.",
-];
-
 export default function Hero() {
   const reduce = useReducedMotionSafe();
   // So pras particulas de fundo (ver comentario grande la embaixo, perto do
@@ -102,14 +91,10 @@ export default function Hero() {
     heightFraction: isLaptop ? 0.76 : 0.72,
   });
 
-  // A esfera segue a legenda, exatamente como na secao de Voz clonada: fala
-  // enquanto o texto e datilografado e se acalma quando a frase termina. Antes
-  // ela so trocava de "idle" para "listening" uma vez e parava ali.
-  const [speaking, setSpeaking] = useState(false);
-  const handleSpeakingChange = React.useCallback(
-    (value: boolean) => setSpeaking(value),
-    []
-  );
+  // Esfera sempre no estado normal ("idle": giro lento e suave), mas com o
+  // BRILHO do modo "falando" (`lit`, ver jarvis-sphere.tsx) — pedido do
+  // usuario (28/09/2026). A legenda datilografada embaixo dela, que alternava
+  // a esfera pro modo "falando", saiu no mesmo pedido.
 
   // A correnteza das particulas pra esquerda e SO no desktop. 1024px e o
   // breakpoint `lg` do Tailwind (o config so acrescenta `wide`, nao mexe nos
@@ -259,8 +244,10 @@ export default function Hero() {
                 sombra extra no hover (tambem rejeitados). */}
             <a
               href="#download"
-              className="rounded-xl bg-[#FAFAFA] px-9 py-4 text-center text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] sm:w-fit sm:min-w-[280px]"
+              className="flex items-center justify-center gap-3 rounded-xl bg-[#FAFAFA] px-9 py-4 text-center text-lg font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] sm:w-fit sm:min-w-[280px]"
             >
+              {/* Mesmo logo do Windows do botao da secao de download. */}
+              <WindowsLogo size={24} weight="fill" aria-hidden className="shrink-0" />
               Baixar grátis
             </a>
 
@@ -342,7 +329,8 @@ export default function Hero() {
                   para (ver jarvis-sphere.tsx). Continua girando em modo
                   fraco de proposito — e a peca central da Hero. */}
               <JarvisOrb
-                state={speaking ? "speaking" : "idle"}
+                state="idle"
+                lit
                 sphereSize={size}
                 paused={!!reduce}
               />
@@ -384,22 +372,6 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* O orb ja traz 72px de padding transparente embaixo, entao a
-              legenda encosta sem precisar de margem propria grande. */}
-          <div className="flex w-full justify-center px-2">
-            <SpokenCaption
-              phrases={HERO_PHRASES}
-              onSpeakingChange={handleSpeakingChange}
-              // Acima da dobra: entra por tempo, junto com os CTAs, e nao por
-              // scroll, que aqui nunca aconteceria.
-              reveal="immediate"
-              revealDelay={0.75}
-              // max-w-md nao bastava mais: com a caixa presa a uma linha so
-              // (sem quebrar), a frase mais longa precisa de mais espaco
-              // horizontal do que 448px davam.
-              className="max-w-xl"
-            />
-          </div>
         </motion.div>
       </div>
     </section>

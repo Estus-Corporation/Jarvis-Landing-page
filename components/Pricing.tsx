@@ -19,6 +19,10 @@ import {
   DownloadSimple,
   WindowsLogo,
   Tag,
+  ArrowRight,
+  CreditCard,
+  Microphone,
+  Desktop,
 } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
@@ -135,66 +139,116 @@ const DOWNLOAD_URL =
   process.env.NEXT_PUBLIC_DOWNLOAD_URL ||
   "https://github.com/Estus-Corporation/Jarvis-Releases/releases/latest/download/Jarvis-Setup.exe";
 
-const TRIAL_POINTS = ["Sem cartão de crédito", "Para Windows"];
-
-// Mesma moldura HUD dos cartoes de plano (e dos de Organizacao), so que
-// larga: e o bloco principal da secao, entao ganha o halo forte.
-function DownloadCard() {
+// Tela de download (pedido do usuario, 28/09/2026): selo, titulo, frase e CTA
+// centralizados, e uma faixa de destaques embaixo com o botao "Planos" na
+// ponta. Ja teve uma esfera (JarvisOrb) na direita — tirada a pedido, ficou
+// ruim ao lado do texto. A tela de planos continua com o cabecalho de antes.
+function DownloadHero({ skipEntrance }: { skipEntrance: boolean }) {
   return (
-    <div className="relative">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-[14px] rounded-[30px] bg-white opacity-[0.09] blur-[20px]"
-      />
-      <TechFrame
-        innerClassName="bg-ink-900"
-        innerStyle={{
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 14px rgba(255,255,255,0.14), inset 0 0 28px rgba(255,255,255,0.08), inset 0 0 50px rgba(255,255,255,0.045)",
-        }}
-        contentClassName="bg-ink-800"
+      <motion.div
+        initial={skipEntrance ? false : { opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.6, ease: EASE }}
+        className="flex flex-col items-center text-center"
       >
-        <div className="flex flex-col items-center gap-7 px-6 py-9 text-center sm:px-10 md:flex-row md:justify-between md:gap-10 md:text-left laptop:py-7">
-          <div>
-            <p className="font-display text-2xl font-semibold tracking-[-0.02em] text-[#FAFAFA] sm:text-[1.75rem]">
-              Comece grátis
-            </p>
-            <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-white/55 sm:text-base">
-              Baixe, instale e use o Jarvis completo. Se gostar, escolha um
-              plano no fim do teste.
-            </p>
-            <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 md:justify-start">
-              {TRIAL_POINTS.map((label) => (
-                <li key={label} className="flex items-center gap-2 text-sm text-white/65">
-                  <Check size={14} weight="bold" className="shrink-0 text-white/40" aria-hidden />
-                  {label}
-                </li>
-              ))}
-            </ul>
-          </div>
+        <SectionEyebrow>Download</SectionEyebrow>
+        <h2 className="mt-6 text-[length:clamp(2.25rem,7vw,4rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-[#FAFAFA] laptop:text-[3.25rem]">
+          Baixe o Jarvis agora!
+        </h2>
+        <p className="mx-auto mt-4 max-w-[46ch] text-lg font-light leading-relaxed text-white/55">
+          Comece de graça. Depois, escolha como quer continuar.
+        </p>
 
-          <div className="flex w-full shrink-0 flex-col items-center md:w-auto">
+        <div className="mt-9 flex w-full flex-col items-center">
+          <div className="relative w-full max-w-[340px] sm:w-auto sm:max-w-none">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-3 rounded-full bg-white/15 blur-xl"
+            />
             {/* Mesmo gesto dos CTAs solidos do site (Hero): levanta 2px e
-                cresce de leve no hover. */}
+                cresce de leve no hover. A seta anda um pouco junto. */}
             <a
               href={DOWNLOAD_URL}
-              className="flex w-full items-center justify-center gap-3 rounded-full bg-[#FAFAFA] px-8 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] md:w-auto"
+              className="group relative flex w-full items-center justify-between gap-10 rounded-full bg-[#FAFAFA] py-4 pl-7 pr-6 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] sm:w-auto sm:text-lg"
             >
-              <DownloadSimple size={20} weight="bold" aria-hidden />
-              Baixar grátis
-            </a>
-            {/* "· versao mais recente" some no celular: com ela a linha
-                quebrava em duas e o icone ficava sozinho na ponta. */}
-            <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-white/40">
-              <WindowsLogo size={13} weight="fill" aria-hidden className="shrink-0" />
-              <span>
-                Instalador para Windows
-                <span className="hidden sm:inline"> · versão mais recente</span>
+              <span className="flex items-center gap-3">
+                <WindowsLogo size={24} weight="fill" aria-hidden className="shrink-0" />
+                Baixar grátis
               </span>
-            </p>
+              <ArrowRight
+                size={18}
+                weight="bold"
+                aria-hidden
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              />
+            </a>
           </div>
+          {/* "· versao mais recente" some no celular: com ela a linha
+              quebrava em duas e o icone ficava sozinho na ponta. */}
+          <p className="mt-4 flex items-center gap-1.5 text-xs text-white/40">
+            <WindowsLogo size={13} weight="fill" aria-hidden className="shrink-0" />
+            <span>
+              Para Windows · Sem cartão de crédito
+              <span className="hidden sm:inline"> · Versão mais recente</span>
+            </span>
+          </p>
         </div>
-      </TechFrame>
+      </motion.div>
+
+  );
+}
+
+// Faixa de destaques da tela de download. So coisas que ja sao verdade em
+// outro lugar da pagina/do fluxo — nada de "instala em X minutos" ou lista
+// de versoes do Windows que ninguem conferiu.
+const DOWNLOAD_HIGHLIGHTS = [
+  { icon: CreditCard, title: "Sem cartão", text: "Comece sem pagar nada" },
+  { icon: Microphone, title: "Jarvis completo", text: "Todos os recursos no teste" },
+  { icon: ShieldCheck, title: "Instalador oficial", text: "Sempre atualizado" },
+  { icon: Desktop, title: "Feito para Windows", text: "Roda direto no seu PC" },
+];
+
+function DownloadHighlights({ onShowPlans }: { onShowPlans: () => void }) {
+  return (
+    <div className="mt-14 border-t border-white/[0.08] pt-8 lg:mt-16 laptop:mt-12">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-6">
+        <ul className="grid flex-1 grid-cols-2 gap-x-4 gap-y-6 lg:flex lg:gap-0">
+          {DOWNLOAD_HIGHLIGHTS.map(({ icon: Icon, title, text }, i) => (
+            <li
+              key={title}
+              className={cn(
+                "flex flex-col gap-2 lg:flex-1 lg:px-6",
+                i === 0 && "lg:pl-0",
+                i > 0 && "lg:border-l lg:border-white/[0.08]"
+              )}
+            >
+              <Icon size={20} weight="regular" aria-hidden className="text-white/70" />
+              <div>
+                <p className="text-sm font-medium text-white/85">{title}</p>
+                <p className="mt-0.5 text-xs text-white/40">{text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {/* Contorno, nao fundo branco: o CTA solido da tela e o "Baixar
+            gratis"; este e navegacao. */}
+        <button
+          type="button"
+          onClick={onShowPlans}
+          aria-controls="precos"
+          className="group flex shrink-0 items-center justify-center gap-3 self-center rounded-full border border-white/20 bg-ink-900 px-6 py-3 text-sm font-semibold text-white/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/45 hover:text-white active:translate-y-0 active:scale-[0.97] lg:self-auto"
+        >
+          <Tag size={16} weight="bold" aria-hidden />
+          Planos
+          <ArrowRight
+            size={15}
+            weight="bold"
+            aria-hidden
+            className="transition-transform duration-300 group-hover:translate-x-1"
+          />
+        </button>
+      </div>
     </div>
   );
 }
@@ -435,14 +489,14 @@ function PlanCard({
           // voltando ao chao e encolhendo no clique. Vale para os dois
           // planos; o que continua diferente entre eles e so a superficie
           // (branca no Anual, aro girando no Mensal).
-          // Os dois agora sao SECUNDARIOS (contorno, sem fundo branco): a
-          // acao principal da secao virou o "Baixar gratis" la em cima, e um
-          // segundo botao branco aqui disputaria com ele. Quem ja quer pagar
-          // sem testar continua podendo, direto daqui.
+          // Anual volta a ser BRANCO SOLIDO (pedido do usuario, 28/09/2026).
+          // Ele tinha virado contorno pra nao disputar com o "Baixar gratis",
+          // mas hoje download e planos sao telas separadas — os dois nunca
+          // aparecem juntos.
           className={cn(
             "group relative block w-full overflow-hidden rounded-full border px-6 py-3.5 text-center text-base font-semibold transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]",
             plan.highlighted
-              ? "border-white/40 text-white hover:border-white/70 hover:bg-white/[0.05]"
+              ? "border-transparent bg-[#FAFAFA] text-ink-950 hover:bg-white"
               : "border-white/15 text-white/85 hover:border-white/40 hover:text-white"
           )}
         >
@@ -505,6 +559,29 @@ export default function Pricing() {
       document.removeEventListener("click", onClick, true);
     };
   }, []);
+  // Troca de tela pelos BOTOES (Planos / Download) em duas etapas, pra ser
+  // suave (pedido do usuario, 28/09/2026): a tela atual apaga (FADE_OUT_MS),
+  // e so entao `view` troca e a nova acende subindo de leve. Antes as duas
+  // trocavam no mesmo frame, com um salto seco. A troca pela ancora #precos
+  // (menu/rodape/app) continua instantanea: ali a pagina ja esta rolando ate
+  // a secao, e ninguem ve a troca acontecer.
+  const FADE_OUT_MS = 260;
+  const [fading, setFading] = React.useState(false);
+  const fadeTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  React.useEffect(() => () => clearTimeout(fadeTimer.current), []);
+  const switchView = (next: "download" | "planos") => {
+    if (next === view || fading) return;
+    if (reduce) {
+      setView(next);
+      return;
+    }
+    setFading(true);
+    fadeTimer.current = setTimeout(() => {
+      setView(next);
+      setFading(false);
+    }, FADE_OUT_MS);
+  };
+
   // So no mobile: qual dos dois cartoes esta ativo. No desktop os dois
   // aparecem lado a lado e este estado e ignorado (o grid de la nunca
   // depende dele).
@@ -648,13 +725,29 @@ export default function Pricing() {
         className="pointer-events-none absolute right-0 top-1/4 h-[520px] w-[620px] translate-x-1/3 rounded-full bg-white/[0.045] blur-[130px]"
       />
 
-      <div className="relative mx-auto max-w-6xl wide:max-w-shell">
+      <motion.div
+        className="relative mx-auto max-w-6xl wide:max-w-shell"
+        initial={false}
+        animate={fading ? { opacity: 0, y: 6, filter: "blur(4px)" } : { opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={
+          fading
+            ? { duration: FADE_OUT_MS / 1000, ease: "easeIn" }
+            : { duration: 0.55, ease: EASE }
+        }
+      >
+        {view === "download" && (
+          <>
+            <DownloadHero skipEntrance={skipEntrance} />
+            <DownloadHighlights onShowPlans={() => switchView("planos")} />
+          </>
+        )}
+
         <motion.div
           initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto max-w-2xl text-center"
+          className={cn("mx-auto max-w-2xl text-center", view !== "planos" && "hidden")}
         >
           {/* Titulo e descricao acompanham a tela ativa (pedido do
               usuario): no download, o texto novo; nos planos, o texto que a
@@ -700,23 +793,19 @@ export default function Pricing() {
             A ancora #precos mora neste bloco (ver o comentario do <section>
             e o useEffect de `view`): quem chega por ela cai na tela de
             planos. */}
-        <div id="precos" className="mx-auto mt-10 max-w-[970px] laptop:mt-8">
+        {/* O download mora em DownloadHero (acima); aqui so ficam os planos.
+            O bloco continua sempre montado (so o de dentro ganha `hidden`)
+            por causa da ancora #precos e do ResizeObserver do carrossel. */}
+        <div
+          id="precos"
+          className={cn("mx-auto max-w-[970px]", view === "planos" && "mt-10 laptop:mt-8")}
+        >
           <motion.div
             initial={skipEntrance ? false : { opacity: 0, y: 22 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.65, ease: EASE }}
           >
-            <motion.div
-              initial={false}
-              animate={view === "download" ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-              transition={{ duration: reduce ? 0 : 0.45, ease: EASE }}
-              className={cn(view !== "download" && "hidden")}
-              aria-hidden={view !== "download" || undefined}
-            >
-              <DownloadCard />
-            </motion.div>
-
             <motion.div
               initial={false}
               animate={view === "planos" ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
@@ -857,7 +946,7 @@ export default function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.6 }}
               transition={{ duration: 0.5, delay: reduce ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-6 flex translate-y-1 items-center justify-center gap-2 text-center text-xs text-white/55 sm:text-sm"
+              className="mt-6 flex translate-y-3 items-center justify-center gap-2 text-center text-xs text-white/55 sm:text-sm"
             >
               <ShieldCheck size={16} weight="light" className="shrink-0" aria-hidden />
               {/* O canal do reembolso precisa aparecer AQUI, antes da compra: o
@@ -876,11 +965,16 @@ export default function Pricing() {
               Contorno, nao fundo branco: nas duas telas ja existe um CTA
               solido (o "Baixar gratis" ou o "Mais popular"/precos), e este e
               navegacao, nao compra. */}
-          <div className="mt-14 flex items-center gap-4 laptop:mt-10">
+          <div
+            className={cn(
+              "mt-14 flex items-center gap-4 laptop:mt-10",
+              view === "download" && "hidden"
+            )}
+          >
             <span aria-hidden className="h-px flex-1 bg-gradient-to-r from-transparent to-white/20" />
             <button
               type="button"
-              onClick={() => setView((v) => (v === "download" ? "planos" : "download"))}
+              onClick={() => switchView(view === "download" ? "planos" : "download")}
               aria-controls="precos"
               className="flex shrink-0 items-center gap-2 rounded-full border border-white/20 bg-ink-900 px-6 py-2.5 font-display text-xs font-semibold uppercase tracking-[0.22em] text-white/75 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/45 hover:text-white active:translate-y-0 active:scale-[0.97]"
             >
@@ -899,7 +993,7 @@ export default function Pricing() {
             <span aria-hidden className="h-px flex-1 bg-gradient-to-l from-transparent to-white/20" />
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

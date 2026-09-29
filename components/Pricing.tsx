@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
 import { TechFrame } from "@/components/ui/tech-frame";
+import { MENSAL_LAUNCH, isLaunchActive } from "@/lib/plans";
 
 // Import dinamico (ssr:false): PrismaticBurst carrega a lib `ogl` (WebGL)
 // inteira so pra desenhar um fundo decorativo no fim da pagina. Import
@@ -52,6 +53,14 @@ const PrismaticBurst = dynamic(() => import("@/components/ui/prismatic-burst"), 
 // inventada derruba a confianca de quem le com atencao.
 //
 // Mudou o preco do mensal? Recalcule `normalPrice`/`discountPercent` do anual.
+//
+// PRECO DE LANCAMENTO (28/09/2026, ver MENSAL_LAUNCH em lib/plans.ts): durante
+// a janela o Mensal mostra R$ 79 no 1º mes (depois R$ 110), e o Anual passa a
+// comparar com 12 x 79 = 948 (decisao do usuario): 948 - 899 = 49, 5,2% (-5%).
+// Fora da janela, tudo volta aos valores de sempre acima. Aqui o "R$ 110" do
+// Mensal NAO e preco riscado de/por: e o valor real das renovacoes, entao
+// aparece RISCADO com "-28%" (pedido do usuario): e o preco normal de
+// verdade, cobrado antes e nas renovacoes — de/por legitimo.
 // `highlights` NAO repete a lista de recursos (essa e identica nos dois
 // planos, repetir dentro dos cartoes so fingiria uma diferenca que nao
 // existe). Sao 3 pontos sobre a UNICA coisa que de fato muda entre os
@@ -66,28 +75,42 @@ const PrismaticBurst = dynamic(() => import("@/components/ui/prismatic-burst"), 
 //   3. Jarvis-Landing-page/app/page.tsx        → o JSON-LD que o Google indexa
 //   4. Jarvis-Credits-Server/src/pricing.ts    → PLAN_ALLOTMENT_MICRO e PLAN_DIAS
 //                                                (quanto de uso o preço compra —
-//                                                 e de onde sai o "~815 comandos
+//                                                 e de onde saía o "~815 comandos
 //                                                 de voz por mês" dos dois cards)
 //   5. Project-Jarvis/legal/termos-de-uso.md   → seção 13, o valor contratado
 // ─────────────────────────────────────────────────────────────────────────
-const plans = [
+function getPlans(launch: boolean) {
+  return [
   {
     id: "mensal",
     name: "Mensal",
     icon: ArrowsClockwise,
     subtitle: "Para começar sem compromisso",
-    price: "R$ 110",
-    period: "/mês",
+    price: launch ? `R$ ${MENSAL_LAUNCH.price}` : "R$ 110",
+    period: launch ? "/1º mês" : "/mês",
+    // So no lancamento: selo no cabecalho, e o preco normal RISCADO com o
+    // selo de desconto (pedido do usuario, 28/09/2026). Riscar o 110 aqui
+    // e de/por legitimo: e o preco que valia antes e o que as renovacoes
+    // cobram. 79/110 = 71,8% → -28% (so no 1º mes, e a lista logo abaixo
+    // diz isso por extenso).
+    launchUntil: launch ? MENSAL_LAUNCH.endsLabel : undefined,
+    afterPrice: undefined as string | undefined,
+    normalPrice: launch ? "R$ 110/mês" : undefined,
+    discountPercent: launch ? "-28%" : undefined,
+    anchorLabel: launch ? "preço normal" : undefined,
     highlights: [
-      // O volume incluído sai do PLAN_ALLOTMENT_MICRO do Credits Server
-      // (src/pricing.ts) dividido pelo custo de uma interação de voz. Os dois
-      // planos anunciam o MESMO número de propósito — ver a nota de decisão
-      // naquele arquivo. Mudou o allotment lá, mude o número aqui.
-      "~815 comandos de voz por mês (~27 por dia)",
-      "Comece hoje, sem burocracia",
+      // O "~815 comandos de voz por mês (~27 por dia)" que abria esta lista
+      // (e a do Anual) saiu a pedido do usuario em 28/09/2026. Se voltar, o
+      // numero sai do PLAN_ALLOTMENT_MICRO do Credits Server (src/pricing.ts)
+      // dividido pelo custo de uma interação de voz.
+      launch
+        ? `R$ ${MENSAL_LAUNCH.price} no 1º mês, depois R$ 110/mês`
+        : "Comece hoje, sem burocracia",
       "Sem multa se você cancelar",
     ],
-    note: "Cobrado todo mês. Cancele quando quiser.",
+    note: launch
+      ? `Preço de lançamento válido até ${MENSAL_LAUNCH.endsLabel}. Cancele quando quiser.`
+      : "Cobrado todo mês. Cancele quando quiser.",
     highlighted: false,
   },
   {
@@ -97,23 +120,38 @@ const plans = [
     subtitle: "Para quem já decidiu usar todo dia",
     price: "R$ 899",
     period: "/ano",
-    normalPrice: "R$ 1.320",
-    discountPercent: "-32%",
-    anchorLabel: "12× o mensal",
+    launchUntil: undefined as string | undefined,
+    afterPrice: undefined as string | undefined,
+    normalPrice: launch ? "R$ 948" : "R$ 1.320",
+    discountPercent: launch ? "-5%" : "-32%",
+    anchorLabel: launch ? `12× R$ ${MENSAL_LAUNCH.price}` : "12× o mensal",
     highlights: [
-      // Mesmo volume mensal do plano Mensal — 12 × o allotment mensal. É o
-      // ponto do plano anual: mesmo uso, preço menor. Ver o comentário gêmeo
-      // no card Mensal acima.
-      "~815 comandos de voz por mês (~27 por dia)",
       "Equivale a R$ 74,92 por mês",
       "Preço travado por 12 meses",
     ],
     note: "Cobrado uma vez, vale 12 meses.",
     highlighted: true,
   },
-];
+  ];
+}
+
+type Plan = ReturnType<typeof getPlans>[number];
 
 const EASE = [0.16, 1, 0.3, 1] as const;
+
+// Liga o preco de lancamento so dentro da janela de MENSAL_LAUNCH. Decidido
+// no cliente (a pagina e estatica: um HTML gerado no build nao sabe que dia e
+// hoje) — nasce desligado e o efeito liga, entao fora da janela nunca pisca o
+// preco promocional. `?lancamento=1` / `?lancamento=0` forcam, pra conferir o
+// visual fora das datas (mesmo padrao do `?lowpower=`).
+function useLaunchPromo() {
+  const [active, setActive] = React.useState(false);
+  React.useEffect(() => {
+    const forced = new URLSearchParams(window.location.search).get("lancamento");
+    setActive(forced === "1" ? true : forced === "0" ? false : isLaunchActive());
+  }, []);
+  return active;
+}
 
 // ---- Download (topo da secao) -------------------------------------------
 // Decisao de 25/09/2026: todo mundo que baixa comeca de graca, sem cartao,
@@ -295,7 +333,7 @@ function PlanCard({
   setMensalHovered,
   reduce,
 }: {
-  plan: (typeof plans)[number];
+  plan: Plan;
   isPeeking: boolean;
   // So a tira do celular passa true: la a janela de recorte cortaria o halo
   // de fora seco, entao ele nao e desenhado (mesma decisao de
@@ -378,7 +416,7 @@ function PlanCard({
       // descontam os 24px desse vao (12 em cima + 12 embaixo), entao o
       // cartao inteiro continua com a altura de antes: 480/530/430.
       innerClassName="h-full bg-ink-900"
-      contentClassName="relative flex h-full min-h-[456px] flex-col bg-ink-800 sm:min-h-[506px] laptop:min-h-[406px]"
+      contentClassName="relative flex h-full min-h-[516px] flex-col bg-ink-800 sm:min-h-[506px] laptop:min-h-[406px]"
       >
       {/* Cabecalho do card da HUD: faixa ink-700 (#1c1c20 no app) com o
           filete de baixo. */}
@@ -391,6 +429,20 @@ function PlanCard({
             aria-hidden
           />
           {plan.name}
+          {/* Selo do preco de lancamento, na MESMA linha do nome (pedido do
+              usuario), com a data de fim ESCRITA: prazo concreto e
+              verificavel, nao "corra que acaba". */}
+          {plan.launchUntil && (
+            // -my-1: o selo e um pouco mais alto que a linha do nome; sem a
+            // margem negativa ele empurrava o cabecalho do Mensal ~10px pra
+            // baixo do do Anual, e os precos desalinhavam.
+            <span className="-my-1 ml-1.5 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-white/25 bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/85 sm:text-[11px] sm:tracking-[0.12em]">
+              <span className="led-dot" aria-hidden />
+              {/* No celular o texto inteiro passava da borda do cartao. */}
+              <span className="sm:hidden">Lançamento · até {plan.launchUntil}</span>
+              <span className="hidden sm:inline">Preço de lançamento · até {plan.launchUntil}</span>
+            </span>
+          )}
         </h3>
         <p className="mt-1 text-sm text-white/45">{plan.subtitle}</p>
       </div>
@@ -423,6 +475,9 @@ function PlanCard({
             </span>
           )}
         </div>
+        {plan.afterPrice && (
+          <p className="mt-2 text-xs leading-relaxed text-white/55">{plan.afterPrice}</p>
+        )}
         {plan.normalPrice && (
           <p className="mt-2 flex items-center gap-1.5 text-xs leading-relaxed text-white/40">
             <span className="font-mono text-white/40 line-through">
@@ -534,6 +589,8 @@ export default function Pricing() {
   // degrade estatico que faz as vezes dele.
   const lowPower = useLowPowerDevice();
   const [mensalHovered, setMensalHovered] = React.useState(false);
+  const launch = useLaunchPromo();
+  const plans = getPlans(launch);
 
   // Qual das duas telas da secao aparece (ver o bloco #precos no JSX).
   // Comeca no download; `/#precos` abre direto nos planos — e o link que o

@@ -33,3 +33,31 @@ export const PLANS = {
 } as const satisfies Record<PlanId, { id: PlanId; label: string; price: number; billing: string }>;
 
 export const CURRENCY = "BRL";
+
+// ─────────────────────────────────────────────────────────────────────────
+// PRECO DE LANCAMENTO DO MENSAL (pedido do usuario em 28/09/2026): R$ 79 no
+// PRIMEIRO mes pra quem assinar entre 28/09 e 05/10/2026 (ja no ar; sai
+// sozinho depois do dia 5, a pedido do usuario); as renovacoes
+// seguem a R$ 110 (`PLANS.mensal.price`, que continua sendo o preco normal).
+// Fora da janela o site volta sozinho pro preco normal — ver
+// useLaunchPromo() em components/Pricing.tsx.
+//
+// ⚠ O que o Mercado Pago COBRA nao sai daqui: sai do plano de assinatura
+// configurado em MP_PREAPPROVAL_PLAN_ID (ver scripts/setup-mercadopago.mjs).
+// Anunciar "R$ 79 no 1º mes, depois R$ 110" exige que a cobranca faca
+// exatamente isso — ver o CLAUDE.md, secao "Preco de lancamento".
+// ─────────────────────────────────────────────────────────────────────────
+export const MENSAL_LAUNCH = {
+  price: 79,
+  startsAt: "2026-09-28T00:00:00-03:00",
+  endsAt: "2026-10-05T23:59:59-03:00",
+  // Como a data aparece no texto do site.
+  endsLabel: "05/10",
+} as const;
+
+export function isLaunchActive(now: number = Date.now()): boolean {
+  return (
+    now >= new Date(MENSAL_LAUNCH.startsAt).getTime() &&
+    now <= new Date(MENSAL_LAUNCH.endsAt).getTime()
+  );
+}

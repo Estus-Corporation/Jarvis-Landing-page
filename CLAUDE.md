@@ -54,6 +54,25 @@ Variáveis de ambiente: ver `.env.example`. Para testar o webhook localmente é
 preciso um túnel (ngrok), porque o Mercado Pago não alcança `localhost` — e
 `auto_return` faz ele rejeitar `back_urls` de localhost.
 
+## Preço de lançamento do Mensal (decidido em 28/09/2026)
+
+R$ 79 no **primeiro mês** para quem assinar entre **28/09 e 05/10/2026** (no ar já; sai sozinho depois do dia 5);
+renovações a R$ 110. O Anual (R$ 899), durante a janela, compara com 12 × 79
+= R$ 948 (-5%) — decisão do usuário. Fonte única: `MENSAL_LAUNCH` em
+`lib/plans.ts`. O site liga/desliga sozinho pela data (no cliente, porque a
+página é estática); `?lancamento=1` / `?lancamento=0` forçam pra conferir.
+
+**⚠ Em aberto — a cobrança ainda não faz isso.** O que o Mercado Pago cobra no
+Mensal vem só do plano em `MP_PREAPPROVAL_PLAN_ID` (valor fixo, hoje R$ 110).
+"R$ 79 no 1º mês e R$ 110 depois" precisa de: um plano a R$ 79 para a janela
+**e** algo que suba cada assinatura para R$ 110 depois do 1º pagamento (ex.:
+o webhook fazendo `PUT /preapproval/{id}` com `auto_recurring.transaction_amount`
+— não implementado nem testado no sandbox). Sem isso, ou o site anuncia R$ 79 e
+cobra R$ 110, ou cobra R$ 79 para sempre. Também falta atualizar os Termos de
+Uso (Jarvis-Developer-Edition/legal/termos-de-uso.md, seção 13), que só
+listam R$ 110. O JSON-LD (`app/page.tsx`) ficou em R$ 110 de propósito: é o
+preço recorrente, e o HTML estático não saberia quando a janela termina.
+
 ## Investigação de performance (2026-08-12 → 2026-08-13)
 
 O usuário reportou o site travando num notebook de terceiros. Isto documenta o que foi investigado, corrigido, revertido em parte, e o que ainda está em aberto — para não repetir trabalho numa próxima sessão.

@@ -6,7 +6,7 @@ import Features from "@/components/Features";
 import Showcase from "@/components/Showcase";
 import Roadmap from "@/components/Roadmap";
 import Testimonials from "@/components/Testimonials";
-import Formulario from "@/components/Formulario";
+import Pricing from "@/components/Pricing";
 import Footer from "@/components/Footer";
 import Grain from "@/components/ui/grain";
 import { TracingBeam } from "@/components/ui/tracing-beam";
@@ -14,12 +14,13 @@ import { SITE, SITE_URL } from "@/lib/site";
 
 // Dados estruturados do app.
 //
-// SEM "offers": a secao de Precos saiu da pagina (produto ainda nao lancou,
-// site inteiro converteu pra lista de espera). Preco no JSON-LD sem preco
-// nenhum visivel na pagina e o proprio "dado estruturado enganoso" que o
-// comentario antigo deste bloco avisava pra evitar — quando a secao de Precos
-// voltar (no lancamento), o bloco "offers" volta junto, espelhando os
-// mesmos valores exibidos.
+// As ofertas espelham exatamente a tabela de precos. Nao existe mais plano
+// gratuito, entao declarar price "0" aqui faria o Google anunciar um plano que
+// a pagina nao vende, o que conta como dado estruturado enganoso.
+//
+// ATENCAO AO FIM DO LANCAMENTO: quando o mensal subir para R$ 147, este valor
+// precisa subir junto. Preco no JSON-LD divergente do preco na pagina e motivo
+// de penalizacao no rich result.
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -29,6 +30,41 @@ const jsonLd = {
   operatingSystem: "Windows 10, Windows 11",
   url: SITE_URL,
   author: { "@type": "Organization", name: SITE.company },
+  // Os valores abaixo são um dos CINCO lugares onde o preço vive — a lista
+  // completa está no topo de lib/plans.ts. Este aqui é o que o Google indexa:
+  // divergir dele significa aparecer na busca com um preço e cobrar outro.
+  offers: [
+    {
+      "@type": "Offer",
+      name: "Mensal",
+      price: "110",
+      priceCurrency: "BRL",
+      availability: "https://schema.org/InStock",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "110",
+        priceCurrency: "BRL",
+        billingDuration: 1,
+        billingIncrement: 1,
+        unitCode: "MON",
+      },
+    },
+    {
+      "@type": "Offer",
+      name: "Anual",
+      price: "899",
+      priceCurrency: "BRL",
+      availability: "https://schema.org/InStock",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "899",
+        priceCurrency: "BRL",
+        billingDuration: 12,
+        billingIncrement: 12,
+        unitCode: "MON",
+      },
+    },
+  ],
 };
 
 export default function Home() {
@@ -44,8 +80,7 @@ export default function Home() {
         <Hero />
         <FeatureTicker />
         {/* Barra de progresso do site (lado esquerdo/direito), do topo de
-            Recursos ate o fim do Formulario (ver FINISH_SECTION_ID em
-            components/ui/tracing-beam.tsx). */}
+            Recursos ate o fim de Precos. */}
         <TracingBeam>
           <Features />
           {/* Interface antes de Organizacao: as duas trocaram de lugar, mas os
@@ -56,10 +91,7 @@ export default function Home() {
           <Organization />
           <Roadmap />
           <Testimonials />
-          {/* Ultima secao da pagina: sem checkout ainda, todos os CTAs (Hero,
-              header, Futuro) desaguam aqui — captura de lead no lugar de
-              venda, enquanto o produto nao lanca. */}
-          <Formulario />
+          <Pricing />
         </TracingBeam>
         <Footer />
       </main>

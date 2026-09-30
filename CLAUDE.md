@@ -87,6 +87,71 @@ npm run lint     # eslint
 npx tsc --noEmit -p .   # typecheck (não tem script próprio)
 ```
 
+## Checkout (Mercado Pago)
+
+Os botões "Obter plano" da seção de Preços apontam para `/api/checkout/mensal` e
+`/api/checkout/anual`, que criam a cobrança e redirecionam para o checkout
+hospedado do Mercado Pago. Nada de dado de cartão passa pelo site (sem PCI).
+
+**Gateway escolhido: Mercado Pago.** Único que atende os três requisitos ao
+mesmo tempo — funciona com CPF puro (não há CNPJ/MEI), tem PIX desde o primeiro
+dia, e cobre recorrência + pagamento único. Stripe foi descartado (PIX é
+invite-only no Brasil, indisponível para conta nova) e AbacatePay também
+(exige CNPJ/MEI em produção).
+
+Os dois planos usam mecanismos diferentes, porque a cobrança é diferente:
+
+- **Mensal (R$110/mês)** — assinatura recorrente via um *plano* (`/preapproval_plan`)
+  criado uma vez por `node scripts/setup-mercadopago.mjs`, cujo ID vai em
+  `MP_PREAPPROVAL_PLAN_ID`. Não usa `POST /preapproval` porque ele exigiria
+  `payer_email` antes do checkout, obrigando a pessoa a digitar o e-mail duas
+  vezes (aqui e na tela do Mercado Pago). **Sem esse ID configurado o botão do
+  Mensal não funciona.**
+- **Anual (R$899/ano)** — cobrança única via Checkout Pro (`/preferences`),
+  criada a cada clique.
+
+**Entrega:** o webhook `/api/webhooks/mercadopago` valida a assinatura
+(`WebhookSignatureValidator` do SDK), consulta o recurso por ID na API (nunca
+confia no corpo) e, se aprovado, manda um e-mail com o link de download e a
+chave de licença.
+
+**Não há banco de dados**, de propósito: a chave de licença é o HMAC de
+(e-mail + plano) — ver `lib/license.ts` —, então validar não exige guardar nada,
+e reprocessar o mesmo comprador devolve sempre a mesma chave. O Mercado Pago é a
+fonte da verdade de quem pagou. Cancelamento e reembolso são **manuais** pelo
+painel do Mercado Pago (decisão explícita para a V1, sem login de cliente).
+
+**Em aberto:** o app Windows ainda não valida licença nenhuma — quando for
+implementar, precisa repetir o mesmo cálculo de `lib/license.ts`, ou o formato
+muda junto. E `DOWNLOAD_URL` precisa apontar para um instalador hospedado
+(não existe ainda) antes do fluxo servir para alguma coisa.
+
+Variáveis de ambiente: ver `.env.example`. Para testar o webhook localmente é
+preciso um túnel (ngrok), porque o Mercado Pago não alcança `localhost` — e
+`auto_return` faz ele rejeitar `back_urls` de localhost.
+
+## Preço de fundador do Mensal (decidido em 29/09/2026)
+
+Substitui o "R$ 79 no 1º mês até 05/10" de 28/09, que nunca chegou a ser
+vendido. Agora: **R$ 79/mês, enquanto a assinatura estiver ativa, para os
+primeiros 50 assinantes do Mensal**. Sem data de término. Mesmo saldo do
+Mensal normal. Regras (reajuste só pelo IPCA 1×/ano, cancelamento, vagas) nos
+Termos, seção 13.2.1. Decisão tomada depois de um LLM Council; o Anual não
+compara mais com 12 × 79.
+
+**Um interruptor só, `NEXT_PUBLIC_FOUNDER_OPEN`**, decide o texto do site
+(`Pricing.tsx`) E o plano que o checkout usa (`getMonthlyCheckout` →
+`MP_PREAPPROVAL_PLAN_ID_FOUNDER` ou `MP_PREAPPROVAL_PLAN_ID`). Assim o anúncio
+nunca diverge da cobrança. Fechar a oferta = `false` na Vercel + redeploy. A
+contagem dos 50 é **manual**, no painel do Mercado Pago (assinaturas do plano
+"Jarvis Mensal (fundador)"); fechar sozinho pela contagem faria o site anunciar
+R$ 79 enquanto o checkout cobra R$ 110. Criar os dois planos:
+`node scripts/setup-mercadopago.mjs` (R$ 110) e `... fundador` (R$ 79).
+`?lancamento=1/0` ainda força só o visual.
+
+Pendente: confirmar no sandbox que desativar o plano de fundador no painel não
+cancela as assinaturas já feitas.
+
 ## Investigação de performance (2026-08-12 → 2026-08-13)
 
 O usuário reportou o site travando num notebook de terceiros. Isto documenta o que foi investigado, corrigido, revertido em parte, e o que ainda está em aberto — para não repetir trabalho numa próxima sessão.
@@ -151,6 +216,9 @@ Depois `http://localhost:3111/?fps=1` (medidor) ou `?lowpower=1` / `?lowpower=0`
 
 ## Formulário de lista de espera (2026-08-18 → 2026-08-20)
 
+> ⚠️ **Histórico.** No merge de `feat(checkout-mercadopago)` → `main` (29/09/2026) a página voltou a vender: `<Pricing />` no lugar de `<Formulario />`, CTAs → `#download`, links de nav/rodapé/Roadmap → `#precos`. `Formulario.tsx` e `/api/waitlist` continuam no código, fora da página.
+
+
 O produto ainda não lançou e não existe checkout de verdade — a seção de Preços linkava pra lugar nenhum real (`Obter plano` ia pra `#top`, um placeholder morto). Decisão: **tirar a seção de Preços da página inteiramente** e substituir por um formulário de captura de lead (`#formulario`, entre Depoimentos e o fim da página, dentro do `TracingBeam`), pra construir lista de espera antes do lançamento. `components/Pricing.tsx`, `components/ui/prismatic-burst.tsx` e `components/ui/hover-border-gradient.tsx` foram deletados (órfãos, só a Pricing usava). O `offers` do JSON-LD também saiu — preço em dado estruturado sem preço nenhum visível na página é o "dado enganoso" que o comentário original daquele bloco avisava pra evitar; volta junto se/quando Preços voltar.
 
 ### O que existe hoje
@@ -190,3 +258,63 @@ Playwright foi instalado como devDependency (`playwright.config.ts`, chromium ap
   Mercado Pago. O `offers` do JSON-LD volta junto (e é mais um lugar onde o preço
   vive — ver a nota de preço no topo).
 - Bug pré-existente (não desta feature, mas achado durante ela): seções com `whileInView`/`once:true` ficam com opacidade 0 permanentemente **até a próxima passagem de scroll** se a página carregar direto numa âncora (`/#formulario`, `/#recursos` etc.) ou em modo `low-power` (Lenis inerte = scroll nativo, sem passar suavemente pelas seções no meio). Confirmado recuperável (rolar de volta por cima resolve), não é permanente — mas é a explicação mais provável se alguém reportar "seção em branco" de novo.
+
+## Auditoria de lançamento — 3 correções (09/09/2026)
+
+### Seções em branco ao abrir a página numa âncora
+
+Bug que já estava documentado como "em aberto" e virou urgente: com
+`whileInView` + `once: true`, uma seção só anima quando entra no viewport.
+Quando a página abre DIRETO numa âncora (`/#precos`), o navegador pula pra lá e
+as seções que ficaram pra trás nunca são intersectadas — ficam em `opacity: 0`
+até a pessoa rolar por cima. Mesma coisa em `low-power`, onde o Lenis fica
+inerte.
+
+Era cosmético enquanto âncora era só navegação interna. Deixou de ser quando o
+app passou a mandar o usuário sem crédito direto pra `/#precos`: a primeira
+coisa que ele vê ao clicar em "Recarregar" não pode ser meia página em branco.
+
+Correção: `useSkipEntrance()` novo em `components/ui/use-reduced-motion-safe.ts`
+— `reduce || tem âncora na URL || low-power`. **Não** dá pra reaproveitar o
+`useReducedMotionSafe` pra isso: `reduce` também governa loops, parallax e
+movimento ambiente, e desligar tudo isso porque alguém chegou por uma âncora
+seria pior que o bug.
+
+Aplicado em **20 animações de entrada**, e só nelas. As 11 que usam `initial` +
+`animate`/`AnimatePresence` (Hero, troca de depoimento, Formulário) continuam no
+`reduce`: elas animam no mount independente de scroll, nunca sofreram o
+problema, e pular a entrada ali seria regressão visual — a Hero apareceria sem
+intro. **A distinção é `whileInView` na linha seguinte**; foi exatamente isso
+que separou os dois grupos.
+
+### Idempotência do webhook (o `Set` em memória não bastava mais)
+
+`grantCredits()` agora manda o id do pagamento como `eventId`. O `Set` daqui
+morre com a instância serverless, e o Mercado Pago reenvia a mesma notificação a
+cada 15 min até receber 2xx. Enquanto o webhook só mandava e-mail, um reenvio
+era chato. Depois que ele passou a conceder crédito virou problema de verdade:
+`/v1/admin/grant` **reseta** o saldo (não soma), então uma notificação atrasada
+devolveria o saldo cheio pra quem já gastou metade do mês. A dedução real passou
+a viver no Credits Server, que tem banco (tabela `processed_events`).
+
+### Canal do reembolso antes da compra
+
+A garantia de 7 dias já aparecia na seção de Preços, mas sem dizer COMO exercer
+— só o e-mail pós-compra explicava. O art. 49 do CDC pede a informação antes da
+contratação. Agora nomeia o canal. **Falta fixar o prazo de estorno** — quando
+decidir, escrever aqui e nos Termos.
+
+### ⚠️ Armadilha desta pasta: o git não consegue trocar de branch
+
+O shell remoto desta sessão não tem permissão pra APAGAR arquivos, e
+`git checkout` depende disso. Trocar de branch **escreve os arquivos novos mas
+não remove nem sobrescreve os que já existem**, e a árvore de trabalho fica
+misturada entre duas branches sem nenhum erro visível. Foi o que aconteceu ao
+mudar de `feat/paginas-legais` pra cá; a árvore foi reconstruída arquivo a
+arquivo a partir do HEAD. Os arquivos que sobraram da `main` estão em
+`_leftovers-da-main/` (todos commitados lá, pode apagar a pasta). Também há um
+`.git/.index.lock.stale` residual, inofensivo.
+
+**Se for mexer nesta pasta por uma sessão remota de novo**: fazer o checkout no
+Windows, não pelo shell remoto.
+

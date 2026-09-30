@@ -3,15 +3,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useInView } from "motion/react";
 import { useLenis } from "lenis/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import {
   CloudSun,
-  MusicNotes,
+  SpotifyLogo,
+  YoutubeLogo,
   Clock,
   GameController,
   X,
+  CaretLeft,
+  CaretRight,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
@@ -35,177 +38,104 @@ import SectionEyebrow from "@/components/ui/section-eyebrow";
 // `active`, o autoplay, o efeito de digitacao e os botoes. A secao virou
 // conteudo parado: chega, mostra e deixa ler.
 //
-// No celular os quatro widgets viram uma ESTEIRA continua e ROLAVEL
-// (`useAutoScrollCarousel`, abaixo). Diferenca deliberada dos carrosseis de
-// Organization.tsx/Features.tsx: aqueles param num cartao por vez, arrastados
-// pelo dedo (drag do motion), porque cada cartao la carrega uma maquete
-// INTEIRA que pede leitura parada. Os widgets sao 4 fatos curtos — icone,
-// nome, uma frase — que nao competem por atencao entre si, entao o padrao e
-// andar sozinho em loop, sem esperar gesto nenhum — mas a pedido do usuario
-// o dedo tambem pode tomar o controle: e uma rolagem NATIVA de verdade
-// (overflow-x-auto + scroll-left), nao um drag reimplementado, entao ganha
-// o momentum/elastico de borda do sistema de graca. Encostar no cartao pausa
-// o autoplay na hora; ele so volta a andar sozinho depois de um tempo sem
-// nenhum evento de scroll (usuario parou de mexer), retomando de onde a
-// rolagem manual deixou — nunca pula de volta pro inicio.
-//
-// O "loop infinito" e um truque de scrollLeft, nao de CSS: a lista real (4
-// itens) e desenhada 2x seguidas, e ao cruzar a metade do scrollWidth o
-// scrollLeft e devolvido pra tras nesse mesmo valor — como as duas metades
-// sao identicas, o salto e invisivel. Respeita `prefers-reduced-motion`
-// (via useReducedMotionSafe): com reduce=true o autoplay nem liga, so sobra
-// rolagem manual comum.
+// Os widgets embaixo da janela viraram SO ICONES (pedido do usuario,
+// 28/09/2026): uma fileira centralizada com o anel duplo de cada um, sem nome
+// nem frase — o nome fica no `title` (dica do mouse) e no texto de leitor de
+// tela. Com isso sairam o cartao unico do desktop e a esteira com autoplay
+// do celular: cinco icones cabem numa linha so em qualquer largura.
 
-type Widget = { icon: Icon; title: string; note: string };
+type Widget = { icon: Icon; title: string };
 
 // Ordem de leitura da grade (esquerda pra direita, de cima pra baixo).
 const WIDGETS: Widget[] = [
-  {
-    icon: CloudSun,
-    title: "Clima",
-    note: "Previsão do tempo sempre à vista.",
-  },
-  {
-    icon: MusicNotes,
-    title: "Spotify",
-    note: "Faixa atual com a capa do álbum.",
-  },
-  {
-    icon: Clock,
-    title: "Relógio",
-    note: "A hora local, sempre bem visível.",
-  },
-  {
-    icon: GameController,
-    title: "Jogo em execução",
-    note: "Ele reconhece o que você está jogando.",
-  },
+  { icon: CloudSun, title: "Clima" },
+  { icon: SpotifyLogo, title: "Spotify" },
+  { icon: Clock, title: "Relógio" },
+  { icon: GameController, title: "Jogo em execução" },
+  { icon: YoutubeLogo, title: "YouTube" },
 ];
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-// A captura, num lugar so: ela e desenhada duas vezes (na janela e no
-// lightbox) e src/alt/proporcao tem que casar entre as duas.
-const SHOT = {
-  src: "/images/dashjarvis.webp",
-  alt: "Interface do Jarvis: esfera de rede geodésica no centro, com widgets de tarefas, clima, relógio e Spotify ao redor.",
-  // Dimensao real do arquivo (checada com sharp), nao mais 1536x864: a
-  // imagem foi trocada por uma mais panoramica (1920x995, ~1.93:1) e esses
-  // numeros tinham ficado desatualizados — o descompasso de proporcao era o
-  // que cortava as laterais no `object-cover` mais abaixo (caixa em 16/9,
-  // imagem mais larga que isso, cover cortava os 2 lados pra preencher a
-  // altura).
-  width: 1920,
-  height: 995,
-} as const;
+// CARROSSEL de capturas (pedido do usuario, 28/09/2026): no lugar da captura
+// unica (dashjarvis.webp), seis telas reais do app mostrando o mesmo painel
+// montado de jeitos diferentes — que e exatamente o "Monte sua tela" do
+// titulo. Convertidas de JPG pra WebP (sharp, quality 90, ~100KB cada), mesmo
+// padrao das imagens do Roadmap. Desenhadas duas vezes (janela e lightbox),
+// por isso src/alt/proporcao moram aqui num lugar so.
+const SHOTS = [
+  {
+    src: "/images/interface-1.webp",
+    alt: "Interface do Jarvis com a esfera no centro, assistente e YouTube à esquerda, lista de tarefas à direita, relógio e clima em cima, jogo e Spotify embaixo.",
+  },
+  {
+    src: "/images/interface-2.webp",
+    alt: "Interface do Jarvis com atalhos em órbita ao redor da esfera, YouTube à esquerda e Spotify à direita.",
+  },
+  {
+    src: "/images/interface-3.webp",
+    alt: "Interface do Jarvis com um vídeo grande no centro, relógio e clima nas laterais, jogo e Spotify embaixo.",
+  },
+  {
+    src: "/images/interface-4.webp",
+    alt: "Interface do Jarvis com o vídeo do YouTube em destaque no centro e a esfera pequena no canto.",
+  },
+  {
+    src: "/images/interface-5.webp",
+    alt: "Interface do Jarvis com relógio e clima em cima, vídeo no centro, jogo e Spotify embaixo.",
+  },
+  {
+    src: "/images/interface-6.webp",
+    alt: "Interface do Jarvis com a esfera no centro, Spotify à esquerda e YouTube à direita.",
+  },
+] as const;
+// As seis tem 1600 de largura e 858-865 de altura. A caixa usa a media; o
+// object-cover corta no maximo ~3px de uma delas, invisivel.
+const SHOT_W = 1600;
+const SHOT_H = 861;
+// Tempo de cada captura no autoplay.
+const SLIDE_MS = 5000;
 
 // Icone em anel duplo — mesma familia visual do RingIcon de Organization.tsx
-// (o "icone de recurso" do site). `size` cobre os dois usos: "sm" (padrao) e
-// o tamanho de sempre, pro cabecalho enxuto da lista de desktop; "lg" e so
-// pro cartao do carrossel do celular, que ganhou altura de sobra e pede um
-// icone mais forte pra preencher o espaco em vez de sobrar vazio.
-function RingIcon({
-  icon: Glyph,
-  className = "",
-  size = "sm",
-}: {
-  icon: Icon;
-  className?: string;
-  size?: "sm" | "lg";
-}) {
-  const ring = size === "lg" ? "h-14 w-14" : "h-10 w-10";
-  const inset = size === "lg" ? "-inset-[6px]" : "-inset-[5px]";
-  const glyph = size === "lg" ? 24 : 18;
+// (o "icone de recurso" do site). So a fileira de widgets usa: sem nome nem
+// frase do lado, o icone sozinho precisa de presenca. 60px no celular (e o
+// que deixa os cinco numa linha so em 390px) e 88px a partir de sm. O tamanho
+// do glifo e por classe, nao pelo `size` do Phosphor, pra poder variar por
+// breakpoint (o CSS vence o atributo width/height do svg).
+function RingIcon({ icon: Glyph }: { icon: Icon }) {
   return (
-    <span
-      className={`relative flex ${ring} shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950 ${className}`}
-    >
+    <span className="relative flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-950 sm:h-[88px] sm:w-[88px]">
       <span
         aria-hidden
-        className={`absolute ${inset} rounded-full border border-white/[0.07]`}
+        className="absolute -inset-[6px] rounded-full border border-white/[0.07] sm:-inset-[9px]"
       />
-      <Glyph size={glyph} weight="light" aria-hidden className="text-white/85" />
+      <Glyph weight="light" aria-hidden className="h-7 w-7 text-white/85 sm:h-10 sm:w-10" />
     </span>
   );
 }
 
-// ---- Esteira rolavel com autoplay (mobile) ------------------------------------
-// px/frame do avanco automatico. Partiu de um valor calibrado pra bater com
-// o ritmo da esteira antiga (CSS `animate-marquee`, --duration:26s pra
-// ~960px de largura de um conjunto de 4 cartoes => ~37px/s => ~0.6px a
-// 60fps) e foi reduzido pela metade a pedido do usuario — o ritmo original
-// lia rapido demais pra ler os 4 cartoes com calma.
-const AUTOSCROLL_SPEED = 0.3;
-// Quanto tempo parado (sem evento de scroll) ate o autoplay retomar.
-const AUTOSCROLL_RESUME_DELAY = 2200;
-
-function useAutoScrollCarousel(reduce: boolean) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  // Ref, nao state: o passo roda a cada frame dentro do rAF, e um state
-  // reagendaria o efeito (e recriaria o loop) a cada pausa/retomada.
-  const pausedRef = useRef(false);
-  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  // Acumulador em ponto flutuante — NAO da pra usar `el.scrollLeft` como a
-  // propria fonte da verdade entre frames: o navegador arredonda essa
-  // propriedade pro inteiro mais proximo a cada leitura, entao um incremento
-  // fracionario (AUTOSCROLL_SPEED < 1) soma em cima do valor ja arredondado
-  // e pode nunca passar do proximo inteiro (bug medido: com 0.3, 0+0.3=0.3
-  // arredonda de volta pra 0 todo frame, e o carrossel nunca sai do lugar).
-  // Mantendo a soma aqui, o navegador so arredonda na hora de PINTAR — a
-  // precisao entre frames fica intacta.
-  const posRef = useRef(0);
-
-  useEffect(() => {
-    if (reduce) return;
-    const el = scrollerRef.current;
-    if (!el) return;
-    posRef.current = el.scrollLeft;
-
-    let rafId: number;
-    const step = () => {
-      if (!pausedRef.current) {
-        const half = el.scrollWidth / 2;
-        posRef.current += AUTOSCROLL_SPEED;
-        if (posRef.current >= half) posRef.current -= half;
-        el.scrollLeft = posRef.current;
-      }
-      rafId = requestAnimationFrame(step);
-    };
-    rafId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(rafId);
-  }, [reduce]);
-
-  useEffect(() => () => clearTimeout(resumeTimerRef.current), []);
-
-  // Toque/clique no cartao tira o controle do autoplay imediatamente — antes
-  // mesmo do primeiro evento de scroll, senao o dedo "briga" um instante com
-  // o avanco automatico.
-  const pause = useCallback(() => {
-    pausedRef.current = true;
-    clearTimeout(resumeTimerRef.current);
-  }, []);
-
-  // Cada evento de scroll (arraste, momentum apos soltar o dedo, ou o
-  // proprio autoplay) reageta o wraparound, ressincroniza o acumulador com a
-  // posicao real (pra retomada nao pular de volta pro ponto onde o autoplay
-  // tinha parado antes do usuario mexer) e, se pausado, adia a retomada —
-  // so volta a andar sozinho depois de ficar `AUTOSCROLL_RESUME_DELAY` sem
-  // nenhum evento novo.
-  const onScroll = useCallback(() => {
-    const el = scrollerRef.current;
-    if (el) {
-      const half = el.scrollWidth / 2;
-      if (el.scrollLeft >= half) el.scrollLeft -= half;
-      posRef.current = el.scrollLeft;
-    }
-    if (!pausedRef.current) return;
-    clearTimeout(resumeTimerRef.current);
-    resumeTimerRef.current = setTimeout(() => {
-      pausedRef.current = false;
-    }, AUTOSCROLL_RESUME_DELAY);
-  }, []);
-
-  return { scrollerRef, pause, onScroll };
+// Seta do carrossel de capturas. `className` decide onde ela mora (fora da
+// janela no desktop, na linha das bolinhas no celular) e inclui o `flex` —
+// por isso nao vem aqui, pra `hidden lg:flex` funcionar.
+function SlideArrow({
+  dir,
+  onStep,
+  className = "",
+}: {
+  dir: -1 | 1;
+  onStep: (delta: number) => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onStep(dir)}
+      aria-label={dir < 0 ? "Imagem anterior" : "Próxima imagem"}
+      className={`h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/[0.16] bg-ink-900 text-white/70 outline-none transition-colors duration-200 hover:border-white/40 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70 lg:h-11 lg:w-11 ${className}`}
+    >
+      {dir < 0 ? <CaretLeft size={16} weight="bold" aria-hidden /> : <CaretRight size={16} weight="bold" aria-hidden />}
+    </button>
+  );
 }
 
 // ---- Lightbox ----------------------------------------------------------------
@@ -214,13 +144,19 @@ function useAutoScrollCarousel(reduce: boolean) {
 // `transform` vira bloco de contencao de `position: fixed` — o overlay
 // deixaria de cobrir a tela e passaria a se posicionar dentro do cartao.
 function Lightbox({
+  index,
+  onStep,
   onClose,
   manageFocus,
 }: {
+  index: number;
+  onStep: (delta: number) => void;
   onClose: () => void;
   manageFocus: boolean;
 }) {
+  const shot = SHOTS[index];
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   const closeRef = useRef<HTMLButtonElement>(null);
   const lenis = useLenis();
 
@@ -254,6 +190,9 @@ function Lightbox({
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      // Setas do teclado passam as capturas tambem com a imagem ampliada.
+      else if (e.key === "ArrowLeft") onStep(-1);
+      else if (e.key === "ArrowRight") onStep(1);
     };
     document.addEventListener("keydown", onKeyDown);
 
@@ -266,7 +205,7 @@ function Lightbox({
       document.removeEventListener("keydown", onKeyDown);
       previouslyFocused?.focus?.();
     };
-  }, [onClose, manageFocus]);
+  }, [onClose, onStep, manageFocus]);
 
   return createPortal(
     <motion.div
@@ -305,15 +244,35 @@ function Lightbox({
             entao a imagem encolhe pelo lado que estourar primeiro — altura em
             tela baixa e larga, largura em tela alta e estreita. */}
         <Image
-          src={SHOT.src}
-          alt={SHOT.alt}
-          width={SHOT.width}
-          height={SHOT.height}
+          key={shot.src}
+          src={shot.src}
+          alt={shot.alt}
+          width={SHOT_W}
+          height={SHOT_H}
           unoptimized
           draggable={false}
           className="h-auto max-h-[86vh] w-auto max-w-full rounded-card border border-white/[0.12] shadow-[0_50px_140px_-40px_rgba(0,0,0,0.9)]"
         />
       </motion.div>
+
+      {/* Setas: fora da imagem, nas bordas da tela. stopPropagation pra o
+          clique nao cair no fundo (que fecha). */}
+      {([-1, 1] as const).map((d) => (
+        <button
+          key={d}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onStep(d);
+          }}
+          aria-label={d < 0 ? "Imagem anterior" : "Próxima imagem"}
+          className={`absolute top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.16] bg-ink-900/80 text-white/70 outline-none transition-colors duration-200 hover:border-white/40 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70 ${
+            d < 0 ? "left-4 sm:left-6" : "right-4 sm:right-6"
+          }`}
+        >
+          {d < 0 ? <CaretLeft size={18} weight="bold" aria-hidden /> : <CaretRight size={18} weight="bold" aria-hidden />}
+        </button>
+      ))}
     </motion.div>,
     document.body
   );
@@ -321,13 +280,35 @@ function Lightbox({
 
 export default function Showcase() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   const [expanded, setExpanded] = useState(false);
   // Se a ampliacao foi aberta pelo teclado. So nesse caso o lightbox mexe no
   // foco (ver comentario la dentro) — no clique de mouse, mexer no foco so
   // acende aneis que o visitante nao pediu.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const close = useCallback(() => setExpanded(false), []);
-  const { scrollerRef, pause, onScroll } = useAutoScrollCarousel(reduce);
+
+  // ---- Carrossel da janela ----
+  const [index, setIndex] = useState(0);
+  const step = useCallback(
+    (delta: number) => setIndex((i) => (i + delta + SHOTS.length) % SHOTS.length),
+    []
+  );
+  // Autoplay pausa com o mouse em cima (ou foco dentro), com a imagem
+  // ampliada, fora da tela, e nunca liga com "reduzir movimento". O `index`
+  // nas deps reinicia a contagem a cada troca — clicar numa seta ou bolinha
+  // da os 5s inteiros pra captura escolhida, em vez de trocar logo em seguida.
+  const [hovering, setHovering] = useState(false);
+  const windowRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(windowRef, { amount: 0.3 });
+  useEffect(() => {
+    if (reduce || hovering || expanded || !inView) return;
+    const t = setTimeout(() => step(1), SLIDE_MS);
+    return () => clearTimeout(t);
+  }, [index, reduce, hovering, expanded, inView, step]);
+  // Arrasto com o dedo troca de captura. Um arrasto tambem dispara `click` no
+  // fim, e isso abriria o lightbox — o ref engole esse clique.
+  const pannedRef = useRef(false);
 
   return (
     <section
@@ -366,7 +347,7 @@ export default function Showcase() {
 
       <div className="relative mx-auto max-w-6xl wide:max-w-shell">
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: EASE }}
@@ -403,13 +384,19 @@ export default function Showcase() {
             a grade de widgets nasce exatamente sob as bordas da imagem, o que
             e o que faz as duas lerem como um bloco so em vez de dois blocos
             empilhados por acaso. O teto de 1080px existe porque a janela e
-            bem panoramica (~1.93:1, ver SHOT) — em telas `wide` o container
-            vai a 1400px, e ali a imagem ainda ficaria alta demais pra caber
-            num olhar. */}
+            16/9 — em telas `wide` o container vai a 1400px, e ali a imagem
+            passaria de 780px de altura, alta demais pra caber num olhar. */}
         <div className="mx-auto mt-12 max-w-[1080px] laptop:mt-9 laptop:max-w-[860px]">
-          {/* janela do app */}
+          {/* janela do app. O wrapper `relative` existe pras setas: a janela
+              tem overflow-hidden, entao elas nao podem morar dentro dela. */}
+          <div className="relative">
           <motion.div
-            initial={reduce ? false : { opacity: 0, y: 24, scale: 0.97 }}
+            ref={windowRef}
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+            onFocus={() => setHovering(true)}
+            onBlur={() => setHovering(false)}
+            initial={skipEntrance ? false : { opacity: 0, y: 24, scale: 0.97 }}
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.8, ease: EASE }}
@@ -447,20 +434,18 @@ export default function Showcase() {
               <span className="ml-1 font-display text-xs font-semibold uppercase tracking-[0.15em] text-white/45">
                 Jarvis
               </span>
-              <span className="ml-auto flex items-center gap-2 text-xs text-white/40">
+              {/* Contador da captura atual, no lugar do antigo "ao vivo". */}
+              <span className="ml-auto flex items-center gap-2 font-mono text-xs tabular-nums text-white/40">
                 <span className="led-dot" aria-hidden />
-                ao vivo
+                {String(index + 1).padStart(2, "0")} / {String(SHOTS.length).padStart(2, "0")}
               </span>
             </div>
 
-            {/* a imagem: aspect-[1920/995], igual a proporcao real do
-                arquivo (checada com sharp) — antes a caixa estava fixa em
-                16/9 enquanto o arquivo (trocado por uma captura mais
-                panoramica) ja era ~1.93:1, e object-cover cortava as duas
-                laterais pra preencher uma caixa mais "quadrada" que a
-                imagem. Com a caixa na MESMA proporcao do arquivo, cover nao
-                corta nada — se a imagem for trocada de novo, os dois (SHOT
-                width/height e esta classe) precisam ser atualizados juntos.
+            {/* a imagem: aspect-[16/9], igual a proporcao real do arquivo
+                (1536x864) — antes era 16/10 (proporcao da imagem antiga),
+                que cortava as laterais desta por object-cover tentar
+                preencher uma caixa mais "quadrada" que a imagem. Com a
+                caixa na MESMA proporcao do arquivo, cover nao corta nada.
 
                 unoptimized: o arquivo fonte JA e um .webp comprimido. Sem
                 isso, o otimizador de imagem do Next decodifica esse webp e
@@ -470,34 +455,56 @@ export default function Showcase() {
                 sobretudo nos pontinhos da esfera e nas estrelas de fundo).
                 unoptimized manda o Next servir os bytes originais direto,
                 sem reprocessar nada — a imagem fica identica ao arquivo
-                fonte. */}
+                fonte. Custo: sem srcset responsivo, mas o arquivo ja e leve
+                (165KB) e nao vale a pena trocar fidelidade por isso aqui. */}
             {/* A captura inteira e o botao de ampliar. Sem nenhuma reacao
                 visual ao hover — nem selo, nem zoom, nem anel na borda: a
                 unica pista e o cursor virar lupa. */}
-            <button
+            <motion.button
               type="button"
               // detail === 0 identifica ativacao por TECLADO: Enter/Espaco num
               // botao disparam um clique sintetico sem contagem de cliques,
               // enquanto o mouse manda 1 ou mais.
               onClick={(e) => {
+                if (pannedRef.current) {
+                  pannedRef.current = false;
+                  return;
+                }
                 setKeyboardOpen(e.detail === 0);
                 setExpanded(true);
+              }}
+              onPanEnd={(_, info) => {
+                if (Math.abs(info.offset.x) < 50) return;
+                pannedRef.current = true;
+                step(info.offset.x < 0 ? 1 : -1);
               }}
               aria-label="Ampliar a imagem da interface do Jarvis"
               // ring-inset, e nao o outline padrao: o outline seria recortado
               // pelo overflow-hidden da janela em tres lados, sobrando so a
               // aresta de cima (a "barra branca"). O ring por dentro fica todo
               // dentro da area visivel. focus-visible: so no teclado.
-              className="relative block aspect-[1920/995] w-full cursor-zoom-in overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
+              // touch-pan-y: o arrasto vertical continua rolando a pagina; so
+              // o horizontal vira troca de captura.
+              className="relative block aspect-[1600/861] w-full cursor-zoom-in touch-pan-y overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
             >
-              <Image
-                src={SHOT.src}
-                alt={SHOT.alt}
-                fill
-                unoptimized
-                className="object-cover"
-                draggable={false}
-              />
+              {/* As seis empilhadas, so a atual visivel: a troca e um
+                  crossfade de opacidade (compositor, sem layout), e como todas
+                  ja estao no DOM nao ha piscada de carregamento na troca. */}
+              {SHOTS.map((shot, i) => (
+                <Image
+                  key={shot.src}
+                  src={shot.src}
+                  alt={i === index ? shot.alt : ""}
+                  aria-hidden={i !== index || undefined}
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 1080px, 100vw"
+                  className={`object-cover transition-opacity duration-700 ease-out ${
+                    i === index ? "opacity-100" : "opacity-0"
+                  }`}
+                  draggable={false}
+                />
+              ))}
               {/* realce especular no topo */}
               <div
                 aria-hidden
@@ -518,8 +525,41 @@ export default function Showcase() {
                   />
                 );
               })}
-            </button>
+            </motion.button>
+
           </motion.div>
+
+          {/* Setas FORA da janela (pedido do usuario), uma de cada lado, na
+              altura do meio da captura. So a partir de lg: abaixo disso nao
+              sobra margem ao lado da janela, e as setas descem pra linha das
+              bolinhas (logo abaixo). */}
+          <SlideArrow dir={-1} onStep={step} className="absolute right-full top-1/2 mr-5 hidden -translate-y-1/2 lg:flex" />
+          <SlideArrow dir={1} onStep={step} className="absolute left-full top-1/2 ml-5 hidden -translate-y-1/2 lg:flex" />
+          </div>
+
+          {/* Bolinhas: a ativa vira um tracinho largo, mesmo padrao dos
+              carrosseis do celular (Organization/Features). No celular as
+              setas ficam nas pontas desta linha. */}
+          <div className="mt-5 flex items-center justify-center gap-2">
+            <SlideArrow dir={-1} onStep={step} className="mr-3 flex lg:hidden" />
+            {SHOTS.map((shot, i) => (
+              <button
+                key={shot.src}
+                type="button"
+                onClick={() => setIndex(i)}
+                aria-label={`Mostrar imagem ${i + 1} de ${SHOTS.length}`}
+                aria-current={i === index || undefined}
+                className="flex h-6 items-center px-0.5 outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              >
+                <span
+                  className={`block h-1.5 rounded-full transition-all duration-300 ${
+                    i === index ? "w-6 bg-white" : "w-1.5 bg-white/25 hover:bg-white/50"
+                  }`}
+                />
+              </button>
+            ))}
+            <SlideArrow dir={1} onStep={step} className="ml-3 flex lg:hidden" />
+          </div>
 
           {/* Divisor rotulado: separa a imagem da legenda dela sem precisar de
               uma caixa. Sem ele os itens encostariam direto no rodape da
@@ -531,7 +571,7 @@ export default function Showcase() {
               COM o led-dot piscando) porque aqui o pedido foi sem a bolinha
               — so o mesmo desenho de pilula, escrito na mao. */}
           <motion.div
-            initial={reduce ? false : { opacity: 0 }}
+            initial={skipEntrance ? false : { opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, amount: 0.6 }}
             transition={{ duration: 0.6, ease: EASE }}
@@ -546,103 +586,29 @@ export default function Showcase() {
             <span className="h-px flex-1 bg-white/[0.18]" aria-hidden />
           </motion.div>
 
-          {/* Desktop (lg+): os 4 widgets dentro de UM cartao so agora
-              (pedido do usuario — testou um cartao por item antes e nao
-              gostou; a versao final e um unico cartao, mesma cor de fundo
-              dos cartoes de widget do celular, com os 4 divididos por
-              linhas verticais finas em vez de quatro molduras separadas).
-              lg:-mx-8: pedido do usuario foi deixar o cartao mais LARGO —
-              sangra 32px de cada lado pra fora do container de 1080px/860px
-              que ele divide com a janela do app (ver comentario grande la
-              em cima, no pai: aquele teto existe pra imagem panoramica nao
-              ficar alta demais, mas nao precisa valer pro cartao de widgets, que
-              nao tem essa restricao de proporcao). 64px de sangria total
-              ainda cabe dentro do max-w-6xl (1152px) da secao inteira nas
-              duas faixas (1080+64=1144 e 860+64=924). */}
-          <div className="mt-10 hidden rounded-card border border-white/[0.1] bg-[#151519] p-7 lg:-mx-8 lg:grid lg:grid-cols-4 lg:divide-x lg:divide-white/[0.08] laptop:mt-8 laptop:p-6">
+          <ul className="mt-10 flex items-center justify-center gap-3 sm:gap-10 laptop:mt-8">
             {WIDGETS.map((w, i) => (
-              <motion.div
+              <motion.li
                 key={w.title}
-                initial={reduce ? false : { opacity: 0, y: 14 }}
+                initial={skipEntrance ? false : { opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
-                // Escalonado por indice: a 0.06s de intervalo os itens entram
-                // como uma onda, nao como uma fila.
+                // Escalonado por indice: entram como uma onda, nao em fila.
                 transition={{ duration: 0.5, ease: EASE, delay: i * 0.06 }}
-                // px-6 (nao mais gap no grid pai): reserva o respiro dos
-                // dois lados de CADA linha divisoria de forma simetrica —
-                // gap + divide-x juntos deixariam a linha colada num dos
-                // lados. first/last:0 pra nao somar padding extra em cima
-                // do p-7/p-6 do cartao, nas pontas.
-                className="flex items-start gap-4 px-6 first:pl-0 last:pr-0"
+                title={w.title}
               >
                 <RingIcon icon={w.icon} />
-                <div className="min-w-0">
-                  <h3 className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#FAFAFA]">
-                    {w.title}
-                  </h3>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
-                    {w.note}
-                  </p>
-                </div>
-              </motion.div>
+                <span className="sr-only">{w.title}</span>
+              </motion.li>
             ))}
-          </div>
-
-          {/* Celular (abaixo de lg): esteira continua e rolavel. A lista de
-              4 cartoes e desenhada 2x seguidas (repeticao minima que basta
-              pro truque de wraparound em `useAutoScrollCarousel` — nao
-              precisa do buffer de 3x que o `Marquee` antigo usava, porque
-              ali a segunda copia so precisava cobrir o vazio atras do
-              translateX; aqui e scrollLeft, entao 2 copias identicas ja
-              fecham o loop sem costura visivel). -mx-6 px-6 sangra a esteira
-              ate a borda real da tela (o titulo/paragrafo acima continuam
-              no respiro normal da secao). touch-pan-x + no-scrollbar: deixa
-              o gesto horizontal nativo (com momentum/elastico do sistema)
-              sem a barra de rolagem sobrando por cima dos cartoes.
-              Altura MENOR que a versao original antes do Marquee (h-40 =
-              160px, era h-60 = 240px): um cartao mais compacto deixa o olho
-              ver mais de um por vez enquanto a esteira passa. */}
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, ease: EASE }}
-            ref={scrollerRef}
-            onScroll={onScroll}
-            onPointerDown={pause}
-            onTouchStart={pause}
-            onWheel={pause}
-            className="no-scrollbar relative -mx-6 mt-10 flex touch-pan-x gap-4 overflow-x-auto px-6 lg:hidden"
-          >
-            {[...WIDGETS, ...WIDGETS].map((w, i) => (
-              <div
-                key={`${w.title}-${i}`}
-                // bg-[#151519]: mais um pouquinho mais escuro (era
-                // #18181C) — pedido do usuario, so pra este cartao
-                // (widgets, mobile). Fora da escala de proposito (mesmo
-                // raciocinio do bg-[#111114] em Organization.tsx): o
-                // ajuste pedido e mais fino do que o degrau inteiro ate
-                // ink-800 (#141417), que escureceria demais.
-                className="flex h-40 w-56 shrink-0 flex-col items-center justify-center gap-2 rounded-card border border-white/[0.1] bg-[#151519] p-5 text-center"
-              >
-                <RingIcon icon={w.icon} size="lg" className="mx-auto" />
-                <div>
-                  <h3 className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#FAFAFA]">
-                    {w.title}
-                  </h3>
-                  <p className="mt-1 text-[13px] leading-relaxed text-white/50">
-                    {w.note}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
+          </ul>
         </div>
       </div>
 
       <AnimatePresence>
-        {expanded && <Lightbox onClose={close} manageFocus={keyboardOpen} />}
+        {expanded && (
+          <Lightbox index={index} onStep={step} onClose={close} manageFocus={keyboardOpen} />
+        )}
       </AnimatePresence>
     </section>
   );

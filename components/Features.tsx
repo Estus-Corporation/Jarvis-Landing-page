@@ -8,7 +8,7 @@ import {
   useMotionValue,
   type PanInfo,
 } from "motion/react";
-import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useReducedMotionSafe, useSkipEntrance } from "@/components/ui/use-reduced-motion-safe";
 import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import {
@@ -447,20 +447,6 @@ function CapButton({
         {cap.tab}
       </span>
     </div>
-  );
-}
-
-// ---- Marca de 4 pontos do Jarvis (mesma do header/footer), em miniatura:
-// serve de "avatar" do cartao de resposta, do mesmo jeito que o microfone
-// marca o cartao do usuario. ----------------------------------------------
-function JarvisMark() {
-  return (
-    <span className="relative block h-3.5 w-3.5" aria-hidden>
-      <span className="absolute left-1/2 top-0 h-1 w-1 -translate-x-1/2 rounded-full bg-white" />
-      <span className="absolute left-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-white" />
-      <span className="absolute right-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-white" />
-      <span className="absolute bottom-0 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-white" />
-    </span>
   );
 }
 
@@ -2704,6 +2690,7 @@ function ConsoleWindow({
 
 export default function Features() {
   const reduce = useReducedMotionSafe();
+  const skipEntrance = useSkipEntrance();
   // Modo fraco: pausa o autoplay entre capacidades (fica so no clique/toque),
   // pula a digitacao letra-a-letra do pedido (ver useEffect logo abaixo) e
   // desliga as duas animacoes CONTINUAS que as demos tem (disco do Spotify,
@@ -3027,7 +3014,7 @@ export default function Features() {
           colunas + console) ganha os ~128px extras. */}
       <div className="relative mx-auto max-w-7xl wide:max-w-shell">
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -3064,7 +3051,7 @@ export default function Features() {
         </motion.div>
 
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 24 }}
+          initial={skipEntrance ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
@@ -3263,9 +3250,6 @@ export default function Features() {
             <div className="mx-3.5 flex items-center gap-2.5 justify-center rounded-chip border border-white/[0.16] bg-white/[0.05] px-3.5 py-3 sm:mx-5 sm:gap-3 sm:px-5 sm:py-3.5 laptop:py-3">
               {showReply ? (
                 <>
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/[0.08] shadow-[0_0_14px_-2px_rgba(255,255,255,0.4)]">
-                    <JarvisMark />
-                  </span>
                   <span className="hidden w-20 shrink-0 text-center font-mono text-xs font-medium uppercase tracking-[0.14em] text-white/60 sm:block laptop:w-16 laptop:text-[11px]">
                     Jarvis
                   </span>

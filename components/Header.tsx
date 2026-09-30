@@ -7,18 +7,18 @@ import { cn } from "@/lib/utils";
 // Navegacao. Uma ancora por secao real da pagina, na mesma ordem em que elas
 // aparecem ao rolar: Recursos, Interface (o showcase da dashboard),
 // Organizacao (tarefas/agenda/lembretes), Futuro (spoilers de atualizacoes),
-// Depoimentos e Lista de espera. As antigas "Como funciona" e "Demonstracao"
+// Depoimentos e Precos. As antigas "Como funciona" e "Demonstracao"
 // sairam com a secao que elas linkavam, "Integracoes" virou "Organizacao"
 // quando aquela secao trocou de assunto (as integracoes agora moram em
-// "Recursos"), e "Preços" virou "Lista de espera" quando a secao de Precos
-// saiu da pagina (produto ainda nao lancou).
+// "Recursos"), e "Precos" voltou no lugar da Lista de espera no merge
+// do checkout (29/09/2026). Hrefs com "/" pra funcionar vindo de /termos etc.
 const navLinksData = [
   { label: "Recursos", href: "/#recursos" },
   { label: "Interface", href: "/#interface" },
   { label: "Organização", href: "/#organizacao" },
   { label: "Futuro", href: "/#futuro" },
   { label: "Depoimentos", href: "/#depoimentos" },
-  { label: "Lista de espera", href: "/#formulario" },
+  { label: "Preços", href: "/#precos" },
 ];
 
 // Indicador da secao ativa: uma linha fina embaixo do link, nao mais o
@@ -119,11 +119,16 @@ export default function Header() {
   // Hover minimo, igual ao CTA da Hero: so levanta 2px e o fundo clareia.
   // Sem mola e sem brilho/sombra no hover (ambos rejeitados).
   const signupButton = (
+    // Leva ao bloco de download (25/09/2026): todo mundo comeca de graca,
+    // sem cartao. O "Testar gratis" que ficava ao lado (abria o
+    // FreeTrialModal, e-mail -> codigo) saiu junto: com o download direto e o
+    // SetupWizard do app criando a conta, o modal virou um segundo caminho
+    // pro mesmo lugar.
     <a
-      href="/#formulario"
+      href="/#download"
       className="block w-full rounded-full bg-[#FAFAFA] px-6 py-2.5 text-center text-sm font-semibold text-ink-950 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white active:translate-y-0 active:scale-[0.97] sm:w-auto"
     >
-      Quero ser notificado!
+      Baixar grátis
     </a>
   );
 
@@ -249,7 +254,9 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="hidden items-center lg:flex">{signupButton}</div>
+        <div className="hidden items-center gap-x-5 lg:flex">
+          {signupButton}
+        </div>
 
         {/* h-11 w-11 (44px): abaixo disso o alvo de toque fica menor que o
             minimo recomendado (Apple/Material, ~44px) — e o unico jeito de
@@ -299,6 +306,7 @@ export default function Header() {
         </nav>
         <div className="mt-5 w-full">{signupButton}</div>
       </div>
+
     </header>
   );
 }

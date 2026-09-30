@@ -1006,7 +1006,7 @@ export default function Pricing() {
                   internet, e a informacao de COMO exercer esse direito nao pode
                   viver so no e-mail que chega depois de pagar. Falta ainda fixar o
                   PRAZO de estorno — quando decidir, escrever aqui e nos Termos. */}
-              Garantia de 7 dias: não gostou, devolvemos 100% — é só pedir em suporte@estuscorporation.com.br.
+              Garantia de 7 dias: não gostou, devolvemos 100% — é só pedir em contato@estuscorporation.com.br.
             </motion.p>
             </motion.div>
           </motion.div>

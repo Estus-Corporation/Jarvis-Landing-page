@@ -47,7 +47,7 @@ const testimonials: Testimonial[] = [
 
 const trust: { icon: Icon; title: string; note: string }[] = [
   { icon: ShieldCheck, title: "Garantia de 7 dias", note: "Não gostou, devolvemos 100%" },
-  { icon: HardDrives, title: "Dados 100% locais", note: "Nada sai do seu computador" },
+  { icon: HardDrives, title: "Sem venda de dados", note: "Seus arquivos ficam no seu PC" },
   { icon: ArrowsClockwise, title: "Sem fidelidade", note: "Cancele quando quiser" },
 ];
 

@@ -59,7 +59,7 @@ const ORB_CHIPS: {
 // role a pagina atras de confianca. Os dois selos (privacidade, instalacao)
 // repetem so o que a pagina ja afirma la embaixo, nunca uma promessa nova.
 const TRUST_SIGNALS: { icon: Icon; title: string; subtitle: string }[] = [
-  { icon: ShieldCheck, title: "Privacidade total", subtitle: "Dados 100% locais" },
+  { icon: ShieldCheck, title: "Privacidade", subtitle: "Sem venda de dados" },
   { icon: Lightning, title: "Instalação rápida", subtitle: "Menos de 1 minuto" },
 ];
 

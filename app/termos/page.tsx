@@ -186,7 +186,9 @@ export default function TermosDeUso() {
               <a href="mailto:contato@estuscorporation.com.br">
                 contato@estuscorporation.com.br
               </a>
-              .
+              . Pedimos o estorno ao Mercado Pago logo após receber o seu pedido,
+              e a assinatura é cancelada junto. O prazo para o valor aparecer no
+              cartão depende da operadora e pode levar até duas faturas.
             </p>
           </Secao>
 

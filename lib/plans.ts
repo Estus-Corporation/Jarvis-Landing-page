@@ -35,29 +35,29 @@ export const PLANS = {
 export const CURRENCY = "BRL";
 
 // ─────────────────────────────────────────────────────────────────────────
-// PRECO DE LANCAMENTO DO MENSAL (pedido do usuario em 28/09/2026): R$ 79 no
-// PRIMEIRO mes pra quem assinar entre 28/09 e 05/10/2026 (ja no ar; sai
-// sozinho depois do dia 5, a pedido do usuario); as renovacoes
-// seguem a R$ 110 (`PLANS.mensal.price`, que continua sendo o preco normal).
-// Fora da janela o site volta sozinho pro preco normal — ver
-// useLaunchPromo() em components/Pricing.tsx.
+// PRECO DE FUNDADOR DO MENSAL (decidido em 29/09/2026): R$ 79/mes, enquanto a
+// assinatura estiver ativa, para os PRIMEIROS 50 assinantes do Mensal. Sem
+// data de termino: acaba quando entrarem 50.
 //
-// ⚠ O que o Mercado Pago COBRA nao sai daqui: sai do plano de assinatura
-// configurado em MP_PREAPPROVAL_PLAN_ID (ver scripts/setup-mercadopago.mjs).
-// Anunciar "R$ 79 no 1º mes, depois R$ 110" exige que a cobranca faca
-// exatamente isso — ver o CLAUDE.md, secao "Preco de lancamento".
+// Um interruptor so, NEXT_PUBLIC_FOUNDER_OPEN, decide o site E a cobranca:
+//   "true" → o site mostra R$ 79 e /api/checkout/mensal usa o plano
+//            MP_PREAPPROVAL_PLAN_ID_FOUNDER (R$ 79);
+//   outro  → site em R$ 110 e plano MP_PREAPPROVAL_PLAN_ID (R$ 110).
+// Fechar = trocar para "false" na Vercel e redeployar (NEXT_PUBLIC_ e embutido
+// no build). A contagem dos 50 e MANUAL, no painel do Mercado Pago, de
+// proposito: fechar sozinho pela contagem deixaria o site anunciando R$ 79
+// enquanto o checkout ja cobra R$ 110. Quem entrar entre o 50º e o
+// redeploy fica com R$ 79 — a favor do cliente.
+//
+// Regras do preco (reajuste, cancelamento): Termos de Uso, secao 13.
 // ─────────────────────────────────────────────────────────────────────────
-export const MENSAL_LAUNCH = {
+export const MENSAL_FOUNDER = {
   price: 79,
-  startsAt: "2026-09-28T00:00:00-03:00",
-  endsAt: "2026-10-05T23:59:59-03:00",
-  // Como a data aparece no texto do site.
-  endsLabel: "05/10",
+  slots: 50,
 } as const;
 
-export function isLaunchActive(now: number = Date.now()): boolean {
-  return (
-    now >= new Date(MENSAL_LAUNCH.startsAt).getTime() &&
-    now <= new Date(MENSAL_LAUNCH.endsAt).getTime()
-  );
+// Acesso literal a process.env.NEXT_PUBLIC_*: e o que o Next substitui no
+// build, inclusive no bundle do cliente.
+export function isFounderOpen(): boolean {
+  return process.env.NEXT_PUBLIC_FOUNDER_OPEN === "true";
 }

@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
 import { TechFrame } from "@/components/ui/tech-frame";
-import { MENSAL_LAUNCH, isLaunchActive } from "@/lib/plans";
+import { MENSAL_FOUNDER, isFounderOpen } from "@/lib/plans";
 
 // Import dinamico (ssr:false): PrismaticBurst carrega a lib `ogl` (WebGL)
 // inteira so pra desenhar um fundo decorativo no fim da pagina. Import
@@ -54,13 +54,12 @@ const PrismaticBurst = dynamic(() => import("@/components/ui/prismatic-burst"), 
 //
 // Mudou o preco do mensal? Recalcule `normalPrice`/`discountPercent` do anual.
 //
-// PRECO DE LANCAMENTO (28/09/2026, ver MENSAL_LAUNCH em lib/plans.ts): durante
-// a janela o Mensal mostra R$ 79 no 1º mes (depois R$ 110), e o Anual passa a
-// comparar com 12 x 79 = 948 (decisao do usuario): 948 - 899 = 49, 5,2% (-5%).
-// Fora da janela, tudo volta aos valores de sempre acima. Aqui o "R$ 110" do
-// Mensal NAO e preco riscado de/por: e o valor real das renovacoes, entao
-// aparece RISCADO com "-28%" (pedido do usuario): e o preco normal de
-// verdade, cobrado antes e nas renovacoes — de/por legitimo.
+// PRECO DE FUNDADOR (29/09/2026, ver MENSAL_FOUNDER em lib/plans.ts): com a
+// oferta aberta o Mensal mostra R$ 79/mes (enquanto a assinatura estiver
+// ativa) e o R$ 110 RISCADO com "-28%": e o preco normal de verdade, o que
+// quem entra depois dos 50 paga — de/por legitimo. O Anual NAO muda de
+// ancora: comparar com 12 x 79 = 948 deixava o anual "5% mais barato" e a
+// oferta com cara de truque (conselho de 29/09/2026).
 // `highlights` NAO repete a lista de recursos (essa e identica nos dois
 // planos, repetir dentro dos cartoes so fingiria uma diferenca que nao
 // existe). Sao 3 pontos sobre a UNICA coisa que de fato muda entre os
@@ -86,14 +85,11 @@ function getPlans(launch: boolean) {
     name: "Mensal",
     icon: ArrowsClockwise,
     subtitle: "Para começar sem compromisso",
-    price: launch ? `R$ ${MENSAL_LAUNCH.price}` : "R$ 110",
-    period: launch ? "/1º mês" : "/mês",
-    // So no lancamento: selo no cabecalho, e o preco normal RISCADO com o
-    // selo de desconto (pedido do usuario, 28/09/2026). Riscar o 110 aqui
-    // e de/por legitimo: e o preco que valia antes e o que as renovacoes
-    // cobram. 79/110 = 71,8% → -28% (so no 1º mes, e a lista logo abaixo
-    // diz isso por extenso).
-    launchUntil: launch ? MENSAL_LAUNCH.endsLabel : undefined,
+    price: launch ? `R$ ${MENSAL_FOUNDER.price}` : "R$ 110",
+    period: "/mês",
+    // So com a oferta de fundador aberta: selo no cabecalho, e o preco
+    // normal RISCADO com o selo de desconto. 79/110 = 71,8% → -28%.
+    founderBadge: launch,
     afterPrice: undefined as string | undefined,
     normalPrice: launch ? "R$ 110/mês" : undefined,
     discountPercent: launch ? "-28%" : undefined,
@@ -104,12 +100,12 @@ function getPlans(launch: boolean) {
       // numero sai do PLAN_ALLOTMENT_MICRO do Credits Server (src/pricing.ts)
       // dividido pelo custo de uma interação de voz.
       launch
-        ? `R$ ${MENSAL_LAUNCH.price} no 1º mês, depois R$ 110/mês`
+        ? `R$ ${MENSAL_FOUNDER.price}/mês enquanto sua assinatura estiver ativa`
         : "Comece hoje, sem burocracia",
       "Sem multa se você cancelar",
     ],
     note: launch
-      ? `Preço de lançamento válido até ${MENSAL_LAUNCH.endsLabel}. Cancele quando quiser.`
+      ? `Preço de fundador para os primeiros ${MENSAL_FOUNDER.slots} assinantes. Cancele quando quiser.`
       : "Cobrado todo mês. Cancele quando quiser.",
     highlighted: false,
   },
@@ -120,11 +116,11 @@ function getPlans(launch: boolean) {
     subtitle: "Para quem já decidiu usar todo dia",
     price: "R$ 899",
     period: "/ano",
-    launchUntil: undefined as string | undefined,
+    founderBadge: false,
     afterPrice: undefined as string | undefined,
-    normalPrice: launch ? "R$ 948" : "R$ 1.320",
-    discountPercent: launch ? "-5%" : "-32%",
-    anchorLabel: launch ? `12× R$ ${MENSAL_LAUNCH.price}` : "12× o mensal",
+    normalPrice: "R$ 1.320",
+    discountPercent: "-32%",
+    anchorLabel: "12× o mensal",
     highlights: [
       "Equivale a R$ 74,92 por mês",
       "Preço travado por 12 meses",
@@ -139,16 +135,15 @@ type Plan = ReturnType<typeof getPlans>[number];
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-// Liga o preco de lancamento so dentro da janela de MENSAL_LAUNCH. Decidido
-// no cliente (a pagina e estatica: um HTML gerado no build nao sabe que dia e
-// hoje) — nasce desligado e o efeito liga, entao fora da janela nunca pisca o
-// preco promocional. `?lancamento=1` / `?lancamento=0` forcam, pra conferir o
-// visual fora das datas (mesmo padrao do `?lowpower=`).
+// Liga o preco de fundador conforme NEXT_PUBLIC_FOUNDER_OPEN (embutido no
+// build, entao servidor e cliente renderizam igual e nada pisca).
+// `?lancamento=1` / `?lancamento=0` forcam, pra conferir o visual (mesmo padrao
+// do `?lowpower=`) — so o visual: o checkout segue o interruptor.
 function useLaunchPromo() {
-  const [active, setActive] = React.useState(false);
+  const [active, setActive] = React.useState(isFounderOpen);
   React.useEffect(() => {
     const forced = new URLSearchParams(window.location.search).get("lancamento");
-    setActive(forced === "1" ? true : forced === "0" ? false : isLaunchActive());
+    setActive(forced === "1" ? true : forced === "0" ? false : isFounderOpen());
   }, []);
   return active;
 }
@@ -429,18 +424,18 @@ function PlanCard({
             aria-hidden
           />
           {plan.name}
-          {/* Selo do preco de lancamento, na MESMA linha do nome (pedido do
-              usuario), com a data de fim ESCRITA: prazo concreto e
+          {/* Selo do preco de fundador, na MESMA linha do nome (pedido do
+              usuario), com o limite ESCRITO (50 vagas): concreto e
               verificavel, nao "corra que acaba". */}
-          {plan.launchUntil && (
+          {plan.founderBadge && (
             // -my-1: o selo e um pouco mais alto que a linha do nome; sem a
             // margem negativa ele empurrava o cabecalho do Mensal ~10px pra
             // baixo do do Anual, e os precos desalinhavam.
             <span className="-my-1 ml-1.5 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-white/25 bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/85 sm:text-[11px] sm:tracking-[0.12em]">
               <span className="led-dot" aria-hidden />
               {/* No celular o texto inteiro passava da borda do cartao. */}
-              <span className="sm:hidden">Lançamento · até {plan.launchUntil}</span>
-              <span className="hidden sm:inline">Preço de lançamento · até {plan.launchUntil}</span>
+              <span className="sm:hidden">Fundador · {MENSAL_FOUNDER.slots} vagas</span>
+              <span className="hidden sm:inline">Preço de fundador · {MENSAL_FOUNDER.slots} vagas</span>
             </span>
           )}
         </h3>

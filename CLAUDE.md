@@ -54,24 +54,27 @@ Variáveis de ambiente: ver `.env.example`. Para testar o webhook localmente é
 preciso um túnel (ngrok), porque o Mercado Pago não alcança `localhost` — e
 `auto_return` faz ele rejeitar `back_urls` de localhost.
 
-## Preço de lançamento do Mensal (decidido em 28/09/2026)
+## Preço de fundador do Mensal (decidido em 29/09/2026)
 
-R$ 79 no **primeiro mês** para quem assinar entre **28/09 e 05/10/2026** (no ar já; sai sozinho depois do dia 5);
-renovações a R$ 110. O Anual (R$ 899), durante a janela, compara com 12 × 79
-= R$ 948 (-5%) — decisão do usuário. Fonte única: `MENSAL_LAUNCH` em
-`lib/plans.ts`. O site liga/desliga sozinho pela data (no cliente, porque a
-página é estática); `?lancamento=1` / `?lancamento=0` forçam pra conferir.
+Substitui o "R$ 79 no 1º mês até 05/10" de 28/09, que nunca chegou a ser
+vendido. Agora: **R$ 79/mês, enquanto a assinatura estiver ativa, para os
+primeiros 50 assinantes do Mensal**. Sem data de término. Mesmo saldo do
+Mensal normal. Regras (reajuste só pelo IPCA 1×/ano, cancelamento, vagas) nos
+Termos, seção 13.2.1. Decisão tomada depois de um LLM Council; o Anual não
+compara mais com 12 × 79.
 
-**⚠ Em aberto — a cobrança ainda não faz isso.** O que o Mercado Pago cobra no
-Mensal vem só do plano em `MP_PREAPPROVAL_PLAN_ID` (valor fixo, hoje R$ 110).
-"R$ 79 no 1º mês e R$ 110 depois" precisa de: um plano a R$ 79 para a janela
-**e** algo que suba cada assinatura para R$ 110 depois do 1º pagamento (ex.:
-o webhook fazendo `PUT /preapproval/{id}` com `auto_recurring.transaction_amount`
-— não implementado nem testado no sandbox). Sem isso, ou o site anuncia R$ 79 e
-cobra R$ 110, ou cobra R$ 79 para sempre. Também falta atualizar os Termos de
-Uso (Jarvis-Developer-Edition/legal/termos-de-uso.md, seção 13), que só
-listam R$ 110. O JSON-LD (`app/page.tsx`) ficou em R$ 110 de propósito: é o
-preço recorrente, e o HTML estático não saberia quando a janela termina.
+**Um interruptor só, `NEXT_PUBLIC_FOUNDER_OPEN`**, decide o texto do site
+(`Pricing.tsx`) E o plano que o checkout usa (`getMonthlyCheckout` →
+`MP_PREAPPROVAL_PLAN_ID_FOUNDER` ou `MP_PREAPPROVAL_PLAN_ID`). Assim o anúncio
+nunca diverge da cobrança. Fechar a oferta = `false` na Vercel + redeploy. A
+contagem dos 50 é **manual**, no painel do Mercado Pago (assinaturas do plano
+"Jarvis Mensal (fundador)"); fechar sozinho pela contagem faria o site anunciar
+R$ 79 enquanto o checkout cobra R$ 110. Criar os dois planos:
+`node scripts/setup-mercadopago.mjs` (R$ 110) e `... fundador` (R$ 79).
+`?lancamento=1/0` ainda força só o visual.
+
+Pendente: confirmar no sandbox que desativar o plano de fundador no painel não
+cancela as assinaturas já feitas.
 
 ## Investigação de performance (2026-08-12 → 2026-08-13)
 

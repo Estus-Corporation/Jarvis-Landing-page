@@ -5,7 +5,10 @@
 // /api/checkout/mensal nao tem pra onde mandar o comprador.
 //
 //   MP_ACCESS_TOKEN=... NEXT_PUBLIC_SITE_URL=https://seusite.com \
-//     node scripts/setup-mercadopago.mjs
+//     node scripts/setup-mercadopago.mjs            → plano normal (R$ 110)
+//   ... node scripts/setup-mercadopago.mjs fundador   → plano de fundador (R$ 79)
+//
+// O de fundador vai para MP_PREAPPROVAL_PLAN_ID_FOUNDER (ver lib/plans.ts).
 //
 // O plano nao e criado a cada clique de proposito: seria um plano novo no
 // painel por visitante. Ele e um molde, criado uma vez e reusado por todos.
@@ -22,23 +25,26 @@ if (!accessToken || !siteUrl) {
   process.exit(1);
 }
 
+const founder = process.argv[2] === "fundador";
 const client = new MercadoPagoConfig({ accessToken });
 
 const plan = await new PreApprovalPlan(client).create({
   body: {
-    reason: "Jarvis Mensal",
+    reason: founder ? "Jarvis Mensal (fundador)" : "Jarvis Mensal",
     back_url: `${siteUrl}/obrigado`,
     auto_recurring: {
       frequency: 1,
       frequency_type: "months",
-      transaction_amount: 110,
+      transaction_amount: founder ? 79 : 110,
       currency_id: "BRL",
     },
   },
 });
 
 console.log("\nPlano criado.\n");
-console.log(`  MP_PREAPPROVAL_PLAN_ID=${plan.id}\n`);
+console.log(
+  `  MP_PREAPPROVAL_PLAN_ID${founder ? "_FOUNDER" : ""}=${plan.id}\n`
+);
 console.log(`  status:     ${plan.status}`);
 console.log(`  init_point: ${plan.init_point}\n`);
 console.log(

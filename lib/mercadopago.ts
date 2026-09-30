@@ -7,7 +7,7 @@ import {
 } from "mercadopago";
 import { randomUUID } from "node:crypto";
 import { requireEnv } from "@/lib/env";
-import { CURRENCY, PLANS } from "@/lib/plans";
+import { CURRENCY, PLANS, isFounderOpen } from "@/lib/plans";
 import { SITE_URL } from "@/lib/site";
 
 // Client criado sob demanda (nao no topo do modulo) — ver o comentario em
@@ -75,7 +75,10 @@ export async function createAnnualCheckout(): Promise<string> {
 // Pago). O link do plano deixa o Mercado Pago coletar o e-mail uma vez so, e
 // ele volta pra gente no webhook.
 export async function getMonthlyCheckout(): Promise<string> {
-  const planId = requireEnv("MP_PREAPPROVAL_PLAN_ID");
+  // Mesmo interruptor que decide o preco mostrado no site (lib/plans.ts).
+  const planId = requireEnv(
+    isFounderOpen() ? "MP_PREAPPROVAL_PLAN_ID_FOUNDER" : "MP_PREAPPROVAL_PLAN_ID"
+  );
   const plan = await new PreApprovalPlan(client()).get({ preApprovalPlanId: planId });
 
   const initPoint = plan.init_point;

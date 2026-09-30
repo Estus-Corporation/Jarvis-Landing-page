@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/termos" },
 };
 
-const ATUALIZADO_EM = "14 de setembro de 2026";
+const ATUALIZADO_EM = "29 de setembro de 2026";
 
 export default function TermosDeUso() {
   return (
@@ -116,7 +116,81 @@ export default function TermosDeUso() {
             </p>
           </Secao>
 
-          <Secao n={6} titulo="Propriedade intelectual">
+          <Secao n={6} titulo="Avaliação gratuita, planos e pagamento">
+            <p>
+              <strong className="text-neutral-100">Avaliação gratuita.</strong>{" "}
+              O Jarvis oferece 7 dias corridos de avaliação a partir do primeiro
+              uso, com uma quantidade limitada de créditos de Inteligência
+              Artificial. A avaliação termina no que ocorrer primeiro: o fim dos
+              7 dias ou o fim dos créditos. Depois disso, o uso continuado exige
+              uma assinatura ativa. O crédito de avaliação é concedido uma única
+              vez por computador.
+            </p>
+            <p>
+              <strong className="text-neutral-100">Planos.</strong> Mensal: R$
+              110,00 por mês, cobrado automaticamente a cada mês. Anual: R$
+              899,00 em cobrança única, válido por 12 meses, sem renovação
+              automática. Os valores são em reais e já incluem os tributos
+              aplicáveis. Podemos alterar os valores comunicando com pelo menos
+              30 dias de antecedência; a alteração não afeta ciclos já pagos.
+            </p>
+            <p>
+              <strong className="text-neutral-100">Preço de fundador.</strong>{" "}
+              Os primeiros 50 assinantes do plano Mensal pagam R$ 79,00 por mês,
+              com o mesmo volume de uso do Mensal. A oferta não tem data de
+              término: encerra quando as 50 assinaturas forem feitas. O preço
+              vale enquanto a assinatura permanecer ativa e só é perdido se o
+              próprio assinante cancelar; uma nova assinatura segue o preço
+              vigente na data. Falha de cobrança do cartão não faz perder o
+              preço enquanto a assinatura puder ser regularizada no Mercado
+              Pago. O valor pode ser reajustado no máximo uma vez a cada 12
+              meses, limitado ao IPCA acumulado no período, com aviso de 30
+              dias. Vagas liberadas por cancelamento não voltam a ser
+              oferecidas.
+            </p>
+            <p>
+              <strong className="text-neutral-100">Limite de uso.</strong> Cada
+              plano inclui um volume mensal de uso de Inteligência Artificial,
+              expresso em créditos e exibido no aplicativo em Configurações →
+              Uso. Os dois planos incluem o mesmo volume mensal. Os créditos são
+              renovados a cada ciclo pago, sem acumular o saldo anterior.
+              Esgotado o saldo, os recursos de voz e IA ficam indisponíveis até
+              a renovação — o limite faz parte do que é contratado.
+            </p>
+            <p>
+              <strong className="text-neutral-100">Pagamento.</strong> Os
+              pagamentos são processados pelo Mercado Pago, responsável pelos
+              dados de pagamento. Não recebemos nem armazenamos números de
+              cartão.
+            </p>
+            <p>
+              <strong className="text-neutral-100">Cancelamento.</strong> O
+              plano Mensal pode ser cancelado a qualquer momento, sem multa, na
+              área de assinaturas do Mercado Pago ou pelo e-mail{" "}
+              <a href="mailto:contato@estuscorporation.com.br">
+                contato@estuscorporation.com.br
+              </a>
+              . O cancelamento interrompe as cobranças futuras e preserva o
+              acesso até o fim do ciclo já pago, sem devolução proporcional do
+              ciclo em curso, ressalvado o direito de arrependimento abaixo.
+            </p>
+            <p>
+              <strong className="text-neutral-100">
+                Direito de arrependimento.
+              </strong>{" "}
+              Conforme o art. 49 do Código de Defesa do Consumidor, você pode
+              desistir da compra em até 7 dias corridos a contar da
+              contratação, com reembolso integral, sem justificativa e
+              independentemente do uso feito no período. Basta pedir pelo
+              e-mail{" "}
+              <a href="mailto:contato@estuscorporation.com.br">
+                contato@estuscorporation.com.br
+              </a>
+              .
+            </p>
+          </Secao>
+
+          <Secao n={7} titulo="Propriedade intelectual">
             <p>
               O Jarvis, seu nome, sua identidade visual e seu código-fonte
               pertencem à Estus Corporation. Estes termos concedem a você uma
@@ -129,7 +203,7 @@ export default function TermosDeUso() {
             </p>
           </Secao>
 
-          <Secao n={7} titulo="Disponibilidade e garantias">
+          <Secao n={8} titulo="Disponibilidade e garantias">
             <p>
               O Jarvis é fornecido no estado em que se encontra. Não garantimos
               que ele funcionará sem interrupções, que interpretará todos os
@@ -142,7 +216,7 @@ export default function TermosDeUso() {
             </p>
           </Secao>
 
-          <Secao n={8} titulo="Limitação de responsabilidade">
+          <Secao n={9} titulo="Limitação de responsabilidade">
             <p>
               Na máxima extensão permitida pela legislação brasileira, a Estus
               Corporation não responde por danos indiretos, lucros cessantes,
@@ -155,7 +229,7 @@ export default function TermosDeUso() {
             </p>
           </Secao>
 
-          <Secao n={9} titulo="Encerramento">
+          <Secao n={10} titulo="Encerramento">
             <p>
               Você pode parar de usar o Jarvis a qualquer momento
               desinstalando-o. Podemos encerrar o seu acesso em caso de
@@ -164,7 +238,7 @@ export default function TermosDeUso() {
             </p>
           </Secao>
 
-          <Secao n={10} titulo="Alterações nestes termos">
+          <Secao n={11} titulo="Alterações nestes termos">
             <p>
               Podemos atualizar estes termos. A data no topo da página indica a
               versão vigente. Mudanças relevantes serão comunicadas dentro do
@@ -173,7 +247,7 @@ export default function TermosDeUso() {
             </p>
           </Secao>
 
-          <Secao n={11} titulo="Lei aplicável e foro">
+          <Secao n={12} titulo="Lei aplicável e foro">
             <p>
               Estes termos são regidos pelas leis da República Federativa do
               Brasil. Fica eleito o foro da comarca de São Carlos, São Paulo,
@@ -182,7 +256,7 @@ export default function TermosDeUso() {
             </p>
           </Secao>
 
-          <Secao n={12} titulo="Contato">
+          <Secao n={13} titulo="Contato">
             <p>
               Estus Corporation — São Carlos, São Paulo, Brasil
               <br />

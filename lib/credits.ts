@@ -82,3 +82,24 @@ export async function markSubscriptionCanceled(
     console.error(`[credits] erro ao marcar cancelamento de ${email}:`, error);
   }
 }
+
+// Estorno ou contestacao no cartao: zera o saldo e encerra o periodo NA HORA
+// (o dinheiro voltou). Ao contrario de `markSubscriptionCanceled`, o erro E
+// propagado: se o corte falhar, o 500 faz o Mercado Pago reenviar — deixar
+// passar significa o cliente reembolsado seguir gastando saldo pago por nos.
+export async function refundCredits(email: string, eventId: string): Promise<void> {
+  const baseUrl = requireEnv("CREDITS_SERVER_URL");
+  const res = await fetch(`${baseUrl}/v1/admin/refund`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Secret": requireEnv("CREDITS_ADMIN_SECRET"),
+    },
+    body: JSON.stringify({ email, eventId }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Falha ao registrar estorno de ${email} (${res.status}): ${detail}`);
+  }
+  console.log(`[credits] estorno registrado para ${email} (${eventId})`);
+}

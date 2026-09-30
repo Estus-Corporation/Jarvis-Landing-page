@@ -6,7 +6,7 @@ import {
 import { requireEnv } from "@/lib/env";
 import { fetchPayment, fetchPreApproval } from "@/lib/mercadopago";
 import { generateLicenseKey } from "@/lib/license";
-import { grantCredits, markSubscriptionCanceled } from "@/lib/credits";
+import { grantCredits, markSubscriptionCanceled, refundCredits } from "@/lib/credits";
 import { sendPurchaseEmail } from "@/lib/email";
 import type { PlanId } from "@/lib/plans";
 
@@ -57,6 +57,25 @@ async function deliver(
   console.log(
     `[webhook] licenca ${plan} (${isRenewal ? "renovacao" : "nova"}) entregue para ${email} (${id})`
   );
+}
+
+// Pagamento que deixou de valer: estorno (`refunded`, inclusive o de 7 dias do
+// CDC feito pelo painel) ou contestacao no cartao (`charged_back`). O Mercado
+// Pago avisa pelo mesmo tipo da aprovacao, so com outro status. Qualquer outro
+// status (pending, rejected...) nao mexe em nada.
+const REVOKED_STATUSES = new Set(["refunded", "charged_back"]);
+
+async function revoke(
+  status: string | undefined,
+  email: string | undefined,
+  id: string
+) {
+  if (!status || !REVOKED_STATUSES.has(status)) return;
+  if (!email) {
+    console.error(`[webhook] pagamento ${id} ${status} SEM e-mail — zerar saldo manualmente`);
+    return;
+  }
+  await refundCredits(email, id);
 }
 
 // Tipos que resultam em alguma acao (entrega de licenca). Tudo que nao for
@@ -127,6 +146,8 @@ export async function POST(request: NextRequest) {
         const plan = (payment.external_reference?.split(":")[0] ??
           "anual") as PlanId;
         await deliver(payment.payer?.email, plan, id, false);
+      } else {
+        await revoke(payment.status, payment.payer?.email, id);
       }
     } else if (type === "subscription_preapproval") {
       const subscription = await fetchPreApproval(id);
@@ -168,6 +189,8 @@ export async function POST(request: NextRequest) {
       const payment = await fetchPayment(id);
       if (payment.status === "approved") {
         await deliver(payment.payer?.email, "mensal", id, true);
+      } else {
+        await revoke(payment.status, payment.payer?.email, id);
       }
     }
     // merchant_order e outros tipos continuam ignorados de proposito — nao

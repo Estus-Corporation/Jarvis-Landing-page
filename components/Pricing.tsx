@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
 import { TechFrame } from "@/components/ui/tech-frame";
+import SmartScreenNotice from "@/components/SmartScreenNotice";
 import { MENSAL_FOUNDER, isFounderOpen } from "@/lib/plans";
 
 // Import dinamico (ssr:false): PrismaticBurst carrega a lib `ogl` (WebGL)
@@ -177,7 +178,12 @@ const DOWNLOAD_URL =
 // ponta. Ja teve uma esfera (JarvisOrb) na direita — tirada a pedido, ficou
 // ruim ao lado do texto. A tela de planos continua com o cabecalho de antes.
 function DownloadHero({ skipEntrance }: { skipEntrance: boolean }) {
+  // Popup do aviso do Windows (SmartScreen) — abre junto com o download, ver
+  // SmartScreenNotice.tsx.
+  const [noticeOpen, setNoticeOpen] = React.useState(false);
+  const closeNotice = React.useCallback(() => setNoticeOpen(false), []);
   return (
+      <>
       <motion.div
         initial={skipEntrance ? false : { opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -201,8 +207,11 @@ function DownloadHero({ skipEntrance }: { skipEntrance: boolean }) {
             />
             {/* Mesmo gesto dos CTAs solidos do site (Hero): levanta 2px e
                 cresce de leve no hover. A seta anda um pouco junto. */}
+            {/* O clique NAO e interceptado: o navegador baixa o .exe pelo
+                href como sempre, e o popup so abre por cima. */}
             <a
               href={DOWNLOAD_URL}
+              onClick={() => setNoticeOpen(true)}
               className="group relative flex w-full items-center justify-between gap-10 rounded-full bg-[#FAFAFA] py-4 pl-7 pr-6 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] sm:w-auto sm:text-lg"
             >
               <span className="flex items-center gap-3">
@@ -228,7 +237,8 @@ function DownloadHero({ skipEntrance }: { skipEntrance: boolean }) {
           </p>
         </div>
       </motion.div>
-
+      <SmartScreenNotice open={noticeOpen} onClose={closeNotice} downloadUrl={DOWNLOAD_URL} />
+      </>
   );
 }
 

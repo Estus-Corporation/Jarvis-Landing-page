@@ -334,6 +334,23 @@ entrar no app com **o mesmo e-mail da compra** (o saldo é preso a ele) e colar 
 licença em Configurações → Licença. `replyTo: contato@estuscorporation.com.br`,
 porque o remetente é no-reply.
 
+### Bug 7 — renovação saía com e-mail de boas-vindas (01/10/2026)
+
+O `payment` de uma assinatura chega do Mercado Pago com `metadata: {}` e sem
+`transaction_data.subscription_id`, então `subscriptionIdOf()` nunca achava a
+assinatura e `isRenewalCharge()` sempre devolvia `false`. A entrega (saldo +
+licença de 35 dias) sempre funcionou; só o texto do e-mail errava.
+
+Em vez de adivinhar o endpoint certo do MP (a chamada por `RECURRING_INVOICE`
+deu 400), o webhook agora usa o `renewal` que o Credits Server devolve no
+`POST /v1/admin/grant` (≥2 linhas no `grant_log` do e-mail). `grantCredits`
+retorna `{ token, renewal? }`; `renewal` é opcional e, se um servidor antigo não
+o mandar, cai no cálculo por data (`isRenewalCharge`), que continua no arquivo
+como reserva. ⚠️ **Publicar o Credits Server ANTES da landing.** Falso positivo
+aceito: quem recompra depois de um estorno também é tratado como renovação (só
+muda o texto). Não validado com um pagamento real ainda — testar pelo simulador
+do painel do MP com o pagamento `181634572200`.
+
 ### Canal do reembolso antes da compra
 
 A garantia de 7 dias já aparecia na seção de Preços, mas sem dizer COMO exercer

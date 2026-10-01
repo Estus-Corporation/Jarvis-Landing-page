@@ -21,7 +21,7 @@ export async function grantCredits(
   email: string,
   plan: PlanId,
   eventId?: string
-): Promise<string> {
+): Promise<{ token: string; renewal?: boolean }> {
   const baseUrl = requireEnv("CREDITS_SERVER_URL");
   const res = await fetch(`${baseUrl}/v1/admin/grant`, {
     method: "POST",
@@ -37,8 +37,13 @@ export async function grantCredits(
     throw new Error(`Falha ao conceder crédito gerenciado (${res.status}): ${detail}`);
   }
 
-  const data = (await res.json()) as { token: string };
-  return data.token;
+  // `renewal` e quem decide se o e-mail e de boas-vindas ou de renovacao: o
+  // Mercado Pago manda o pagamento de uma assinatura sem nenhum campo que o
+  // ligue a ela, entao so o servidor de creditos (que ve o historico de
+  // cobrancas do e-mail) sabe. Opcional porque um servidor mais antigo nao o
+  // devolve — nesse caso o chamador cai no calculo por data.
+  const data = (await res.json()) as { token: string; renewal?: boolean };
+  return { token: data.token, renewal: typeof data.renewal === "boolean" ? data.renewal : undefined };
 }
 
 // Avisa o servidor de creditos que a assinatura foi cancelada no Mercado Pago.

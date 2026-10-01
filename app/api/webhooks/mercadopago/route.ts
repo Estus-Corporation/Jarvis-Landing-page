@@ -25,7 +25,7 @@ async function deliver(
   email: string | undefined,
   plan: PlanId,
   id: string,
-  isRenewal: boolean
+  fallbackRenewal: () => Promise<boolean>
 ) {
   if (!email) {
     // Nada a fazer sem e-mail, e reenviar a notificacao nao vai criar um.
@@ -48,7 +48,11 @@ async function deliver(
   // `processed` abaixo continua sendo so uma economia de chamada na instancia
   // quente.
   // O token que o grant devolve nao vai mais no e-mail — ver lib/email.ts.
-  await grantCredits(email, plan, id);
+  const grant = await grantCredits(email, plan, id);
+  // O servidor de creditos e a fonte da verdade (ver lib/credits.ts); so cai no
+  // calculo por data se ele nao informar. A anual nunca e renovacao aqui.
+  const isRenewal =
+    plan !== "mensal" ? false : grant.renewal ?? (await fallbackRenewal());
 
   await sendPurchaseEmail(email, plan, licenseKey, isRenewal);
   // Marcado so DEPOIS do envio dar certo: marcar antes faria uma falha de
@@ -208,8 +212,7 @@ export async function POST(request: NextRequest) {
       const payment = await fetchPayment(id);
       if (payment.status === "approved") {
         const plan = planOf(payment);
-        const isRenewal = plan === "mensal" && (await isRenewalCharge(payment, id));
-        await deliver(payment.payer?.email, plan, id, isRenewal);
+        await deliver(payment.payer?.email, plan, id, () => isRenewalCharge(payment, id));
       } else {
         await revoke(payment.status, payment.payer?.email, id);
       }

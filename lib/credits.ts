@@ -8,9 +8,8 @@ import type { PlanId } from "@/lib/plans";
 // MESMO valor nos dois lados) — esse endpoint nunca é exposto ao app do
 // usuário final, só a este webhook.
 //
-// Devolve o token de sessão (o "código de acesso" que a pessoa cola no app,
-// no lugar de criar as próprias chaves OpenAI/ElevenLabs) — incluído no
-// e-mail de compra junto da chave de licença.
+// Devolve o token de sessão, mas ninguém usa mais: ele saiu do e-mail de
+// compra (ver lib/email.ts) — o app obtém o próprio token no login.
 // `eventId` e o id do pagamento/assinatura no Mercado Pago. Ele viaja junto
 // porque a deduplicacao do lado de ca (o `Set` em memoria no route.ts) morre
 // com a instancia serverless — e o Mercado Pago reenvia a mesma notificacao a

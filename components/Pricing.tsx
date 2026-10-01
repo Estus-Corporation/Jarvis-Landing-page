@@ -29,6 +29,7 @@ import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
 import SectionEyebrow from "@/components/ui/section-eyebrow";
 import { TechFrame } from "@/components/ui/tech-frame";
 import SmartScreenNotice from "@/components/SmartScreenNotice";
+import { useMobileDevice } from "@/components/ui/use-mobile-device";
 import { MENSAL_FOUNDER, isFounderOpen } from "@/lib/plans";
 
 // Import dinamico (ssr:false): PrismaticBurst carrega a lib `ogl` (WebGL)
@@ -604,6 +605,16 @@ export default function Pricing() {
   // intercepta os links de ancora e rola sem mudar o hash, entao so o
   // `hashchange` nao pegaria o clique no menu.
   const [view, setView] = React.useState<"download" | "planos">("download");
+  // CELULAR/TABLET SO VE OS PLANOS (pedido do usuario, 01/10/2026): o
+  // instalador e um .exe de Windows, e o "Baixar gratis" baixava ele no
+  // celular, onde nao serve pra nada. No aparelho movel a secao abre direto
+  // nos planos, sem o botao que volta pro download, com um aviso de que o
+  // download e no PC. Decidido pelo aparelho, nao pela largura (ver
+  // use-mobile-device.ts).
+  const mobile = useMobileDevice();
+  React.useEffect(() => {
+    if (mobile) setView("planos");
+  }, [mobile]);
   React.useEffect(() => {
     const fromHash = () => {
       if (window.location.hash === "#precos") setView("planos");
@@ -839,6 +850,12 @@ export default function Pricing() {
               ? "Comece de graça. Depois, escolha como quer continuar."
               : "O Jarvis completo nos dois planos. Só muda a forma de pagar."}
           </p>
+          {mobile && (
+            <p className="mx-auto mt-4 inline-flex max-w-[34ch] items-start gap-2 rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-2.5 text-left text-sm leading-snug text-white/75">
+              <Desktop size={18} weight="light" aria-hidden className="mt-px shrink-0 text-white/85" />
+              O Jarvis é para PC com Windows. Para baixar e testar grátis, abra este site no computador.
+            </p>
+          )}
         </motion.div>
 
         {/* DUAS TELAS NO MESMO LUGAR (pedido do usuario, 25/09/2026): o
@@ -1030,7 +1047,8 @@ export default function Pricing() {
           <div
             className={cn(
               "mt-14 flex items-center gap-4 laptop:mt-10",
-              view === "download" && "hidden"
+              // No celular nao ha tela de download pra onde voltar.
+              (view === "download" || mobile) && "hidden"
             )}
           >
             <span aria-hidden className="h-px flex-1 bg-gradient-to-r from-transparent to-white/20" />

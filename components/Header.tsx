@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import { useMobileDevice } from "@/components/ui/use-mobile-device";
 
 // Navegacao. Uma ancora por secao real da pagina, na mesma ordem em que elas
 // aparecem ao rolar: Recursos, Interface (o showcase da dashboard),
@@ -118,6 +119,8 @@ export default function Header() {
 
   // Hover minimo, igual ao CTA da Hero: so levanta 2px e o fundo clareia.
   // Sem mola e sem brilho/sombra no hover (ambos rejeitados).
+  // Celular/tablet: nao ha o que baixar, o botao leva pros planos.
+  const mobile = useMobileDevice();
   const signupButton = (
     // Leva ao bloco de download (25/09/2026): todo mundo comeca de graca,
     // sem cartao. O "Testar gratis" que ficava ao lado (abria o
@@ -125,10 +128,10 @@ export default function Header() {
     // SetupWizard do app criando a conta, o modal virou um segundo caminho
     // pro mesmo lugar.
     <a
-      href="/#download"
+      href={mobile ? "/#precos" : "/#download"}
       className="block w-full rounded-full bg-[#FAFAFA] px-6 py-2.5 text-center text-sm font-semibold text-ink-950 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white active:translate-y-0 active:scale-[0.97] sm:w-auto"
     >
-      Baixar grátis
+      {mobile ? "Ver planos" : "Baixar grátis"}
     </a>
   );
 

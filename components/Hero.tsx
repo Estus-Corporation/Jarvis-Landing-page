@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotionSafe } from "@/components/ui/use-reduced-motion-safe";
+import { useMobileDevice } from "@/components/ui/use-mobile-device";
 import { useLowPowerDevice } from "@/components/ui/use-low-power";
 import { useMediaQuery } from "@/components/ui/use-media-query";
 import { JarvisOrb } from "@/components/ui/jarvis-sphere";
@@ -16,6 +17,7 @@ import {
   Terminal,
   SquaresFour,
   WindowsLogo,
+  Tag,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
@@ -65,6 +67,9 @@ const TRUST_SIGNALS: { icon: Icon; title: string; subtitle: string }[] = [
 
 export default function Hero() {
   const reduce = useReducedMotionSafe();
+  // No celular nao ha o que baixar (o instalador e de Windows): o CTA vira
+  // "Ver planos" e leva direto pra eles (ver o mesmo pedido em Pricing.tsx).
+  const mobile = useMobileDevice();
   // So pras particulas de fundo (ver comentario grande la embaixo, perto do
   // <Particles>) — a esfera e os pontinhos de LED continuam rodando sempre,
   // mesmo em maquina fraca.
@@ -243,12 +248,21 @@ export default function Hero() {
                 versao com seta rejeitada antes). Sem mola e sem brilho/
                 sombra extra no hover (tambem rejeitados). */}
             <a
-              href="#download"
+              href={mobile ? "#precos" : "#download"}
               className="flex items-center justify-center gap-3 rounded-xl bg-[#FAFAFA] px-9 py-4 text-center text-lg font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white active:translate-y-0 active:scale-[0.98] sm:w-fit sm:min-w-[280px]"
             >
               {/* Mesmo logo do Windows do botao da secao de download. */}
-              <WindowsLogo size={24} weight="fill" aria-hidden className="shrink-0" />
-              Baixar grátis
+              {mobile ? (
+                <>
+                  <Tag size={22} weight="bold" aria-hidden className="shrink-0" />
+                  Ver planos
+                </>
+              ) : (
+                <>
+                  <WindowsLogo size={24} weight="fill" aria-hidden className="shrink-0" />
+                  Baixar grátis
+                </>
+              )}
             </a>
 
             <a

@@ -38,8 +38,8 @@ type RoadmapItem = {
   title: string;
   body: string;
   // Versao mais curta do body, so pra caber no notebook (ver `isLaptop`,
-  // mais abaixo) sem passar da base da imagem, onde o botao "Quero ser
-  // notificado!" agora fica fixo. Opcional: quando ausente, usa `body` normal
+  // mais abaixo) sem passar da base da imagem, onde o botao "Ver
+  // planos" agora fica fixo. Opcional: quando ausente, usa `body` normal
   // em todas as telas.
   bodyCompact?: string;
   // Versao mais curta AINDA, so pro carrossel do celular: la o cartao ja e a
@@ -335,7 +335,7 @@ export default function Roadmap() {
   const [contentHeight, setContentHeight] = useState(0);
 
   // No notebook (mesma faixa do `laptop:` do tailwind.config.ts — tela larga
-  // mas baixa), o botao "Quero ser notificado!" precisa ficar PARADO, nunca
+  // mas baixa), o botao "Ver planos" precisa ficar PARADO, nunca
   // descer quando o item ativo trocar. Por isso, so nessa faixa, contentHeight
   // usa a altura do MAIOR item (nao so do ativo) — o botao passa a se ancorar
   // sempre no mesmo lugar (o pior caso), em vez de subir/descer junto com o
@@ -358,7 +358,7 @@ export default function Roadmap() {
   }, [active, isLaptop]);
 
   // Altura real da imagem (coluna direita): medida do mesmo jeito que
-  // contentHeight, pra o botao "Quero ser notificado!" poder se ancorar no
+  // contentHeight, pra o botao "Ver planos" poder se ancorar no
   // fim dela (ver `stageHeight` mais abaixo). offsetHeight volta 0 quando a
   // imagem esta `hidden` (abaixo de md), o que desativa essa ancoragem
   // sozinho no celular — Math.max cai de volta pra contentHeight.
@@ -713,7 +713,7 @@ export default function Roadmap() {
               href="#precos"
               className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
             >
-              Quero ser notificado!
+              Ver planos
               <ArrowRight
                 size={17}
                 weight="bold"
@@ -784,7 +784,7 @@ export default function Roadmap() {
             }
           >
             {/* Trilha vertical: do topo do titulo (pula o rotulo "Update N.0"
-                acima dele, top-7) ate o fim do botao "Quero ser notificado!"
+                acima dele, top-7) ate o fim do botao "Ver planos"
                 (bottom-0 deste wrapper, que e o ultimo elemento). Fica no VAO
                 entre o controle e o texto (left-[46px]: depois dos 36px do
                 controle, antes dos 76px onde o texto comeca) — nao mais em
@@ -830,8 +830,8 @@ export default function Roadmap() {
                     // caixa a MESMA altura sempre (ate logo acima do botao),
                     // e o `mt-auto` da citacao (mais abaixo) empurra ela pro
                     // fundo dessa caixa — ou seja, a citacao fica sempre na
-                    // mesma linha, colada acima do botao "Quero ser
-                    // notificado!", nao importa o tamanho do body do item.
+                    // mesma linha, colada acima do botao "Ver
+                    // planos", nao importa o tamanho do body do item.
                     // No mobile/tablet, style fica undefined (altura
                     // continua automatica) e o layout nao muda.
                     className={`absolute inset-x-0 top-0 flex flex-col transition-all duration-700 ease-in-out ${
@@ -895,7 +895,7 @@ export default function Roadmap() {
                 href="#precos"
                 className="group inline-flex items-center gap-2.5 rounded-full bg-[#FAFAFA] px-9 py-4 text-base font-semibold text-ink-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_30px_-12px_rgba(255,255,255,0.35)] transition-colors duration-200 hover:bg-white active:scale-[0.98]"
               >
-                Quero ser notificado!
+                Ver planos
                 <ArrowRight
                   size={17}
                   weight="bold"

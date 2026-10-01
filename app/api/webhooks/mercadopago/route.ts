@@ -47,9 +47,10 @@ async function deliver(
   // deducao de verdade acontece no servidor de creditos, que tem banco; o
   // `processed` abaixo continua sendo so uma economia de chamada na instancia
   // quente.
-  const creditsToken = await grantCredits(email, plan, id);
+  // O token que o grant devolve nao vai mais no e-mail — ver lib/email.ts.
+  await grantCredits(email, plan, id);
 
-  await sendPurchaseEmail(email, plan, licenseKey, creditsToken, isRenewal);
+  await sendPurchaseEmail(email, plan, licenseKey, isRenewal);
   // Marcado so DEPOIS do envio dar certo: marcar antes faria uma falha de
   // e-mail bloquear a propria retentativa do Mercado Pago que existe pra
   // consertar essa falha.
@@ -78,21 +79,85 @@ async function revoke(
   await refundCredits(email, id);
 }
 
-// Tipos que resultam em alguma acao (entrega de licenca). Tudo que nao for
-// isso — merchant_order (rastreio de pedido), etc. — e ignorado antes mesmo
-// de validar assinatura: como nenhuma acao e tomada, nao ha nada a proteger,
-// e validar mesmo assim so rejeitava notificacoes legitimas (o MP nao assina
-// merchant_order do mesmo jeito que payment/subscription_preapproval) e
-// fazia o Mercado Pago reenviar em loop.
-// subscription_authorized_payment (a cobranca RECORRENTE de cada renovacao
-// mensal) entrou na lista junto da integracao de credito/licenca — sem isso
-// aqui, o retorno antecipado logo abaixo mataria a notificacao antes mesmo
-// de chegar no tratamento de renovacao mais abaixo.
-const ACTIONABLE_TYPES = new Set([
-  "payment",
-  "subscription_preapproval",
-  "subscription_authorized_payment",
-]);
+type Payment = Awaited<ReturnType<typeof fetchPayment>>;
+
+// QUAL PLANO UM PAGAMENTO APROVADO COMPRA.
+//
+// So o checkout do Anual (Checkout Pro, lib/mercadopago.ts) grava
+// `external_reference` ("anual:<uuid>"). A cobranca de uma ASSINATURA — o
+// Mensal, criado a partir de um PreApprovalPlan — chega aqui como `payment`
+// SEM esse campo. Antes o fallback era `?? "anual"`, e a primeira compra real
+// de teste (30/09/2026, R$ 79 de fundador) recebeu saldo de 12 meses, periodo
+// de 370 dias e licenca anual. O fallback agora e "mensal": o unico outro
+// caminho que gera pagamento nesta aplicacao e a assinatura.
+function planOf(payment: Payment): PlanId {
+  const prefix = payment.external_reference?.split(":")[0];
+  if (prefix === "anual" || prefix === "mensal") return prefix;
+  return "mensal";
+}
+
+// Id da assinatura (preapproval) que gerou o pagamento. O SDK nao tipa esses
+// campos, e o Mercado Pago ja os mandou em lugares diferentes ao longo das
+// versoes da API — por isso as duas fontes.
+function subscriptionIdOf(payment: Payment): string | undefined {
+  const fromMetadata = payment.metadata?.preapproval_id;
+  const transactionData = payment.point_of_interaction?.transaction_data as
+    | { subscription_id?: string }
+    | undefined;
+  const id = fromMetadata ?? transactionData?.subscription_id;
+  return typeof id === "string" && id ? id : undefined;
+}
+
+// Renovacao = cobranca que nao e a primeira da assinatura. Decidido pela
+// DISTANCIA entre a criacao da assinatura e a aprovacao do pagamento, nao por
+// `summarized.charged_quantity`: nao da pra saber se esse contador ja inclui a
+// cobranca que esta sendo notificada agora, e errar nisso trocaria o e-mail
+// de boas-vindas pelo de renovacao (ou o contrario). A primeira cobranca sai
+// na hora da adesao — 7 dias de folga cobrem retentativa de cartao recusado;
+// a renovacao vem ~30 dias depois.
+const FIRST_CHARGE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function isRenewalCharge(payment: Payment, id: string): Promise<boolean> {
+  const subscriptionId = subscriptionIdOf(payment);
+  if (!subscriptionId) {
+    console.warn(`[webhook] pagamento ${id} sem id de assinatura — tratado como 1a cobranca`);
+    return false;
+  }
+  try {
+    const subscription = await fetchPreApproval(subscriptionId);
+    const createdAt = Date.parse(subscription.date_created ?? "");
+    const chargedAt = Date.parse(payment.date_approved ?? payment.date_created ?? "");
+    if (Number.isNaN(createdAt) || Number.isNaN(chargedAt)) return false;
+    return chargedAt - createdAt > FIRST_CHARGE_WINDOW_MS;
+  } catch (error) {
+    // So muda o texto do e-mail. Nao vale derrubar a entrega por isso.
+    console.warn(`[webhook] nao consegui consultar a assinatura ${subscriptionId}:`, error);
+    return false;
+  }
+}
+
+// Tipos que resultam em alguma acao. Tudo que nao for isso — merchant_order
+// (rastreio de pedido), etc. — e ignorado antes mesmo de validar assinatura:
+// como nenhuma acao e tomada, nao ha nada a proteger, e validar mesmo assim
+// so rejeitava notificacoes legitimas (o MP nao assina merchant_order do mesmo
+// jeito que payment/subscription_preapproval) e fazia o Mercado Pago reenviar
+// em loop.
+//
+// ENTREGA (licenca + credito + e-mail) SAI SO DE `payment`. Toda cobranca de
+// assinatura, a primeira e cada renovacao, vira um pagamento de verdade e
+// dispara `payment` — foi o unico evento que chegou na compra real de
+// 30/09/2026. Entregar tambem por `subscription_preapproval` (autorizada) e
+// por `subscription_authorized_payment` (a fatura da assinatura) mandava ate
+// tres e-mails, com tres licencas diferentes, pra mesma compra: cada evento
+// tem um id proprio, entao a deduplicacao por id nao os reconhecia como o
+// mesmo pagamento.
+//
+// `subscription_authorized_payment` saiu da lista por isso, e porque o id dele
+// e de uma fatura (/authorized_payments), nao de um pagamento: o
+// `fetchPayment` que o tratava nao achava o recurso, o webhook respondia 500 e
+// o Mercado Pago reenviava em loop. `subscription_preapproval` continua — e
+// por ele que chega o cancelamento.
+const ACTIONABLE_TYPES = new Set(["payment", "subscription_preapproval"]);
 
 export async function POST(request: NextRequest) {
   const url = new URL(request.url);
@@ -142,17 +207,19 @@ export async function POST(request: NextRequest) {
     if (type === "payment") {
       const payment = await fetchPayment(id);
       if (payment.status === "approved") {
-        // external_reference sai como "anual:<uuid>" (ver lib/mercadopago.ts).
-        const plan = (payment.external_reference?.split(":")[0] ??
-          "anual") as PlanId;
-        await deliver(payment.payer?.email, plan, id, false);
+        const plan = planOf(payment);
+        const isRenewal = plan === "mensal" && (await isRenewalCharge(payment, id));
+        await deliver(payment.payer?.email, plan, id, isRenewal);
       } else {
         await revoke(payment.status, payment.payer?.email, id);
       }
     } else if (type === "subscription_preapproval") {
       const subscription = await fetchPreApproval(id);
       if (subscription.status === "authorized") {
-        await deliver(subscription.payer_email, "mensal", id, false);
+        // Nada a entregar aqui: a primeira cobranca chega como `payment` e e
+        // entregue la (ver ACTIONABLE_TYPES). Uma assinatura que volta de
+        // `paused` se reativa sozinha no Credits Server no proximo pagamento,
+        // porque o grant marca a assinatura como ativa.
       } else if (
         subscription.status === "cancelled" ||
         subscription.status === "paused"
@@ -180,21 +247,11 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-    } else if (type === "subscription_authorized_payment") {
-      // Cobranca RECORRENTE (renovacao mensal) — precisa reemitir a licenca
-      // (ela expira em ~35 dias, ver lib/license.ts) e RESETAR o credito
-      // gerenciado pro valor do plano de novo (ver lib/credits.ts). Antes
-      // isso era ignorado de proposito, o que quebraria silenciosamente o
-      // acesso de quem continua pagando depois de ~30 dias.
-      const payment = await fetchPayment(id);
-      if (payment.status === "approved") {
-        await deliver(payment.payer?.email, "mensal", id, true);
-      } else {
-        await revoke(payment.status, payment.payer?.email, id);
-      }
     }
-    // merchant_order e outros tipos continuam ignorados de proposito — nao
-    // carregam nada que a gente precise agir.
+    // merchant_order, subscription_authorized_payment e outros tipos sao
+    // ignorados de proposito — ver ACTIONABLE_TYPES. A renovacao mensal
+    // (reemitir a licenca de ~35 dias e resetar o credito) acontece pelo
+    // `payment` da cobranca, acima.
   } catch (error) {
     console.error(`[webhook] falha ao processar ${type} ${id}:`, error);
     // 500 de proposito: o Mercado Pago reenvia, e um erro transitorio (API

@@ -297,6 +297,43 @@ era chato. Depois que ele passou a conceder crédito virou problema de verdade:
 devolveria o saldo cheio pra quem já gastou metade do mês. A dedução real passou
 a viver no Credits Server, que tem banco (tabela `processed_events`).
 
+### Primeira compra real (30/09/2026) — três bugs de entrega
+
+Compra de R$ 79 (fundador, Mensal) feita pelo Lucca como teste. O crédito foi
+concedido, mas:
+
+1. **Nenhum e-mail saiu.** O webhook respondia 500 e o Mercado Pago reenviava.
+   `RESEND_API_KEY`/`EMAIL_FROM`/`DOWNLOAD_URL` não estavam em Production na
+   Vercel — `requireEnv` lançava **antes** de chamar o Resend, por isso o painel
+   do Resend não mostrava nada. Corrigido na Vercel (chave nova `landing-vercel`,
+   remetente `Jarvis <no-reply@primejarvis.com.br>`). Reenviado pelo "Simular
+   notificações" do painel de Webhooks com o ID real do pagamento — o simulador
+   assina com o segredo, e o webhook consulta o pagamento real pelo ID.
+2. **Mensal entregue como Anual.** A cobrança de assinatura chega como `payment`
+   sem `external_reference`, e o fallback era `?? "anual"`: saldo de 12 meses,
+   370 dias e licença anual por R$ 79. Agora o fallback é `"mensal"` (`planOf`).
+3. **Entrega por três caminhos.** `payment`, `subscription_preapproval`
+   (autorizada) e `subscription_authorized_payment` entregavam cada um — ids
+   diferentes, então até três e-mails e três licenças pra mesma compra. E o
+   terceiro chamava `fetchPayment` com id de fatura, que não existe como
+   pagamento → 500 em loop. **Entrega agora sai só de `payment`**;
+   `subscription_preapproval` ficou só pro cancelamento/pausa, e
+   `subscription_authorized_payment` é ignorado. Renovação × primeira cobrança
+   é decidida pela distância entre a criação da assinatura e a aprovação do
+   pagamento (`isRenewalCharge`, janela de 7 dias).
+
+Também no painel do MP: os eventos marcados eram "Vinculação de aplicações,
+Alertas de fraude…". Precisam estar marcados **Pagamentos** e **Planos e
+assinaturas** (esta inclui os eventos de assinatura) — sem a segunda, o
+cancelamento nunca chega.
+
+**E-mail de compra mudou:** não leva mais o "código de acesso" (token de sessão
+do Credits Server — o app obtém o mesmo token no login por e-mail + código de 6
+dígitos; no e-mail só confundia e era credencial em texto puro). Agora diz pra
+entrar no app com **o mesmo e-mail da compra** (o saldo é preso a ele) e colar a
+licença em Configurações → Licença. `replyTo: contato@estuscorporation.com.br`,
+porque o remetente é no-reply.
+
 ### Canal do reembolso antes da compra
 
 A garantia de 7 dias já aparecia na seção de Preços, mas sem dizer COMO exercer

@@ -8,7 +8,7 @@ import { fetchPayment, fetchPreApproval } from "@/lib/mercadopago";
 import { generateLicenseKey } from "@/lib/license";
 import { grantCredits, markSubscriptionCanceled, refundCredits } from "@/lib/credits";
 import { sendPurchaseEmail } from "@/lib/email";
-import type { PlanId } from "@/lib/plans";
+import { PLANS, MENSAL_FOUNDER, type PlanId } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +36,18 @@ async function deliver(
     return;
   }
   if (processed.has(id)) return;
+
+  // Tudo que o ENVIO precisa, checado ANTES de conceder credito. Antes essas
+  // variaveis so eram lidas dentro de sendPurchaseEmail, depois do
+  // grantCredits: com uma delas faltando, o cliente ganhava o credito, nunca
+  // recebia o e-mail e o Mercado Pago reenviava em loop (a compra real de
+  // 30/09/2026 caiu exatamente nisso).
+  requireEnv("DOWNLOAD_URL");
+  requireEnv("RESEND_API_KEY");
+  requireEnv("EMAIL_FROM");
+  // O mesmo comprador pode vir com maiuscula/espaco; o Credits Server chaveia
+  // a conta pelo e-mail, entao normaliza uma vez aqui.
+  email = email.trim().toLowerCase();
 
   const licenseKey = generateLicenseKey(email, plan);
   // Credito gerenciado (Jarvis Credits Server) — reseta pro valor do plano;
@@ -80,7 +92,7 @@ async function revoke(
     console.error(`[webhook] pagamento ${id} ${status} SEM e-mail — zerar saldo manualmente`);
     return;
   }
-  await refundCredits(email, id);
+  await refundCredits(email.trim().toLowerCase(), id);
 }
 
 type Payment = Awaited<ReturnType<typeof fetchPayment>>;
@@ -94,10 +106,17 @@ type Payment = Awaited<ReturnType<typeof fetchPayment>>;
 // de teste (30/09/2026, R$ 79 de fundador) recebeu saldo de 12 meses, periodo
 // de 370 dias e licenca anual. O fallback agora e "mensal": o unico outro
 // caminho que gera pagamento nesta aplicacao e a assinatura.
-function planOf(payment: Payment): PlanId {
+function planOf(payment: Payment): PlanId | null {
   const prefix = payment.external_reference?.split(":")[0];
   if (prefix === "anual" || prefix === "mensal") return prefix;
-  return "mensal";
+  // Sem referencia: so e o Mensal se houver EVIDENCIA de assinatura. Antes todo
+  // pagamento aprovado sem referencia virava "mensal", entao um Pix avulso, um
+  // link de pagamento ou um pagamento de teste da mesma conta do Mercado Pago
+  // concedia licenca e credito ao e-mail de quem pagou.
+  const amount = Number(payment.transaction_amount);
+  const valorDoMensal = amount === PLANS.mensal.price || amount === MENSAL_FOUNDER.price;
+  if (subscriptionIdOf(payment) || valorDoMensal) return "mensal";
+  return null;
 }
 
 // Id da assinatura (preapproval) que gerou o pagamento. O SDK nao tipa esses
@@ -192,12 +211,22 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 
-  const body = await request.json();
+  // Corpo malformado nao pode virar 500 (o MP reenviaria em loop): vira 400.
+  const body = await request.json().catch(() => null);
   // O corpo so serve pra saber O QUE mudou. O estado real vem sempre da
   // consulta autenticada abaixo — confiar no corpo deixaria qualquer um
   // liberar licenca postando JSON aqui.
   const type: string | undefined = body?.type ?? queryType;
-  const id: string | undefined = body?.data?.id ?? dataId ?? undefined;
+  // O id vem da QUERY (`data.id`), que e o que a assinatura x-signature cobre.
+  // O `data.id` do corpo NAO e assinado: antes ele tinha prioridade, e um
+  // pedido legitimo (valido por 300s) podia ser reaproveitado com o corpo
+  // apontando pra OUTRO pagamento.
+  const id: string | undefined = dataId ?? undefined;
+  const bodyId = body?.data?.id;
+  if (bodyId !== undefined && id && String(bodyId).toLowerCase() !== id.toLowerCase()) {
+    console.warn(`[webhook] data.id do corpo (${bodyId}) difere do assinado (${id})`);
+    return new NextResponse(null, { status: 400 });
+  }
 
   if (type && !ACTIONABLE_TYPES.has(type)) {
     return NextResponse.json({ ignored: type }, { status: 200 });
@@ -212,7 +241,16 @@ export async function POST(request: NextRequest) {
       const payment = await fetchPayment(id);
       if (payment.status === "approved") {
         const plan = planOf(payment);
-        await deliver(payment.payer?.email, plan, id, () => isRenewalCharge(payment, id));
+        if (!plan) {
+          // Nao e compra do Jarvis (sem referencia, sem assinatura, valor
+          // diferente do Mensal). 200: reenviar nao muda nada. Loga alto pra
+          // alguem conferir se era uma compra legitima com dados diferentes.
+          console.error(
+            `[webhook] pagamento ${id} aprovado SEM referencia e sem cara de assinatura (valor ${payment.transaction_amount}) — ignorado, conferir`
+          );
+        } else {
+          await deliver(payment.payer?.email, plan, id, () => isRenewalCharge(payment, id));
+        }
       } else {
         await revoke(payment.status, payment.payer?.email, id);
       }

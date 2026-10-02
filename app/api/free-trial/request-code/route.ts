@@ -1,33 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireEnv } from "@/lib/env";
+// DESATIVADA. Esta rota existia só pro FreeTrialModal, que saiu do site (ver
+// components/Header.tsx): o teste grátis agora começa no app, que cria a conta
+// sozinho e manda o identificador da máquina. Esta rota NÃO manda esse
+// identificador, então quem criasse conta por aqui furava a trava de "crédito
+// grátis uma vez por máquina". Além disso era pública, sem limite de pedidos e
+// sem timeout: dava pra disparar código pra qualquer e-mail (e-mail bombing).
+// Se um dia o formulário voltar, precisa de rate limit, timeout e deviceId.
+import { NextResponse } from "next/server";
 
-// Repassa pro Credits Server em vez do navegador chamar direto: evita ter
-// que abrir CORS la (que e outro dominio, outro deploy) so pra este formulario,
-// e mantem o padrao ja usado pelos outros dois proxies do site (checkout,
-// webhook) — tudo que fala com servico externo passa por uma rota aqui.
 export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => null);
-  const email = typeof body?.email === "string" ? body.email.trim() : "";
-  if (!email) {
-    return NextResponse.json({ error: "e-mail obrigatório" }, { status: 400 });
-  }
-
-  try {
-    const baseUrl = requireEnv("CREDITS_SERVER_URL");
-    const upstream = await fetch(`${baseUrl}/v1/signup/request-code`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    const data = await upstream.json().catch(() => ({}));
-    return NextResponse.json(data, { status: upstream.status });
-  } catch (error) {
-    console.error("[free-trial/request-code] falha:", error);
-    return NextResponse.json(
-      { error: "Não foi possível enviar o código agora. Tente de novo em instantes." },
-      { status: 502 }
-    );
-  }
+export async function POST() {
+  return NextResponse.json(
+    { error: "O teste grátis agora começa no aplicativo. Baixe o Jarvis para testar." },
+    { status: 410 }
+  );
 }

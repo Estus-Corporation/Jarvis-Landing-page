@@ -1,36 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireEnv } from "@/lib/env";
+// DESATIVADA. Esta rota existia só pro FreeTrialModal, que saiu do site (ver
+// components/Header.tsx): o teste grátis agora começa no app, que cria a conta
+// sozinho e manda o identificador da máquina. Esta rota NÃO manda esse
+// identificador, então quem criasse conta por aqui furava a trava de "crédito
+// grátis uma vez por máquina". Além disso era pública, sem limite de pedidos e
+// sem timeout: dava pra disparar código pra qualquer e-mail (e-mail bombing).
+// Se um dia o formulário voltar, precisa de rate limit, timeout e deviceId.
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => null);
-  const email = typeof body?.email === "string" ? body.email.trim() : "";
-  const code = typeof body?.code === "string" ? body.code.trim() : "";
-  if (!email || !code) {
-    return NextResponse.json({ error: "e-mail e código obrigatórios" }, { status: 400 });
-  }
-
-  try {
-    const baseUrl = requireEnv("CREDITS_SERVER_URL");
-    const upstream = await fetch(`${baseUrl}/v1/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, code }),
-    });
-    const data = await upstream.json().catch(() => ({}));
-    if (!upstream.ok) {
-      return NextResponse.json(data, { status: upstream.status });
-    }
-    // downloadUrl sai daqui (server-side), nao vira NEXT_PUBLIC_ so pra isso —
-    // mesma logica do lib/env.ts: segredo/config de deploy fica no servidor,
-    // o cliente so recebe o que precisa mostrar nesta resposta especifica.
-    return NextResponse.json({ ...data, downloadUrl: requireEnv("DOWNLOAD_URL") });
-  } catch (error) {
-    console.error("[free-trial/confirm] falha:", error);
-    return NextResponse.json(
-      { error: "Não foi possível confirmar agora. Tente de novo em instantes." },
-      { status: 502 }
-    );
-  }
+export async function POST() {
+  return NextResponse.json(
+    { error: "O teste grátis agora começa no aplicativo. Baixe o Jarvis para testar." },
+    { status: 410 }
+  );
 }

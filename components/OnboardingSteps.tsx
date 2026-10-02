@@ -6,7 +6,7 @@ import {
 import type { Icon } from "@phosphor-icons/react";
 
 // Passo a passo visual de "como configurar no app", só na tela /obrigado.
-// Deliberadamente NÃO mostra a chave de licença nem o código de acesso aqui —
+// Deliberadamente NÃO mostra a chave de licença aqui —
 // o redirect do Mercado Pago pra esta página carrega um payment_id na URL sem
 // assinatura nenhuma, então qualquer segredo mostrado nesta tela poderia
 // vazar pra quem adivinhar/enumerar o payment_id de outra pessoa. O e-mail
@@ -16,8 +16,7 @@ const steps: { icon: Icon; title: string; description: string }[] = [
   {
     icon: EnvelopeSimple,
     title: "Confira seu e-mail",
-    description:
-      "Enviamos o link de download, sua chave de licença e seu código de acesso.",
+    description: "Enviamos o link de download e a sua chave de licença.",
   },
   {
     icon: DownloadSimple,
@@ -26,9 +25,9 @@ const steps: { icon: Icon; title: string; description: string }[] = [
   },
   {
     icon: Key,
-    title: "Cole as duas chaves na primeira tela",
+    title: "Entre e ative a licença",
     description:
-      "A chave de licença ativa o app. O código de acesso libera o uso sem precisar criar contas na OpenAI/ElevenLabs.",
+      "Na primeira tela, entre com o mesmo e-mail da compra (você recebe um código de 6 dígitos). Depois, cole a chave de licença em Configurações → Licença.",
   },
 ];
 

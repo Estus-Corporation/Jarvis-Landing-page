@@ -41,13 +41,15 @@ function signLicense(email: string, plan: PlanId, dias: number): string {
 }
 
 export function generateLicenseKey(email: string, plan: PlanId): string {
-  // "anual": cobrança única, sem evento de renovação — 12 meses + 5 dias de
-  // folga (atraso de processamento não deve derrubar o acesso 1 dia antes da
-  // hora). "mensal": expira em ~35 dias e PRECISA ser reemitida a cada
-  // cobrança recorrente aprovada (ver app/api/webhooks/mercadopago/route.ts)
-  // — sem isso, um assinante que continua pagando perderia acesso depois de
-  // um mês, porque a licença (offline, sem revogação/consulta a servidor)
-  // simplesmente venceria.
-  const dias = plan === "anual" ? 370 : 35;
+  // As DUAS validades são longas (370 dias) de propósito. A mensal era 35 dias e
+  // exigia que o assinante colasse uma chave nova a cada renovação: quem não
+  // colava, ou cuja cobrança atrasava, caía no dia 36 na tela de bloqueio
+  // PAGANDO — e o app não tem como buscar a chave sozinho (ela só existe aqui,
+  // a privada de assinatura não vai pra fora). Quem limita o uso de verdade é
+  // o SALDO do Credits Server, que é concedido a cada cobrança aprovada e zerado
+  // no estorno/contestação: sem pagamento não há crédito novo, e sem crédito o
+  // Jarvis não responde, com ou sem licença "válida". A licença só destrava o
+  // app depois dos 7 dias de teste.
+  const dias = 370;
   return signLicense(email, plan, dias);
 }

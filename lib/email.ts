@@ -49,7 +49,7 @@ function steps(email: string, isRenewal: boolean) {
     },
     {
       title: "Cole a chave",
-      body: "acima em Configurações → Licença (ou na tela de assinatura, se ela aparecer).",
+      body: "acima, depois de entrar no app: abra Configurações → Licença (ou use a tela de assinatura, se ela aparecer).",
     },
     { title: "Pronto.", body: "Diga \"Jarvis\" e peça o que precisar." },
   ];
@@ -58,7 +58,7 @@ function steps(email: string, isRenewal: boolean) {
 function cancelText(plan: PlanId) {
   return plan === "mensal"
     ? "Sua assinatura renova sozinha todo mês, e a cada renovação você recebe um e-mail como este. Para cancelar, use Mercado Pago → Assinaturas ou responda este e-mail."
-    : "Seu acesso vale 12 meses e não renova sozinho. Avisaremos antes de vencer.";
+    : "Seu acesso vale 12 meses e não renova sozinho.";
 }
 
 const REFUND_TEXT =

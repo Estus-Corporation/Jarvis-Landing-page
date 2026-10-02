@@ -20,7 +20,7 @@ export default function ObrigadoPage() {
       // (OnboardingSteps) tambem NAO mostra a chave/token em si, so explica o
       // que fazer com eles quando chegarem — ver comentario la pro motivo de
       // seguranca (payment_id da URL de retorno nao e assinado).
-      description="Em instantes você recebe um e-mail com o link de download, sua chave de licença e seu código de acesso."
+      description="Em instantes você recebe um e-mail com o link de download e sua chave de licença."
       actionLabel="Voltar ao site"
       actionHref="/"
       footnote="Não chegou em alguns minutos? Confira o spam ou responda o e-mail da compra."
